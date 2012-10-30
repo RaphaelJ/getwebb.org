@@ -1,0 +1,13 @@
+<header>
+    <nav>
+        <a #logo href=@{HomeR}>
+            getwebb
+
+        <span #free_file_sharing>
+            free file sharing
+
+        <ul #links>
+            <li .active>
+                <a href=@{HomeR}>New upload
+            <li>
+                <a href=@{HomeR}>Upload history

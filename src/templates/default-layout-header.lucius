@@ -1,0 +1,62 @@
+header {
+    background-color: #3D94B6;
+    box-shadow: 1px 0 2px grey;
+
+    nav {
+        margin: auto;
+        width: 950px;
+        height: 37px;
+
+        font-family: "Chau Philomene One", sans-serif;
+        color: white;
+    }
+
+    nav #logo {
+        padding: 0 3px 0 10px;
+
+        color: white;
+        font-size: 25px;
+        text-decoration: none;
+        text-shadow: 0 -1px 0 #2D6F88;
+    }
+
+    nav #logo:hover {
+        text-shadow: 0 0 3px #BABDB6;
+    }
+
+    nav #free_file_sharing {
+        color: white;
+        text-align: left;
+        font-size: 10px;
+    }
+
+    nav ul#links {
+        float: right;
+        margin-top: 8px;
+
+        font-size: 15px;
+        list-style-type: none;
+
+        li {
+            display: inline;
+
+            text-shadow: 0 -1px 0 #2D6F88;
+
+            a {
+                color: white;
+                text-decoration: none;
+
+                margin: 0 10px;
+                padding: 0 5px 5px 5px;
+            }
+
+            a:hover {
+                border-bottom: 3px solid white;
+            }
+        }
+
+        li.active a {
+            border-bottom: 3px solid white;
+        }
+    }
+}

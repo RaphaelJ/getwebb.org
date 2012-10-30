@@ -1,0 +1,28 @@
+$newline always
+$doctype 5
+<!--[if lt IE 9]>
+<script src="//html5shim.googlecode.com/svn/trunk/html5.js"></script>
+<![endif]-->
+<html>
+    <head>
+        <meta charset="UTF-8">
+
+        <title>#{pageTitle pc}
+        <meta name="author"
+              content="#{extraAuthor $ appExtra $ settings master}">
+
+        ^{pageHead pc}
+
+        <link href=/static/img/favicon.png
+              rel=icon type=image/png>
+
+        <link href=http://fonts.googleapis.com/css?family=Chau+Philomene+One
+              rel=stylesheet type=text/css>
+    <body>
+        ^{pageBody pc}
+
+    <footer>
+        Icons by P.J. Onori, O. Frolov, J. Wieser, M. Zlatar, A. Whitcroft
+        &amp; - 2012
+            <a href="mailto:#{extraAuthorMail $ appExtra $ settings master}">
+                #{extraAuthor $ appExtra $ settings master}

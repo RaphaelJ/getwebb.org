@@ -1,0 +1,92 @@
+<div #home_screen>
+    <div #upload_progress style="display: none">
+        <div .complete style="width: 60%">
+
+    <div #upload_box>
+        <form #upload_form style="display: none">
+            <h2>Select some files to upload
+
+            <input name=files[] type=file multiple>
+
+            <div .clear_float>
+
+
+            <p .options_button>
+                <button type=button onclick="showOptions(this, 'options')">
+                    Show more options
+
+            <input type=submit value=Upload .big_button .upload_button>
+
+            <div .clear_float>
+
+            <div #options style="display: none">
+                <label for=email>Send link by email :</label>
+                <input type=text name=email>
+
+        <div #uploads>
+            <h2>Uploading ...
+
+            <div .upload>
+                <h3 .uploaded>wallpaper.png
+                <div .progress>
+                    <div .complete style="width: 100%">
+
+            <div .upload>
+                <h3 .uploaded>wallpaper.png
+                <div .progress>
+                    <div .complete style="width: 100%">
+
+            <div .upload>
+                <h3 .uploaded>wallpaper.png
+                <div .progress>
+                    <div .complete style="width: 100%">
+
+            <div .upload>
+                <h3 .uploading>wallpaper.png
+                <div .progress>
+                    <div .complete style="width: 100%">
+
+            <div .upload>
+                <h3 .waiting>wallpaper.png
+                <div .progress>
+                    <div .complete style="width: 100%">
+
+            <div .upload>
+                <h3 .waiting>wallpaper.png
+                <div .progress>
+                    <div .complete style="width: 100%">
+
+            <div .upload>
+                <h3 .waiting>wallpaper.png
+                <div .progress>
+                    <div .complete style="width: 100%">
+
+<div #page>
+    <div align=center>
+        <ul>
+            <li>
+                <img src=@{StaticR img_homepage_storage_png}
+                     alt="Storage icon">
+                <h3>Large files
+                <span .description>
+                    With <span class="getwebb">getwebb</span>, you can freely
+                    upload files up to 150 Mio without any registration.
+
+            <li>
+                <img src=@{StaticR img_homepage_formats_png}
+                     alt="Formats icon">
+                <h3>Format aware
+                <span .description>
+                    We didn't restrict the format the files are uploaded.
+                    Moreover, we provide special features for images, medias and
+                    archives.
+
+            <li>
+                <img src=@{StaticR img_homepage_infinity_png}
+                     alt="Infinity icon">
+                <h3>No expiration
+                <span .description>
+                    As long as your file is downloaded a least once a year,
+                    it will not be removed from our servers.
+
+        <div .clear_float>

@@ -1,0 +1,21 @@
+Default: &defaults
+  host: "*4" # any IPv4 host
+  port: 3000
+  approot: "http://localhost:3000"
+  author: "Raphael Javaux"
+  authorMail: "raphaeljavaux[at]gmail.com"
+  maxFileSize: 157286400 # 150 Mio
+  #analytics: UA-YOURCODE
+
+Development:
+  <<: *defaults
+
+Testing:
+  <<: *defaults
+
+Staging:
+  <<: *defaults
+
+Production:
+  #approot: "http://www.example.com"
+  <<: *defaults

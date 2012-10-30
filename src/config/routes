@@ -1,6 +1,7 @@
-/static StaticR Static getStatic
-/auth   AuthR   Auth   getAuth
+/static         StaticR Static getStatic
+/auth           AuthR   Auth   getAuth
 
-/robots.txt RobotsR GET
+/robots.txt     RobotsR GET
 
-/ HomeR GET POST
+/               HomeR   GET
+/upload         UploadR POST

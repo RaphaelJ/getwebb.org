@@ -12,7 +12,6 @@ import Network.HTTP.Conduit (Manager)
 import qualified Settings
 import Settings.Development (development)
 import qualified Database.Persist.Store
-import Settings.StaticFiles
 import Database.Persist.GenericSql
 import Settings (widgetFile, Extra (..))
 import Model

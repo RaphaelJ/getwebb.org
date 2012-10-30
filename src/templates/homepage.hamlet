@@ -3,19 +3,22 @@
         <div .complete style="width: 60%">
 
     <div #upload_box>
-        <form #upload_form style="display: none">
+        <form #upload_form enctype="multipart/form-data" 
+                           method="post" action="@{UploadR}">
             <h2>Select some files to upload
 
-            <input name=files[] type=file multiple>
+            <input name=files[] type=file multiple tabindex=1 autofocus>
 
             <div .clear_float>
 
 
             <p .options_button>
-                <button type=button onclick="showOptions(this, 'options')">
+                <button type=button onclick="showOptions(this, 'options')"
+                        tabindex=3>
                     Show more options
 
-            <input type=submit value=Upload .big_button .upload_button>
+            <button .big_button .upload_button type=button tabindex=2>
+                Upload
 
             <div .clear_float>
 
@@ -89,4 +92,5 @@
                     As long as your file is downloaded a least once a year,
                     it will not be removed from our servers.
 
+        <button .big_button href="http://www.google.be">Download</button>
         <div .clear_float>

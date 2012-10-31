@@ -158,6 +158,7 @@
             text-align: center;
 
             h3 {
+                font-family: "ProximaNova-Light", "HelveticaNeue", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
                 margin: 3px 0 10px 0;
 
                 font-size: 18px;

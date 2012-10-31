@@ -11,7 +11,6 @@
 
             <div .clear_float>
 
-
             <p .options_button>
                 <button type=button onclick="showOptions(this, 'options')"
                         tabindex=3>

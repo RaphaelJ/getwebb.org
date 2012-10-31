@@ -6,10 +6,8 @@ function showOptions(button, optionsId)
     if (button.className == "enabled") {
         button.className = "";
         options.style.display = "none";
-        options.style.opacity = 0;
     } else {
         button.className = "enabled";
         options.style.display = "";
-        options.style.opacity = 1;
     }
 }

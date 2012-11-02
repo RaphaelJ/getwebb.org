@@ -1,13 +1,18 @@
-// Shows/Hides the options menu.
-function showOptions(button, optionsId)
-{
-    var options = document.getElementById(optionsId);
+// // Shows/Hides the options menu.
+// function showOptions(button, optionsId)
+// {
+//     var options = document.getElementById(optionsId);
+// 
+//     if (button.className == "enabled") {
+//         button.className = "";
+//         options.style.display = "none";
+//     } else {
+//         button.className = "enabled";
+//         options.style.display = "";
+//     }
+// }
 
-    if (button.className == "enabled") {
-        button.className = "";
-        options.style.display = "none";
-    } else {
-        button.className = "enabled";
-        options.style.display = "";
-    }
-}
+$("#options_toggle").click(function () {
+        $("#options_toggle").toggleClass("enabled");
+        $("#options").slideToggle(100);
+    });

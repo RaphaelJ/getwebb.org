@@ -17,5 +17,4 @@ Staging:
   <<: *defaults
 
 Production:
-  #approot: "http://www.example.com"
   <<: *defaults

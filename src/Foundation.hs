@@ -103,6 +103,8 @@ instance Yesod App where
     shouldLog _ _source level =
         development || level == LevelWarn || level == LevelError
 
+    maximumContentLength _ _ = 1024 * 1024 * 1024 -- 1024 Mio
+
 -- How to run database actions.
 instance YesodPersist App where
     type YesodPersistBackend App = SqlPersist

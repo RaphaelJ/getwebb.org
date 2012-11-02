@@ -23,7 +23,7 @@
             font-size: 20px;
         }
 
-        .upload_button {
+        #upload_button {
             float: right;
             display: block;
         }
@@ -77,7 +77,7 @@
             margin: 10px 0 10px 35px;
         }
 
-        #uploads {
+        #uploads_progress {
             margin-top: 15px;
 
             .upload {

@@ -1,6 +1,6 @@
 <div #home_screen>
     <div #upload_progress style="display: none">
-        <div .complete style="width: 60%">
+        <div #upload_progress_complete .complete>
 
     <div #upload_box>
         <form #upload_form enctype="multipart/form-data" 
@@ -19,7 +19,7 @@
             <!--<button .big_button .upload_button type=button tabindex=2>
                 Upload-->
 
-            <button .big_button .upload_button type=button tabindex=2>
+            <button .big_button #upload_button type=button tabindex=2>
                 Upload
 
             <div .clear_float>
@@ -27,7 +27,7 @@
             <div #options style="display: none">
                 ^{widget}
 
-        <div #uploads>
+        <div #uploads_progress style="display: none">
             <h2>Uploading ...
 
             <div .upload>

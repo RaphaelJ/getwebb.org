@@ -1,18 +1,31 @@
-// // Shows/Hides the options menu.
-// function showOptions(button, optionsId)
-// {
-//     var options = document.getElementById(optionsId);
-// 
-//     if (button.className == "enabled") {
-//         button.className = "";
-//         options.style.display = "none";
-//     } else {
-//         button.className = "enabled";
-//         options.style.display = "";
-//     }
-// }
-
+// Shows/Hides the options menu.
 $("#options_toggle").click(function () {
-        $("#options_toggle").toggleClass("enabled");
-        $("#options").slideToggle(100);
-    });
+    $("#options_toggle").toggleClass("enabled");
+    $("#options").slideToggle(100);
+});
+
+// Hides the upload form, start the upload and shows the uploads progress.
+$("#upload_button").click(function () {
+    $("#upload_form").hide("fast");
+
+    var xhr = new XMLHttpRequest();
+    var data = new FormData(document.getElementById("upload_form"));
+
+    $("#upload_progress").show("slow");
+    var progress_complete = $("#upload_progress_complete");
+
+//     xhr.upload.addEventListener("progress", function (e) {
+//         alert(e.loaded / e.total * 100);
+//         progress_complete.animate({
+//             width: parseInt(e.loaded / e.total * 100)
+//         }, "slow");
+//     }, false);
+//     xhr.addEventListener("load", uploadComplete, false);
+//     xhr.addEventListener("error", uploadFailed, false);
+//     xhr.addEventListener("abort", uploadCanceled, false);
+
+    xhr.open("POST", "@{UploadR}");
+    xhr.send(data);
+
+    $("#uploads_progress").show("fast");
+});

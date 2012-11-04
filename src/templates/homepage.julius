@@ -6,15 +6,18 @@ $("#options_toggle").click(function () {
 
 // Hides the upload form, start the upload and shows the uploads progress.
 $("#upload_button").click(function () {
-    // Checks if at least a file as been selected for upload
-    var files = document.getElementById("upload_files").files;
-    if (files.length < 1)
-        show_error("Please select at least one file to upload");
-    else {
+    var files = document.getElementById("upload_files").files
+    if (files.length < 1) {
+        // Checks if at least a file as been selected for upload
+        show_error("Please select at least one file to upload.");
+    } else if (!document.getElementById("options_email").checkValidity()) {
+        // Checks if the email field is valid
+        show_error("Please enter a valid email.");
+    } else {
         $("#upload_form").hide("fast");
 
         var xhr = new XMLHttpRequest();
-        var data = new FormData(document.getElementById("upload_form"));
+        var data = new FormData(form);
 
         $("#uploads_progress").show("fast");
         $("#upload_progress").show();
@@ -31,7 +34,7 @@ $("#upload_button").click(function () {
         }, false);
 
         xhr.addEventListener("error", function (e) {
-            show_error("An error occured during the upload, please try again");
+            show_error("An error occured during the upload, please try again.");
             restore_upload_form();
         }, false);
 

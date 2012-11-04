@@ -3,11 +3,13 @@
         <div #upload_progress_complete .complete>
 
     <div #upload_box>
-        <form #upload_form enctype="multipart/form-data" 
+        <div #upload_error style="display: none">
+
+        <form #upload_form enctype="multipart/form-data"
                            method="post" action="@{UploadR}">
             <h2>Select some files to upload
 
-            <input name=files[] type=file multiple tabindex=1 autofocus>
+            <input #upload_files type=file multiple tabindex=1 autofocus>
 
             <div .clear_float>
 

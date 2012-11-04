@@ -6,26 +6,51 @@ $("#options_toggle").click(function () {
 
 // Hides the upload form, start the upload and shows the uploads progress.
 $("#upload_button").click(function () {
-    $("#upload_form").hide("fast");
+    // Checks if at least a file as been selected for upload
+    var files = document.getElementById("upload_files").files;
+    if (files.length < 1)
+        show_error("Please select at least one file to upload");
+    else {
+        $("#upload_form").hide("fast");
 
-    var xhr = new XMLHttpRequest();
-    var data = new FormData(document.getElementById("upload_form"));
+        var xhr = new XMLHttpRequest();
+        var data = new FormData(document.getElementById("upload_form"));
 
-    $("#upload_progress").show("slow");
-    var progress_complete = $("#upload_progress_complete");
+        $("#uploads_progress").show("fast");
+        $("#upload_progress").show();
+        var progress_complete = $("#upload_progress_complete");
 
-//     xhr.upload.addEventListener("progress", function (e) {
-//         alert(e.loaded / e.total * 100);
-//         progress_complete.animate({
-//             width: parseInt(e.loaded / e.total * 100)
-//         }, "slow");
-//     }, false);
-//     xhr.addEventListener("load", uploadComplete, false);
-//     xhr.addEventListener("error", uploadFailed, false);
-//     xhr.addEventListener("abort", uploadCanceled, false);
+        xhr.upload.addEventListener("progress", function (e) {
+            progress_complete.animate({
+                width: parseInt(e.loaded / e.total * 100)
+            }, "slow");
+        }, false);
 
-    xhr.open("POST", "@{UploadR}");
-    xhr.send(data);
+        xhr.addEventListener("load", function (e) {
+            alert(e.target.responseText);restore_upload_form();
+        }, false);
 
-    $("#uploads_progress").show("fast");
+        xhr.addEventListener("error", function (e) {
+            show_error("An error occured during the upload, please try again");
+            restore_upload_form();
+        }, false);
+
+        xhr.addEventListener("abort", restore_upload_form, false);
+
+        xhr.open("POST", "@{UploadR}");
+        xhr.send(data);
+    }
 });
+
+// Restores the upload form and hide the current uploads status
+function restore_upload_form() {
+    $("#upload_progress").hide();
+    $("#uploads_progress").hide("fast");
+    $("#upload_form").show("fast");
+}
+
+function show_error(message) {
+    var error = $("#upload_error");
+    error.html(message);
+    error.fadeIn();
+}

@@ -3,12 +3,12 @@ module Handler.Home where
 
 import Import
 
-import Handler.Upload (optionsForm)
+import Handler.Upload (uploadForm')
 
 -- Shows the home page
 getHomeR :: Handler RepHtml
 getHomeR = do
-    (widget, enctype) <- generateFormPost optionsForm
+    ((widgetFiles, widgetOpt), enctype) <- generateFormPost uploadForm'
 
     defaultLayout $ do
         setTitle "getwebb - Free file sharing"

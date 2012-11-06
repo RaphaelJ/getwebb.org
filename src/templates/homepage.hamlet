@@ -9,7 +9,7 @@
                            method="post" action="@{UploadR}">
             <h2>Select some files to upload
 
-            <input #upload_files type=file multiple tabindex=1 autofocus>
+            ^{widgetFiles}
 
             <div .clear_float>
 
@@ -27,7 +27,7 @@
             <div .clear_float>
 
             <div #options style="display: none">
-                ^{widget}
+                ^{widgetOpt}
 
         <div #uploads_progress style="display: none">
             <h2>Uploading ...

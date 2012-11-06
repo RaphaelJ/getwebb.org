@@ -17,10 +17,10 @@ $("#upload_button").click(function () {
         $("#upload_form").hide("fast");
 
         var xhr = new XMLHttpRequest();
-        var data = new FormData(form);
+        var data = new FormData(document.getElementById("upload_form"));
 
+        $("#upload_progress").fadeIn();
         $("#uploads_progress").show("fast");
-        $("#upload_progress").show();
         var progress_complete = $("#upload_progress_complete");
 
         xhr.upload.addEventListener("progress", function (e) {
@@ -47,7 +47,7 @@ $("#upload_button").click(function () {
 
 // Restores the upload form and hide the current uploads status
 function restore_upload_form() {
-    $("#upload_progress").hide();
+    $("#upload_progress").fadeOut();
     $("#uploads_progress").hide("fast");
     $("#upload_form").show("fast");
 }

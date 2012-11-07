@@ -1,15 +1,32 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Handler.Upload where
-
-import Control.Monad.Writer
-import Data.Map (elems)
+module Handler.Upload (Options (..), postUploadR, uploadForm, uploadForm')
+    where
 
 import Import
+
+import Control.Concurrent
+import Control.Monad.Writer
+import Data.Map (elems)
 
 data Options = Options {
       optEmail :: Maybe Text
     }
     deriving (Show, Read)
+
+-- | Uploads files to the server. Returns a Json object which contains the
+-- id of the upload or the error.
+postUploadR :: Handler RepJson
+postUploadR = do
+    ((res, _), _) <- runFormPost uploadForm'
+
+    liftIO $ threadDelay 30000000
+
+    let rep = case res of
+          FormFailure ms -> object [("errors", array ms)]
+          FormSuccess (files, Options email) ->
+            object [ (fileName f, fileContentType f) | f <- files ]
+          FormMissing -> undefined
+    jsonToRepJson rep
 
 -- | Creates a form for the upload and its options.
 uploadForm :: Text -- ^ The prefix which will precede each field name and id.
@@ -21,7 +38,7 @@ uploadForm prefix extra = do
     tell Multipart
 
     -- File widget.
-    let filesId = prefix <> "_files"
+    let filesId = prefix <> "files"
     let filesView = FieldView {
           fvLabel = "Select some files to upload"
         , fvTooltip = Nothing, fvId = filesId
@@ -39,12 +56,12 @@ uploadForm prefix extra = do
     -- Retrieves the list of uploaded files.
     files <- askFiles
     let filesRes = case elems <$> files of
-         Nothing -> FormFailure ["Please select at least one file to upload"]
-         Just [] -> FormFailure ["Please select at least one file to upload"]
-         Just fs -> FormSuccess fs
+         Just fs@(_:_) 
+                -> FormSuccess fs
+         _      -> FormFailure ["Please send at least one file to upload"]
 
     -- Options widget.
-    let emailId = Just (prefix <> "_email")
+    let emailId = Just (prefix <> "email")
     let emailSettings = FieldSettings {
           fsLabel = "Send link by email", fsTooltip = Nothing
         , fsId = emailId, fsName = emailId, fsAttrs = []
@@ -61,17 +78,9 @@ uploadForm prefix extra = do
 
     return (res, (filesWidget, optWidget))
 
+-- | Same as 'uploadForm' but with upload_ as a predefined prefix.
+uploadForm' :: Html
+            -> MForm App App (
+                    FormResult ([FileInfo], Options), (Widget, Widget)
+               )
 uploadForm' = uploadForm "upload_"
-
--- | Uploads files to the server. Returns a Json object which contains the
--- id of the upload or the error.
-postUploadR :: Handler RepJson
-postUploadR = do
-    ((res, _), _) <- runFormPost uploadForm'
-
-    let rep = case res of
-          FormFailure ms -> object [("errors", array ms)]
-          FormSuccess (files, Options email) ->
-            object [ (fileName f, fileContentType f) | f <- files ]
-          FormMissing -> undefined
-    jsonToRepJson rep

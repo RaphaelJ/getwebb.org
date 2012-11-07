@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Handler.Home where
+module Handler.Home (getHomeR)
+    where
 
 import Import
 

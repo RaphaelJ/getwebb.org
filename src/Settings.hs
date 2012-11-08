@@ -6,6 +6,7 @@
 module Settings where
 
 import Prelude
+import Data.Word
 import Text.Shakespeare.Text (st)
 import Language.Haskell.TH.Syntax
 import Database.Persist.Sqlite (SqliteConf)
@@ -62,11 +63,13 @@ widgetFile = (if development then widgetFileReload
               widgetFileSettings
 
 data Extra = Extra {
-      extraMaxFileSize :: Int, extraAuthor :: Text, extraAuthorMail :: Text
+      extraMaxFileSize :: Word64, extraMaxFiles :: Int, extraAuthor :: Text
+    , extraAuthorMail :: Text
     } deriving Show
 
 parseExtra :: DefaultEnv -> Object -> Parser Extra
 parseExtra _ o = Extra
     <$> o .: "maxFileSize"
+    <*> o .: "maxFiles"
     <*> o .: "author"
     <*> o .: "authorMail"

@@ -9,38 +9,40 @@ $("#upload_button").click(function () {
     var files = document.getElementById("upload_files").files
     if (files.length < 1) {
         // Checks if at least a file as been selected for upload
-        show_error("Please select at least one file to upload.");
+        showError("Please select at least one file to upload.");
     } else if (!document.getElementById("upload_email").checkValidity()) {
         // Checks if the email field is valid
-        show_error("Please enter a valid email.");
+        showError("Please enter a valid email.");
+    } else if (sumSize(files) > ) {
+        
     } else {
         $("#upload_form").hide("fast");
 
         var xhr = new XMLHttpRequest();
         var data = new FormData(document.getElementById("upload_form"));
 
-        var progress_complete = $("#upload_progress_complete");
-        progress_complete.width(0);
+        var progressComplete = $("#upload_progress_complete");
+        progressComplete.width(0);
         $("#upload_progress").fadeIn();
         $("#uploads_progress").show("fast");
 
         xhr.upload.addEventListener("progress", function (e) {
-            progress_complete.animate({
+            progressComplete.animate({
                 width: parseInt(e.loaded / e.total * 100) + "%"
             }, "slow");
         }, false);
 
         xhr.addEventListener("load", function (e) {
             alert(e.target.responseText);
-//             restore_upload_form();
+            restoreUploadForm();
         }, false);
 
         xhr.addEventListener("error", function (e) {
-            show_error("An error occured during the upload, please try again.");
-//             restore_upload_form();
+            showError("An error occured during the upload, please try again.");
+            restoreUploadForm();
         }, false);
 
-        xhr.addEventListener("abort", restore_upload_form, false);
+        xhr.addEventListener("abort", restoreUploadForm, false);
 
         xhr.open("POST", "@{UploadR}");
         xhr.send(data);
@@ -48,13 +50,13 @@ $("#upload_button").click(function () {
 });
 
 // Restores the upload form and hide the current uploads status
-function restore_upload_form() {
+function restoreUploadForm() {
     $("#upload_progress").fadeOut();
     $("#uploads_progress").hide("fast");
     $("#upload_form").show("fast");
 }
 
-function show_error(message) {
+function showError(message) {
     var error = $("#upload_error");
     error.html(message);
     error.fadeIn();

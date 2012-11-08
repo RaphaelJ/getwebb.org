@@ -19,7 +19,7 @@ postUploadR :: Handler RepJson
 postUploadR = do
     ((res, _), _) <- runFormPost uploadForm'
 
-    liftIO $ threadDelay 30000000
+    liftIO $ threadDelay 3000000
 
     let rep = case res of
           FormFailure ms -> object [("errors", array ms)]

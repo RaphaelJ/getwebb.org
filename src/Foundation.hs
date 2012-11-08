@@ -1,6 +1,7 @@
 module Foundation where
 
 import Prelude
+import Data.Word
 import Yesod
 import Yesod.Static
 import Yesod.Auth
@@ -103,7 +104,11 @@ instance Yesod App where
     shouldLog _ _source level =
         development || level == LevelWarn || level == LevelError
 
-    maximumContentLength _ _ = 1024 * 1024 * 1024 -- 1024 Mio
+    -- Permits a query which can hold ten files of the
+    maximumContentLength app (Just UploadR) =
+        let extras = appExtra $ settings $ app
+        in (extraMaxFileSize extras) * (word64 $ extraMaxFiles extras)
+    maximumContentLength _   _              = 2 * 1024 * 1024 -- 2 Mio
 
 -- How to run database actions.
 instance YesodPersist App where
@@ -150,3 +155,6 @@ getExtra = fmap (appExtra . settings) getYesod
 -- wiki:
 --
 -- https://github.com/yesodweb/yesod/wiki/Sending-email
+
+word64 :: Integral a => a -> Word64
+word64 = fromIntegral

@@ -30,7 +30,7 @@ library
                      Settings.Development
                      Handler.Home
                      Handler.Upload
-                     Upload
+                     Upload.Processing
                      Upload.Image
 
     if flag(dev) || flag(library-only)

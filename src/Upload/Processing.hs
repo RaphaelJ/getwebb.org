@@ -1,4 +1,4 @@
-module Upload (process)
+module Upload.Processing (process)
     where
 
 import Import
@@ -9,7 +9,8 @@ type UploadId = Int
 type FileId = Int
 
 process :: [FileInfo] -> UploadId
-process (f:fs) = undefined
+process (f:fs) = 
+    
 
 processFile :: FileInfo -> FileId
 processFile f = undefined

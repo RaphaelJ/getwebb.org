@@ -8,6 +8,8 @@ import Control.Concurrent
 import Control.Monad.Writer
 import Data.Map (elems)
 
+import Upload.Processing (process)
+
 data Options = Options {
       optEmail :: Maybe Text
     }
@@ -21,12 +23,13 @@ postUploadR = do
 
     liftIO $ threadDelay 3000000
 
-    let rep = case res of
-          FormFailure ms -> object [("errors", array ms)]
-          FormSuccess (files, Options email) ->
-            object [ (fileName f, fileContentType f) | f <- files ]
-          FormMissing -> undefined
-    jsonToRepJson rep
+    case res of
+         FormSuccess (files, Options email) -> do
+             process f
+
+             jsonToRepJson $! object [ (fileName f, fileContentType f) | f <- files ]
+         FormFailure ms -> jsonToRepJson $ object [("errors", array ms)]
+         FormMissing -> undefined
 
 -- | Creates a form for the upload and its options.
 uploadForm :: Text -- ^ The prefix which will precede each field name and id.

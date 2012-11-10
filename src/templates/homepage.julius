@@ -13,9 +13,9 @@ $("#upload_button").click(function () {
     } else if (!document.getElementById("upload_email").checkValidity()) {
         // Checks if the email field is valid
         showError("Please enter a valid email.");
-    } else if (sumSize(files) > ) {
+    } /*else if (sumSize(files) > ) {
         
-    } else {
+    }*/ else {
         $("#upload_form").hide("fast");
 
         var xhr = new XMLHttpRequest();

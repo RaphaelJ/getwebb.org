@@ -25,7 +25,7 @@ postUploadR = do
 
     case res of
          FormSuccess (files, Options email) -> do
-             process f
+             process files
 
              jsonToRepJson $! object [ (fileName f, fileContentType f) | f <- files ]
          FormFailure ms -> jsonToRepJson $ object [("errors", array ms)]
@@ -58,7 +58,7 @@ uploadForm prefix extra = do
 
     -- Retrieves the list of uploaded files.
     files <- askFiles
-    let filesRes = case elems <$> files of
+    let filesRes = case concat <$> elems <$> files of
          Just fs@(_:_) 
                 -> FormSuccess fs
          _      -> FormFailure ["Please send at least one file to upload"]

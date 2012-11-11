@@ -13,8 +13,8 @@ import qualified Database.Persist.Store
 import Database.Persist.GenericSql
 import Settings (widgetFile, Extra (..))
 import Text.Jasmine (minifym)
-import qualified Web.ClientSession as S
 import Text.Hamlet (hamletFile)
+import Web.ClientSession (getKey)
 
 -- | The site argument for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -22,7 +22,6 @@ import Text.Hamlet (hamletFile)
 -- access to the data present here.
 data App = App
     { settings :: AppConfig DefaultEnv Extra
-    , encryptKey :: S.Key -- ^ The key used to encrypt cookies.
     , getStatic :: Static -- ^ Settings for static file serving.
     , connPool :: Database.Persist.Store.PersistConfigPool Settings.PersistConfig -- ^ Database connection pool.
     , httpManager :: Manager
@@ -61,10 +60,10 @@ instance Yesod App where
     approot = ApprootMaster $ appRoot . settings
 
     -- Store session data on the client in encrypted cookies,
-    -- default session idle timeout is 120 minutes
+    -- default session idle timeout is two year.
     makeSessionBackend app = do
-        let key = encryptKey app
-        return . Just $ clientSessionBackend key 120
+        key <- getKey "config/client_session_key.aes"
+        return . Just $ clientSessionBackend key (2 * 365 * 24 * 60)
 
     defaultLayout widget = do
         master <- getYesod

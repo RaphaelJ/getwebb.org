@@ -24,10 +24,42 @@ processFile f = do
 
     hash <- liftIO $! hashFile f
     let path = hashPath (extraUploadDir extras) hash
+    
+    adminKey <- getAdminKey
+    liftIO $ print adminKey
 
-    liftIO $! fileMove f path
-    liftIO $! print hash
-    liftIO $! print path
+    liftIO $ fileMove f path
+
+    liftIO $ print hash
+    liftIO $ print path
+
+-- | Reads the session value to get the admin key of the visitor. If the user
+-- doesn\'t have a key, creates a new key.
+getAdminKey :: Handler AdminKey
+getAdminKey = do
+    let sessionName = "admin_key"
+    mKey <- lookupSession sessionName
+
+    -- Checks if the user has already an admin key.
+    case mKey of
+        Just k ->
+            return $ read $ unpack k
+        Nothing -> runDB $ do
+            -- The user hasn't admin key. Takes the next free admin key.
+            mLastK <- selectFirst [] []
+            k <- case mLastK of
+                    Just (Entity rowId (LastAdminKey lastK)) -> do
+                        -- Increments the last admin key to get a new value.
+                        let newK = lastK + 1
+                        update rowId [LastKey newK]
+                        return newK
+                    Nothing -> do
+                        -- Inserts the first admin key in the database.
+                        _ <- insert (LastAdminKey 0)
+                        return 0
+
+            lift $ setSession sessionName (pack $ show k)
+            return k
 
 -- | Computes the digest of a uploaded file.
 hashFile :: FileInfo -> IO String

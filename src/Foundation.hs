@@ -4,9 +4,6 @@ import Prelude
 import Data.Word
 import Yesod
 import Yesod.Static
-import Yesod.Auth
-import Yesod.Auth.BrowserId
-import Yesod.Auth.GoogleEmail
 import Yesod.Default.Config
 import Yesod.Default.Util (addStaticContentExternal)
 import Network.HTTP.Conduit (Manager)
@@ -15,9 +12,8 @@ import Settings.Development (development)
 import qualified Database.Persist.Store
 import Database.Persist.GenericSql
 import Settings (widgetFile, Extra (..))
-import Model
 import Text.Jasmine (minifym)
-import Web.ClientSession (getKey)
+import qualified Web.ClientSession as S
 import Text.Hamlet (hamletFile)
 
 -- | The site argument for your application. This can be a good place to
@@ -26,6 +22,7 @@ import Text.Hamlet (hamletFile)
 -- access to the data present here.
 data App = App
     { settings :: AppConfig DefaultEnv Extra
+    , encryptKey :: S.Key -- ^ The key used to encrypt cookies.
     , getStatic :: Static -- ^ Settings for static file serving.
     , connPool :: Database.Persist.Store.PersistConfigPool Settings.PersistConfig -- ^ Database connection pool.
     , httpManager :: Manager
@@ -65,8 +62,8 @@ instance Yesod App where
 
     -- Store session data on the client in encrypted cookies,
     -- default session idle timeout is 120 minutes
-    makeSessionBackend _ = do
-        key <- getKey "config/client_session_key.aes"
+    makeSessionBackend app = do
+        let key = encryptKey app
         return . Just $ clientSessionBackend key 120
 
     defaultLayout widget = do
@@ -87,9 +84,6 @@ instance Yesod App where
 --         Just $ uncurry (joinPath y (Settings.staticRoot $ settings y)) $ renderRoute s
 --     urlRenderOverride _ _ = Nothing
 
-    -- The page to be redirected to when authentication is required.
-    authRoute _ = Just $ AuthR LoginR
-
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows
     -- expiration dates to be set far in the future without worry of
@@ -106,7 +100,7 @@ instance Yesod App where
 
     -- Permits a query which can hold ten files of the
     maximumContentLength app (Just UploadR) =
-        let extras = appExtra $ settings $ app
+        let extras = appExtra $ settings app
         in (extraMaxFileSize extras) * (word64 $ extraMaxFiles extras)
     maximumContentLength _   _              = 2 * 1024 * 1024 -- 2 Mio
 
@@ -120,25 +114,25 @@ instance YesodPersist App where
             f
             (connPool master)
 
-instance YesodAuth App where
-    type AuthId App = UserId
-
-    -- Where to send a user after successful login
-    loginDest _ = HomeR
-    -- Where to send a user after logout
-    logoutDest _ = HomeR
-
-    getAuthId creds = runDB $ do
-        x <- getBy $ UniqueUser $ credsIdent creds
-        case x of
-            Just (Entity uid _) -> return $ Just uid
-            Nothing -> do
-                fmap Just $ insert $ User (credsIdent creds) Nothing
-
-    -- You can add other plugins like BrowserID, email or OAuth here
-    authPlugins _ = [authBrowserId, authGoogleEmail]
-
-    authHttpManager = httpManager
+-- instance YesodAuth App where
+--     type AuthId App = UserId
+-- 
+--     -- Where to send a user after successful login
+--     loginDest _ = HomeR
+--     -- Where to send a user after logout
+--     logoutDest _ = HomeR
+-- 
+--     getAuthId creds = runDB $ do
+--         x <- getBy $ UniqueUser $ credsIdent creds
+--         case x of
+--             Just (Entity uid _) -> return $ Just uid
+--             Nothing -> do
+--                 fmap Just $ insert $ User (credsIdent creds) Nothing
+-- 
+--     -- You can add other plugins like BrowserID, email or OAuth here
+--     authPlugins _ = [authBrowserId, authGoogleEmail]
+-- 
+--     authHttpManager = httpManager
 
 -- This instance is required to use forms. You can modify renderMessage to
 -- achieve customized and internationalized form validation messages.

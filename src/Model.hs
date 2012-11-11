@@ -2,13 +2,40 @@ module Model where
 
 import Prelude
 import Yesod
+
+import Data.Int
 import Data.Text (Text)
-import Database.Persist.Quasi
+import Data.Time.LocalTime (TimeOfDay)
 
+-- | Files types recognized.
+data FileType = Image | Audio | Video | Archive | Unknown
+    deriving (Show, Read, Eq)
+derivePersistField "FileType"
 
--- You can define all of your database entities in the entities file.
--- You can find more information on persistent and how to declare entities
--- at:
--- http://www.yesodweb.com/book/persistent/
-share [mkPersist sqlSettings, mkMigrate "migrateAll"]
-    $(persistFileWith lowerCaseSettings "config/models")
+share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistUpperCase|
+AdminKey
+    deriving Show
+
+Upload
+    adminKeyID AdminKeyId
+    uploadDate TimeOfDay default=CURRENT_TIMESTAMP
+    deriving Show
+
+File
+    sha1 Text
+    type FileType
+    size Int64
+    uploadDate TimeOfDay default=CURRENT_TIMESTAMP
+    UniqueSha1 sha1
+    deriving Show
+
+UploadFile
+    uploadId UploadId
+    fileId FileId
+    name Text
+    ip Text
+    uploadDate TimeOfDay default=CURRENT_TIMESTAMP
+    views Int64 default=0
+    lastView TimeOfDay default=CURRENT_TIMESTAMP
+    deriving Show
+|]

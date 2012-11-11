@@ -63,13 +63,14 @@ widgetFile = (if development then widgetFileReload
               widgetFileSettings
 
 data Extra = Extra {
-      extraMaxFileSize :: Word64, extraMaxFiles :: Int, extraAuthor :: Text
-    , extraAuthorMail :: Text
+      extraAuthor :: Text, extraAuthorMail :: Text, extraUploadDir :: FilePath
+    , extraMaxFileSize :: Word64, extraMaxFiles :: Int
     } deriving Show
 
 parseExtra :: DefaultEnv -> Object -> Parser Extra
 parseExtra _ o = Extra
-    <$> o .: "maxFileSize"
-    <*> o .: "maxFiles"
-    <*> o .: "author"
+    <$> o .: "author"
     <*> o .: "authorMail"
+    <*> o .: "uploadDir"
+    <*> o .: "maxFileSize"
+    <*> o .: "maxFiles"

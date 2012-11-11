@@ -4,6 +4,7 @@ Default: &defaults
   approot: "http://localhost:3000"
   author: "Raphael Javaux"
   authorMail: "raphaeljavaux[at]gmail.com"
+  uploadDir: "files"
   maxFileSize: 157286400 # 150 Mio
   maxFiles: 15 # Used to limit the request size
   #analytics: UA-YOURCODE

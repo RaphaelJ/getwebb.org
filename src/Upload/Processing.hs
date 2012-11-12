@@ -99,11 +99,9 @@ adminKey = do
 -- Returns the file\'s name and its size.
 moveToTmp :: FileInfo -> Handler FilePath
 moveToTmp f = do
-    extras <- getExtra
-    let dir = extraUploadDir extras </> "tmp"
-
-    (path, h) <- openTempFile dir "upload_"
-    hClose h
+    app <- getYesod
+    (path, h) <- liftIO $ newTmpFile app "upload_"
+    liftIO $ hClose h
 
     liftIO $ fileMove f path
 
@@ -116,7 +114,9 @@ fileSize path = withFile ReadMode hFileSize
 -- | Computes the digest of a file.
 hashFile :: FilePath -> IO String
 hashFile path = do
-    digest <- withFile ReadMode (sha1 . LB.hGetContents)
+    digest <- withFile path ReadMode $ \h -> do
+        c <- LB.hGetContents h
+        return $ sha1 c
     return $! showDigest digest
 
 -- | Move a file to the upload directory given and name it @original@.

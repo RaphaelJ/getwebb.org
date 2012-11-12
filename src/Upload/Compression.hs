@@ -35,7 +35,7 @@ compressionDaemon app =
             -- Process the file if it still exists.
             let hash = fileSha1 $ fromJust mFile
             let path = hashPath uploadDir hash </> "original"
-            
+
   where
     runTransact f = runPool (persistConfig app) f (connPool app)
     uploadDir = extraUploadDir $ appExtra $ settings app

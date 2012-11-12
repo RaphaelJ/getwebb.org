@@ -1,9 +1,11 @@
 -- | Defines a few utilities function which are used by the modules which
 -- process the files upload.
-module Upload.Utils (getAdminKey, hashPath, uploadDir, tmpDir)
+module Upload.Utils (getAdminKey, hashPath, uploadDir, tmpDir, openTmpFile)
     where
 
 import Import
+
+import System.IO
 
 -- | Reads the session value to get the admin key of the visitor. Returns
 -- 'Norhing' if the user doesn\'t have a key.
@@ -27,3 +29,6 @@ uploadDir app = extraUploadDir $ appExtra $ settings app
 tmpDir :: App -> FilePath
 tmpDir app = uploadDir app </> "tmp"
 
+-- | Opens a new temporary file with the given prefix.
+newTmpFile :: App -> String -> IO (FilePath, Handle)
+newTmpFile app prefix = openTempFile (tmpDir app) prefix

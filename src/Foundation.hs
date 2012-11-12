@@ -16,16 +16,19 @@ import Text.Jasmine (minifym)
 import Text.Hamlet (hamletFile)
 import Web.ClientSession (getKey)
 
+import Upload.Compression (CompressionQueue)
+
 -- | The site argument for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
 -- starts running, such as database connections. Every handler will have
 -- access to the data present here.
-data App = App
-    { settings :: AppConfig DefaultEnv Extra
+data App = App {
+      settings :: AppConfig DefaultEnv Extra
     , getStatic :: Static -- ^ Settings for static file serving.
     , connPool :: Database.Persist.Store.PersistConfigPool Settings.PersistConfig -- ^ Database connection pool.
     , httpManager :: Manager
     , persistConfig :: Settings.PersistConfig
+    , compressionQueue :: CompressionQueue
     }
 
 -- Set up i18n messages. See the message folder.
@@ -61,7 +64,7 @@ instance Yesod App where
 
     -- Store session data on the client in encrypted cookies,
     -- default session idle timeout is two year.
-    makeSessionBackend app = do
+    makeSessionBackend _ = do
         key <- getKey "config/client_session_key.aes"
         return . Just $ clientSessionBackend key (2 * 365 * 24 * 60)
 

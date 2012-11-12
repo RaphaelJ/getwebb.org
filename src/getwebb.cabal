@@ -30,8 +30,9 @@ library
                      Settings.Development
                      Handler.Home
                      Handler.Upload
-                     Upload.Processing
+                     Upload.Compression
                      Upload.Image
+                     Upload.Processing
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT

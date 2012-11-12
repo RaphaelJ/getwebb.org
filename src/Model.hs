@@ -5,11 +5,11 @@ import Yesod
 
 import Data.Int
 import Data.Text (Text)
-import Data.Time.LocalTime (TimeOfDay)
+import Data.Time.Clock (UTCTime)
 import Data.Word
 
--- | Files types recognized.
-data FileType = Image | Audio | Video | Archive | Unknown
+-- | File types recognized.
+data FileType = Image | Audio | Video | Archive | UnknownType
     deriving (Show, Read, Eq)
 derivePersistField "FileType"
 
@@ -17,19 +17,20 @@ type AdminKey = Int64
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistUpperCase|
 LastAdminKey
-    lastKey AdminKey
+    value AdminKey
     deriving Show
 
 Upload
     adminKey AdminKey
-    uploadDate TimeOfDay default=CURRENT_TIMESTAMP
+    uploadDate UTCTime
     deriving Show
 
 File
     sha1 Text
     type FileType
     size Word64
-    uploadDate TimeOfDay default=CURRENT_TIMESTAMP
+    compressed Bool
+    uploadDate UTCTime
     UniqueSha1 sha1
     deriving Show
 
@@ -38,8 +39,8 @@ UploadFile
     fileId FileId
     name Text
     ip Text
-    uploadDate TimeOfDay default=CURRENT_TIMESTAMP
+    uploadDate UTCTime
     views Int64 default=0
-    lastView TimeOfDay default=CURRENT_TIMESTAMP
+    lastView UTCTime
     deriving Show
 |]

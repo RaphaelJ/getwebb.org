@@ -4,7 +4,6 @@ module Handler.Upload (Options (..), postUploadR, uploadForm, uploadForm')
 
 import Import
 
-import Control.Concurrent
 import Control.Monad.Writer
 import Data.Map (elems)
 
@@ -19,17 +18,14 @@ data Options = Options {
 -- id of the upload or the error.
 postUploadR :: Handler RepJson
 postUploadR = do
-    ((res, _), _) <- runFormPost uploadForm'
-
-    liftIO $ threadDelay 3000000
+    ((res, _), _) <- runFormPostNoToken uploadForm'
 
     case res of
-         FormSuccess (files, Options email) -> do
-             process files
-
-             jsonToRepJson $! object [ (fileName f, fileContentType f) | f <- files ]
-         FormFailure ms -> jsonToRepJson $ object [("errors", array ms)]
-         FormMissing -> undefined
+        FormSuccess (files, Options email) -> do
+            process files
+            jsonToRepJson $! object [ (fileName f, fileContentType f) | f <- files ]
+        FormFailure ms -> jsonToRepJson $ object [("errors", array ms)]
+        FormMissing -> undefined
 
 -- | Creates a form for the upload and its options.
 uploadForm :: Text -- ^ The prefix which will precede each field name and id.
@@ -59,9 +55,10 @@ uploadForm prefix extra = do
     -- Retrieves the list of uploaded files.
     files <- askFiles
     let filesRes = case concat <$> elems <$> files of
-         Just fs@(_:_) 
+            Just fs | not (null fs)
                 -> FormSuccess fs
-         _      -> FormFailure ["Please send at least one file to upload"]
+            _
+                -> FormFailure ["Please send at least one file to upload"]
 
     -- Options widget.
     let emailId = Just (prefix <> "email")

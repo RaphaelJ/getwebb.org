@@ -52,6 +52,8 @@ compressionDaemon app =
             hClose tmpH
 
             -- Remplaces the file if the compressed one is smaller.
+            liftIO $ print (tmpSize, fileSize file)
+
             if tmpSize < fileSize file
                 then runDBIO $ do
                     update fileId [FileCompressed =. True]

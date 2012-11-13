@@ -22,7 +22,7 @@ LastAdminKey
 
 Upload
     adminKey AdminKey
-    uploadDate UTCTime
+    date UTCTime
     deriving Show
 
 File
@@ -30,7 +30,7 @@ File
     type FileType
     size Word64
     compressed Bool
-    uploadDate UTCTime
+    date UTCTime
     UniqueSha1 sha1
     deriving Show
 

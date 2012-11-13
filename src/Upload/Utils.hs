@@ -1,10 +1,11 @@
 -- | Defines a few utilities function which are used by the modules which
 -- process the files upload.
 module Upload.Utils (
-      getAdminKey, adminKey, fileSize, hashPath, uploadDir, tmpDir, newTmpFile
+      tryAdminKey, getAdminKey, getFileSize, hashPath, uploadDir, tmpDir
+    , newTmpFile
     ) where
 
-import Import hiding (fileSize)
+import Import
 
 import Data.Word
 import System.IO
@@ -15,16 +16,16 @@ import Yesod.Default.Config
 
 -- | Reads the session value to get the admin key of the visitor. Returns
 -- 'Norhing' if the user doesn\'t have a key.
-getAdminKey :: Handler (Maybe AdminKey)
-getAdminKey = do
+tryAdminKey :: Handler (Maybe AdminKey)
+tryAdminKey = do
     mKey <- lookupSession "admin_key"
     return $ (read . unpack) <$> mKey
 
 -- | Reads the session value to get the admin key of the visitor. If the user
 -- doesn\'t have a key, creates a new key.
-adminKey :: Handler AdminKey
-adminKey = do
-    mKey <- getAdminKey
+getAdminKey :: Handler AdminKey
+getAdminKey = do
+    mKey <- tryAdminKey
 
     -- Checks if the user has already an admin key.
     case mKey of
@@ -47,8 +48,8 @@ adminKey = do
             return k
 
 -- | Returns the size in bytes of the given file.
-fileSize :: FilePath -> IO Word64
-fileSize path = fromIntegral <$> withFile path ReadMode hFileSize
+getFileSize :: FilePath -> IO Word64
+getFileSize path = fromIntegral <$> withFile path ReadMode hFileSize
 
 -- | Splits the hash in four parts and constucts a four level directory path in
 -- the given directory.

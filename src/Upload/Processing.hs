@@ -4,19 +4,17 @@ module Upload.Processing (process, processFile, hashFile, hashPath)
 import Import
 
 import Control.Monad
-import Data.Word
 import System.Directory
 import System.FilePath
 import System.IO
 
 import qualified Data.ByteString.Lazy as LB
-import qualified Data.Conduit.List as CL
 import Data.Digest.Pure.SHA (sha1, showDigest)
 import Data.Text (pack)
 import Data.Time.Clock (getCurrentTime)
 
 import Upload.Compression (putFile)
-import Upload.Utils (adminKey, fileSize, hashPath)
+import Upload.Utils (getAdminKey, getFileSize, hashPath, uploadDir, newTmpFile)
 
 -- | Process a upload using a list of files. Returns the ID of the new upload
 -- row in the database.
@@ -36,7 +34,7 @@ processFile f = do
     extras <- getExtra
 
     tmpPath <- moveToTmp f
-    size <- fileSize tmpPath
+    size <- liftIO $ getFileSize tmpPath
 
     if size > extraMaxFileSize extras
         then return $! Left "File too large"
@@ -46,22 +44,28 @@ processFile f = do
             let hashText = pack hash
             let hashDir = hashPath (uploadDir app) hash
 
-            fileId <- runDB $ do
+            eitFileId <- runDB $ do
                 mFile <- getBy (UniqueSha1 hashText)
                 case mFile of
-                    Just f  ->
+                    Just entity -> do
                         -- Existing file, remove the temporary file.
                         liftIO $ removeFile tmpPath
-                        return $! Right $ entityKey f
+                        return $! Right $ entityKey entity
                     Nothing -> do
                         -- New file, move the temporary file to its final
                         -- destination and adds the information to the database.
                         liftIO $ moveToUpload tmpPath hashDir
                         currentTime <- liftIO getCurrentTime
-                        let file = File hashText UnknownType size currentTime
-                        return $! Left $ insert file
+                        let file = File {
+                              fileSha1 = hashText, fileType = UnknownType
+                            , fileSize = size, fileCompressed = False
+                            , fileDate = currentTime
+                            }
+                        Left <$> insert file
 
-            liftIO $ compressionQueue app `putFile` fileId
+            let fileId = either id id eitFileId
+
+            liftIO $ app `putFile` fileId
             return $! Left "Error"
 
 -- | Moves the uploaded file to a temporary file with a @upload_@ prefix.

@@ -20,7 +20,7 @@ import Network.HTTP.Conduit (newManager, def)
 import Handler.Home
 import Handler.Upload
 
-import Upload.Compression (newQueue)
+import Upload.Compression (newQueue, forkCompressionDaemon)
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -34,7 +34,7 @@ mkYesodDispatch "App" resourcesApp
 makeApplication :: AppConfig DefaultEnv Extra -> IO Application
 makeApplication conf = do
     foundation <- makeFoundation conf
-    forkCompressionDaemon foundation
+    _ <- forkCompressionDaemon foundation
     app <- toWaiAppPlain foundation
     return $ logWare app
   where
@@ -50,8 +50,8 @@ makeFoundation conf = do
               Database.Persist.Store.applyEnv
     p <- Database.Persist.Store.createPoolConfig (dbconf :: Settings.PersistConfig)
     Database.Persist.Store.runPool dbconf (runMigration migrateAll) p
-    compressionQueue <- newQueue
-    return $ App conf s p manager dbconf compressionQueue
+    queue <- newQueue
+    return $ App conf s p manager dbconf queue
 
 -- for yesod devel
 getApplicationDev :: IO (Int, Application)

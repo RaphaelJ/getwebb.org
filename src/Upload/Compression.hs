@@ -12,13 +12,19 @@ module Upload.Compression (
 import Import
 
 import Data.Maybe
-import Control.Concurrent
-import Control.Concurrent.Chan
+import Control.Concurrent (ThreadId, Chan, forkIO, newChan, writeChan, readChan)
+import Control.Monad
+import System.Directory
+import System.FilePath
 import System.IO
 
 import Database.Persist.Store (runPool)
+import Data.Conduit (($$), ($=), runResourceT)
+import Data.Conduit.Binary (sourceFile, sinkHandle)
+import Data.Conduit.Zlib (gzip)
+import Data.Text (unpack)
 
-import Upload.Processing (hashPath)
+import Upload.Utils (hashPath, uploadDir, newTmpFile)
 
 type CompressionQueue = Chan FileId
 
@@ -30,15 +36,31 @@ compressionDaemon app =
         -- Waits until an FileId has been insered in the queue.
         fileId <- readChan $ compressionQueue app
 
-        mFile <- runTransact $ get fileId
+        mFile <- runDBIO $ get fileId
         when (isJust mFile) $ do
             -- Process the file if it still exists.
-            let hash = fileSha1 $ fromJust mFile
-            let path = hashPath uploadDir hash </> "original"
+            let file = fromJust mFile
+            let hash = unpack $ fileSha1 file
+            let path = hashPath (uploadDir app) hash </> "original"
 
+            -- Compress the file in a new temporary file.
+            (tmpPath, tmpH) <- newTmpFile app "compression_"
+            runResourceT $ sourceFile path $= gzip $$ sinkHandle tmpH
+
+            -- Computes the size of both files.
+            tmpSize <- fromIntegral <$> hFileSize tmpH
+            hClose tmpH
+
+            -- Remplaces the file if the compressed one is smaller.
+            if tmpSize < fileSize file
+                then runDBIO $ do
+                    update fileId [FileCompressed =. True]
+                    liftIO $ removeFile path
+                    liftIO $ renameFile tmpPath path
+                else removeFile tmpPath
   where
-    runTransact f = runPool (persistConfig app) f (connPool app)
-    uploadDir = extraUploadDir $ appExtra $ settings app
+    runDBIO :: YesodPersistBackend App IO a -> IO a
+    runDBIO f = runPool (persistConfig app) f (connPool app)
 
 -- | Forks the compression daemon on a new thread and returns its 'ThreadId'.
 forkCompressionDaemon :: App -> IO ThreadId

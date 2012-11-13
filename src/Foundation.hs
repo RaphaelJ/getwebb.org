@@ -1,6 +1,7 @@
 module Foundation where
 
 import Prelude
+import Control.Concurrent.Chan (Chan)
 import Data.Word
 import Yesod
 import Yesod.Static
@@ -16,7 +17,7 @@ import Text.Jasmine (minifym)
 import Text.Hamlet (hamletFile)
 import Web.ClientSession (getKey)
 
-import Upload.Compression (CompressionQueue)
+import Model
 
 -- | The site argument for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -28,7 +29,7 @@ data App = App {
     , connPool :: Database.Persist.Store.PersistConfigPool Settings.PersistConfig -- ^ Database connection pool.
     , httpManager :: Manager
     , persistConfig :: Settings.PersistConfig
-    , compressionQueue :: CompressionQueue
+    , compressionQueue :: Chan FileId
     }
 
 -- Set up i18n messages. See the message folder.

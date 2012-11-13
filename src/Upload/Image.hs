@@ -12,5 +12,3 @@ extensions = S.fromDistinctAscList [
     , ".pgm", ".pic", ".png", ".ppm", ".psd", ".psp", ".raw", ".sgi", ".tga"
     , ".tif"
     ]
-
-    

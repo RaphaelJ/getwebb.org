@@ -39,7 +39,6 @@ UploadFile
     fileId FileId
     name Text
     ip Text
-    uploadDate UTCTime
     views Int64 default=0
     lastView UTCTime
     deriving Show

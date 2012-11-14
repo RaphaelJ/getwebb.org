@@ -1,8 +1,8 @@
-import Prelude              (IO)
-import Yesod.Default.Config (fromArgs)
+import Prelude              (IO, ($))
+import Yesod.Default.Config (appExtra, appPort, appHost, fromArgs)
 
 import Application          (makeApplication)
-import Network.Wai.Handler.Warp (runSettings, defaultSettings)
+import Network.Wai.Handler.Warp (Settings (..), runSettings, defaultSettings)
 import Settings             (parseExtra, extraTimeout)
 
 main :: IO ()

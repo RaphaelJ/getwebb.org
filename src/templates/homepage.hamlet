@@ -21,8 +21,8 @@
             <!--<button .big_button .upload_button type=button tabindex=2>
                 Upload-->
 
-            <button .big_button #upload_button type=button tabindex=2>
-                Upload
+            <input .big_button #upload_button type=submit tabindex=2
+                                              value=Upload>
 
             <div .clear_float>
 
@@ -45,7 +45,8 @@
                 <h3>Large files
                 <span .description>
                     With <span class="getwebb">getwebb</span>, you can freely
-                    upload files up to 150 Mio without any registration.
+                    upload files up to <strong>#{maxFileSize}</strong> without 
+                    any registration.
 
             <li>
                 <img src=@{StaticR img_homepage_formats_png}

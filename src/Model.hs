@@ -29,7 +29,7 @@ File
     sha1 Text
     type FileType
     size Word64
-    compressed Bool
+    compressed Word64 Maybe -- The compressed size if the file is compressed.
     date UTCTime
     UniqueSha1 sha1
     deriving Show

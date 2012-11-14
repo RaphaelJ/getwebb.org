@@ -21,7 +21,11 @@ $doctype 5
         ^{pageBody pc}
 
     <footer>
-        Icons by P.J. Onori, O. Frolov, J. Wieser, M. Zlatar, A. Whitcroft
-        &amp; - 2012 
-            <a href="mailto:#{extraAuthorMail $ appExtra $ settings master}">
-                #{extraAuthor $ appExtra $ settings master}
+        Icons by P.J. Onori, O. Frolov, J. Wieser, M. Zlatar &amp; A. Whitcroft
+        &nbsp;-&nbsp;
+        <a href="@{HomeR}">
+            API
+        &nbsp;-&nbsp;
+        2012&nbsp;
+        <a href="mailto:#{extraAuthorMail $ appExtra $ settings master}">
+            #{extraAuthor $ appExtra $ settings master}

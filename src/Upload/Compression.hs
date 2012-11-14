@@ -56,7 +56,7 @@ compressionDaemon app =
 
             if tmpSize < fileSize file
                 then runDBIO $ do
-                    update fileId [FileCompressed =. True]
+                    update fileId [FileCompressed =. Just tmpSize]
                     liftIO $ removeFile path
                     liftIO $ renameFile tmpPath path
                 else removeFile tmpPath

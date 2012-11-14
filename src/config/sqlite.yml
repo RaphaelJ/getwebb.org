@@ -1,6 +1,7 @@
 Default: &defaults
   database: getwebb.sqlite3
-  poolsize: 10
+  # SQLite doesn't manage more than one concurrent connection with threads
+  poolsize: 1
 
 Development:
   <<: *defaults

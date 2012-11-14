@@ -69,7 +69,7 @@ uploadForm prefix extra = do
     (emailRes, emailView) <- mopt emailField emailSettings Nothing
 
     let optWidget = [whamlet|
-            <label for=^{toHtml $ fvId emailView}>^{fvLabel emailView}:
+            <label for=^{toHtml $ fvId emailView}>^{fvLabel emailView}
             ^{fvInput emailView}
             |]
 

@@ -5,11 +5,15 @@ module Handler.Home (getHomeR)
 import Import
 
 import Handler.Upload (uploadForm')
+import Handler.Utils (PrettyFileSize (..))
 
 -- Shows the home page
 getHomeR :: Handler RepHtml
 getHomeR = do
     ((widgetFiles, widgetOpt), enctype) <- generateFormPost uploadForm'
+
+    extras <- getExtra
+    let maxFileSize = PrettyFileSize $ extraMaxFileSize extras
 
     defaultLayout $ do
         setTitle "getwebb | Free file sharing"

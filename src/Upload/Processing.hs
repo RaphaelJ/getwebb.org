@@ -44,26 +44,31 @@ processFile f = do
             let hashText = pack hash
             let hashDir = hashPath (uploadDir app) hash
 
-            eitFileId <- runDB $ do
-                mFile <- getBy (UniqueSha1 hashText)
-                case mFile of
-                    Just entity -> do
-                        -- Existing file, remove the temporary file.
-                        liftIO $ removeFile tmpPath
-                        return $! Right $ entityKey entity
-                    Nothing -> do
-                        -- New file, move the temporary file to its final
+            currentTime <- liftIO getCurrentTime
+            let file = File {
+                  fileSha1 = hashText, fileType = UnknownType
+                , fileSize = size, fileCompressed = Nothing
+                , fileDate = currentTime
+                }
+
+            eithFileId <- runDB $ do
+                mFileId <- insertUnique file
+                case mFileId of
+                    Just inseredFileId -> do
+                        -- New file: moves the temporary file to its final
                         -- destination and adds the information to the database.
                         liftIO $ moveToUpload tmpPath hashDir
-                        currentTime <- liftIO getCurrentTime
-                        let file = File {
-                              fileSha1 = hashText, fileType = UnknownType
-                            , fileSize = size, fileCompressed = False
-                            , fileDate = currentTime
-                            }
-                        Left <$> insert file
+                        liftIO $ print "New file"
+                        return $ Left inseredFileId
+                    Nothing -> do
+                        -- Existing file: remove the temporary file and
+                        -- retrieves the FileId.
+                        liftIO $ removeFile tmpPath
+                        liftIO $ print "Existing file"
+                        Just existingFile <- getBy (UniqueSha1 hashText)
+                        return $ Right $ entityKey existingFile
 
-            let fileId = either id id eitFileId
+            let fileId = either id id eithFileId
 
             liftIO $ app `putFile` fileId
             return $! Left "Error"

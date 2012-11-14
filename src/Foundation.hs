@@ -103,8 +103,7 @@ instance Yesod App where
 
     -- Permits a query which can hold ten files of the
     maximumContentLength app (Just UploadR) =
-        let extras = appExtra $ settings app
-        in (extraMaxFileSize extras) * (word64 $ extraMaxFiles extras)
+        extraMaxRequestSize $ appExtra $ settings app
     maximumContentLength _   _              = 2 * 1024 * 1024 -- 2 Mio
 
 -- How to run database actions.

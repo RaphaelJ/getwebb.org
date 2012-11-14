@@ -64,7 +64,8 @@ widgetFile = (if development then widgetFileReload
 
 data Extra = Extra {
       extraAuthor :: Text, extraAuthorMail :: Text, extraUploadDir :: FilePath
-    , extraMaxFileSize :: Word64, extraMaxFiles :: Int
+    , extraMaxFileSize :: Word64, extraMaxRequestSize :: Word64
+    , extraTimeout :: Int
     } deriving Show
 
 parseExtra :: DefaultEnv -> Object -> Parser Extra
@@ -73,4 +74,5 @@ parseExtra _ o = Extra
     <*> o .: "authorMail"
     <*> o .: "uploadDir"
     <*> o .: "maxFileSize"
-    <*> o .: "maxFiles"
+    <*> o .: "maxRequestSize"
+    <*> o .: "timeout"

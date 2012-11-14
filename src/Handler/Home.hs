@@ -13,7 +13,8 @@ getHomeR = do
     ((widgetFiles, widgetOpt), enctype) <- generateFormPost uploadForm'
 
     extras <- getExtra
-    let maxFileSize = PrettyFileSize $ extraMaxFileSize extras
+    let maxFileSize = extraMaxFileSize extras
+    let maxRequestSize = extraMaxRequestSize extras
 
     defaultLayout $ do
         setTitle "getwebb | Free file sharing"

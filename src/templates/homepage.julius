@@ -2,23 +2,36 @@
 var originalTitle = document.title;
 
 // Shows/Hides the options menu.
-$("#options_toggle").click(function () {
+$("#options_toggle").click(function () 
+{
     $("#options_toggle").toggleClass("enabled");
     $("#options").slideToggle(100);
 });
 
 // Hides the upload form, start the upload and shows the uploads progress.
-$("#upload_form").submit(function () {
-    var files = document.getElementById("upload_files").files
+$("#upload_form").submit(function () 
+{
+    var files = document.getElementById("upload_files").files;
     if (files.length < 1) {
-        // Checks if at least a file as been selected for upload
+        // Checks if at least a file as been selected for upload.
         showError("Please select at least one file to upload.");
+    } else if ((larges = largeFiles(files)).length > 0) {
+        // Checks if some files exceed the maximum file size.
+        showError(
+            "The following files exceed the maximum file size " +
+            "(#{show $ PrettyFileSize maxFileSize}) :<br />" + 
+            larges.join("<br />") + "."
+        );
+    } else if (sumFilesSizes(files) > #{show maxRequestSize}) {
+        // Checks if the whole set of files can be uploaded at once.
+        showError(
+            "You can't upload more than " +
+            "#{show $ PrettyFileSize maxRequestSize} at once."
+        );
     } else if (!document.getElementById("upload_email").checkValidity()) {
-        // Checks if the email field is valid
+        // Checks if the email field is valid.
         showError("Please enter a valid email.");
-    } else if (sumSize(files) > ) {
-        
-    }*/ else {
+    } else {
         $("#upload_form").hide("fast");
 
         var xhr = new XMLHttpRequest();
@@ -33,7 +46,7 @@ $("#upload_form").submit(function () {
 
         xhr.upload.addEventListener("progress", function (e) {
             var newPercent = parseInt(e.loaded / e.total * 100) + "%"
-            if (newPercent != percent) { // Doesn't update if no change
+            if (newPercent != percent) { // Doesn't update if no change.
                 percent = newPercent;
 
                 progressComplete.css("width", percent);
@@ -56,19 +69,46 @@ $("#upload_form").submit(function () {
         xhr.open("POST", "@{UploadR}");
         xhr.send(data);
     }
-    
+
     return false;
 });
 
-// Restores the upload form and hide the current uploads status
-function restoreUploadForm() {
+// Restores the upload form and hide the current uploads status.
+function restoreUploadForm()
+{
     $("#upload_progress").fadeOut();
     $("#uploads_progress").hide("fast");
     $("#upload_form").show("fast");
     document.title = originalTitle;
 }
 
-function showError(message) {
+// Returns the list of the files which are to large to be uploaded.
+function largeFiles(files)
+{
+    var l = [];
+    for (var i = 0; i < files.length; i++) {
+        var f = files[i];
+        if (f.size > #{show maxFileSize})
+            l.push(f.name);
+    }
+
+    return l;
+}
+
+// Computes the sum of the set of files.
+function sumFilesSizes(files) 
+{
+    var s = 0;
+    for (var i = 0; i < files.length; i++) {
+        var f = files[i];
+        s += f.size;
+    }
+    return s;
+}
+
+// Shows the error message above the upload form.
+function showError(message) 
+{
     var error = $("#upload_error");
     error.html(message);
     error.fadeIn();

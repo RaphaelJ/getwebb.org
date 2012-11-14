@@ -5,8 +5,9 @@ Default: &defaults
   author: "Raphael Javaux"
   authorMail: "raphaeljavaux[at]gmail.com"
   uploadDir: "files"
-  maxFileSize: 157286400 # 150 Mio
-  maxFiles: 10 # Used to limit the request size
+  maxFileSize: 157286400 # 150 MiB
+  maxRequestSize: 1073741824 # 1 GiB
+  timeout: 60 # Application timeout in seconds
   #analytics: UA-YOURCODE
 
 Development:

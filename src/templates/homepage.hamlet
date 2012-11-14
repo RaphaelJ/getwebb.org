@@ -45,8 +45,8 @@
                 <h3>Large files
                 <span .description>
                     With <span class="getwebb">getwebb</span>, you can freely
-                    upload files up to <strong>#{maxFileSize}</strong> without 
-                    any registration.
+                    upload files up to <strong>#{maxFileSize}</strong> each
+                    without any registration.
 
             <li>
                 <img src=@{StaticR img_homepage_formats_png}

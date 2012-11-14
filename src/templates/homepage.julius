@@ -42,15 +42,16 @@ $("#upload_form").submit(function ()
         $("#upload_progress").fadeIn();
         $("#uploads_progress").show("fast");
 
-        var percent = "0%";
+        var oldPercent = 0;
+        var oldBytes = 0;
+        var oldTime = new Date().getTime();
+        updateProgress(oldPercent, oldBytes, 0);
 
         xhr.upload.addEventListener("progress", function (e) {
-            var newPercent = parseInt(e.loaded / e.total * 100) + "%"
-            if (newPercent != percent) { // Doesn't update if no change.
-                percent = newPercent;
-
-                progressComplete.css("width", percent);
-                document.title = percent + " | " + originalTitle;
+            var percent = parseInt(e.loaded / e.total * 100)
+            if (percent != oldPercent) { // Doesn't update if no change.
+                oldPercent = percent;
+                updateProgress(percent, e.loaded);
             }
         }, false);
 
@@ -112,4 +113,18 @@ function showError(message)
     var error = $("#upload_error");
     error.html(message);
     error.fadeIn();
+}
+
+// Update the different elements of the interface with the status of the upload,
+// given the percent of the upload, and the number of bytes transmitted during
+// the elapsed time.
+function updateProgress(percent, bytes, elapsed)
+{
+    var strPercent = percent + "%"
+    progressComplete.css("width", strPercent);
+    document.title = strPercent + " | " + originalTitle;
+
+    // Computes the speed in bytes per second
+    var speed = bytes * 1000 / elapsed;
+    
 }

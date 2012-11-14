@@ -6,7 +6,8 @@
         <div #upload_error style="display: none">
 
         <form #upload_form enctype="multipart/form-data"
-                           method="post" action="@{UploadR}">
+                           method="post" action="@{UploadR}"
+                            style="display: none">
             <h2>Select some files to upload
 
             ^{widgetFiles}
@@ -29,8 +30,13 @@
             <div #options style="display: none">
                 ^{widgetOpt}
 
-        <div #uploads_progress style="display: none">
+        <div #uploads_progress>
             <h2>Uploading ...
+
+            <div #upload_speed>
+                0 KiB/s
+
+            <div .clear_float>
 
             <div .upload>
                 <h3 .uploaded>wallpaper.png

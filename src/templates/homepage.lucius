@@ -94,6 +94,16 @@
         #uploads_progress {
             margin-top: 15px;
 
+            h2 {
+                float: left;
+                margin-top: 0;
+            }
+
+            #upload_speed {
+                float: right;
+                line-height: 20px;
+            }
+
             .upload {
                 margin: 3px 0;
                 width: 100%;

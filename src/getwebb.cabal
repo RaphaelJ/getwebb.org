@@ -104,6 +104,7 @@ executable         getwebb
     build-depends:     base
                      , getwebb
                      , yesod-default
+                     , warp                          >= 1.3        && < 1.4
 
     ghc-options:       -threaded -O2
 

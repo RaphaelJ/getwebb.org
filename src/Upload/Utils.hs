@@ -16,6 +16,8 @@ import Yesod.Default.Config
 
 -- | Reads the session value to get the admin key of the visitor. Returns
 -- 'Norhing' if the user doesn\'t have a key.
+-- The admin key is a random key given to each user to control their own 
+-- uploads.
 tryAdminKey :: Handler (Maybe AdminKey)
 tryAdminKey = do
     mKey <- lookupSession "admin_key"

@@ -33,25 +33,28 @@ $("#upload_form").submit(function ()
         showError("Please enter a valid email.");
     } else {
         $("#upload_form").hide("fast");
+        $("#upload_error").fadeOut();
 
         var xhr = new XMLHttpRequest();
         var data = new FormData(document.getElementById("upload_form"));
 
-        var progressComplete = $("#upload_progress_complete");
-        progressComplete.width(0);
+        $("#upload_progress_complete").width(0);
         $("#upload_progress").fadeIn();
         $("#uploads_progress").show("fast");
 
         var oldPercent = 0;
         var oldBytes = 0;
         var oldTime = new Date().getTime();
-        updateProgress(oldPercent, oldBytes, 0);
+        updateProgress(0, 0, 0);
 
         xhr.upload.addEventListener("progress", function (e) {
             var percent = parseInt(e.loaded / e.total * 100)
             if (percent != oldPercent) { // Doesn't update if no change.
+                newTime = new Date().getTime();
+                updateProgress(percent, e.loaded - oldBytes, newTime - oldTime);
                 oldPercent = percent;
-                updateProgress(percent, e.loaded);
+                oldBytes = e.loaded;
+                oldTime = newTime;
             }
         }, false);
 
@@ -81,6 +84,8 @@ function restoreUploadForm()
     $("#uploads_progress").hide("fast");
     $("#upload_form").show("fast");
     document.title = originalTitle;
+    $("#upload_status").html("Connecting ...");
+    $("#upload_speed").html();
 }
 
 // Returns the list of the files which are to large to be uploaded.
@@ -120,11 +125,48 @@ function showError(message)
 // the elapsed time.
 function updateProgress(percent, bytes, elapsed)
 {
-    var strPercent = percent + "%"
-    progressComplete.css("width", strPercent);
-    document.title = strPercent + " | " + originalTitle;
+    if (percent < 100) {
+        $("#upload_status").html("Uploading ...");
 
-    // Computes the speed in bytes per second
-    var speed = bytes * 1000 / elapsed;
-    
+        var strPercent = percent + "%"
+        $("#upload_progress_complete").width(strPercent);
+        document.title = strPercent + " | " + originalTitle;
+
+        // Computes the speed in bytes per second
+        var speed = bytes * 1000 / elapsed;
+        $("#upload_speed").html(prettySpeed(speed));
+    } else {
+        $("#upload_status").html("Waiting on server response ...");
+        document.title = "Waiting ... | " + originalTitle;
+
+        $("#upload_speed").html();
+    }
+}
+
+// Returns a string with the speed in a human readable way.
+function prettySpeed(bytesPerSecond)
+{
+    var pow1 = 1024;
+    var pow2 = pow1 * 1024;
+    var pow3 = pow2 * 1024;
+    var pow4 = pow3 * 1024;
+
+    // Rounnd the speed two number after the comma.
+    function roundSpeed(speed)
+    {
+        return Math.round(speed * 100) / 100;
+    }
+
+    if (bytesPerSecond < 2)
+        return bytesPerSecond + " byte/s";
+    else if (bytesPerSecond < pow1)
+        return bytesPerSecond + " bytes/s";
+    else if (bytesPerSecond < pow2)
+        return roundSpeed(bytesPerSecond / pow1) + " KiB/s";
+    else if (bytesPerSecond < pow3)
+        return roundSpeed(bytesPerSecond / pow2) + " MiB/s";
+    else if (bytesPerSecond < pow4)
+        return roundSpeed(bytesPerSecond / pow2) + " GiB/s";
+    else // Boy, this is crazy fast !
+        return roundSpeed(bytesPerSecond / pow2) + " TiB/s";
 }

@@ -14,15 +14,14 @@ newtype PrettyFileSize = PrettyFileSize Word64
 
 instance Show PrettyFileSize where
     show (PrettyFileSize size)
-        | size < 2       = show size                  ++ " byte"
-        | size < 1024    = show size                  ++ " bytes"
-        | size < 1024^.2 = show (size `quot` 1024^.1) ++ " KiB"
-        | size < 1024^.3 = show (size `quot` 1024^.2) ++ " MiB"
-        | size < 1024^.4 = show (size `quot` 1024^.3) ++ " GiB"
-        | otherwise      = show (size `quot` 1024^.4) ++ " TiB"
+        | size < 2    = show size               ++ " byte"
+        | size < pow1 = show size               ++ " bytes"
+        | size < pow2 = show (size `quot` pow1) ++ " KiB"
+        | size < pow3 = show (size `quot` pow2) ++ " MiB"
+        | size < pow4 = show (size `quot` pow3) ++ " GiB"
+        | otherwise   = show (size `quot` pow4) ++ " TiB"
       where
-        (^.) :: Word64 -> Word64 -> Word64
-        a ^. b = a ^ b
+        (pow1, pow2, pow3, pow4) = (1024, pow1 * 1024, pow2 * 1024, pow3 * 1024)
 
 instance ToMarkup PrettyFileSize where
     toMarkup = toMarkup . show

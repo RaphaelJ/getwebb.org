@@ -6,8 +6,7 @@
         <div #upload_error style="display: none">
 
         <form #upload_form enctype="multipart/form-data"
-                           method="post" action="@{UploadR}"
-                            style="display: none">
+                           method="post" action="@{UploadR}">
             <h2>Select some files to upload
 
             ^{widgetFiles}
@@ -19,9 +18,6 @@
                         <!--"onclick="showOptions(this, 'options')"-->
                     Show more options
 
-            <!--<button .big_button .upload_button type=button tabindex=2>
-                Upload-->
-
             <input .big_button #upload_button type=submit tabindex=2
                                               value=Upload>
 
@@ -30,11 +26,10 @@
             <div #options style="display: none">
                 ^{widgetOpt}
 
-        <div #uploads_progress>
-            <h2>Uploading ...
+        <div #uploads_progress style="display: none">
+            <h2 #upload_status>Connecting ...
 
             <div #upload_speed>
-                0 KiB/s
 
             <div .clear_float>
 

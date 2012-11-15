@@ -2,6 +2,7 @@ module Foundation where
 
 import Prelude
 import Control.Concurrent.Chan (Chan)
+import Data.Text (unpack)
 import Data.Word
 import Yesod
 import Yesod.Static
@@ -72,6 +73,14 @@ instance Yesod App where
     defaultLayout widget = do
         master <- getYesod
         mmsg <- getMessage
+
+        -- | FIXME: combile with Upload.Utils.tryAdminKey
+        mAdminKey <- lookupSession "admin_key"
+        countHistory <- case mAdminKey of 
+            Just adminKey -> runDB $ count [
+                  UploadAdminKey ==. (read $ unpack adminKey)
+                ]
+            Nothing -> return 0
 
         pc <- widgetToPageContent $ do
             $(widgetFile "normalize")

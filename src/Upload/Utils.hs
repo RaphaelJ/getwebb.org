@@ -18,10 +18,10 @@ import Yesod.Default.Config
 getFileSize :: FilePath -> IO Word64
 getFileSize path = fromIntegral <$> withFile path ReadMode hFileSize
 
--- | Splits the hash in four parts and constucts a four level directory path in
--- the given directory.
-hashPath :: FilePath -> String -> FilePath
-hashPath dir hash =
+-- | Splits the hash of the file in four parts and constucts a four level directory path in
+-- the given directory which is associated to the extension of the file.
+hashPath :: FilePath -> File -> FilePath
+hashPath dir hash extension =
     let (p1, hash') = splitAt 2 hash
         (p2, hash'') = splitAt 2 hash'
         (p3, p4) = splitAt 2 hash''

@@ -33,14 +33,14 @@ processImage extension fileId dir = do
                                      (const $ return Nothing)
 
             case mImg of
-                Just img  -> do
+                Just img -> do
                     -- Creates the miniature and save it as "miniature.png".
                     -- Update the database row so the file type is Image.
                     let miniImg = miniature img
                     liftIO $ save miniImg (dir </> "miniature" <.> "png")
                     runDB $ update fileId [FileType =. Image]
                     return True
-                Nothing   -> return False
+                Nothing  -> return False
 
 -- | Generates a miniature from the input image.
 miniature :: RGBImage -> RGBImage

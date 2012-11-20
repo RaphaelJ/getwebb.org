@@ -28,11 +28,14 @@ Upload
 
 File
     sha1 Text
+    extension Text
     type FileType
     size Word64
     compressed Word64 Maybe -- The compressed size if the file is compressed.
     date UTCTime
-    UniqueSha1 sha1
+
+    -- Each file is identified by its hash and extension
+    UniqueFiles sha1 extension
     deriving Show
 
 UploadFile

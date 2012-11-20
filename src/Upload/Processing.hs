@@ -39,18 +39,20 @@ processFile f = do
     if size > extraMaxFileSize extras
         then return $! Left "File too large"
         else do
-            -- Checks if the file has been already uploaded by computing his 
+            -- Checks if the file has been already uploaded by computing his
             -- hash.
             hash <- liftIO $ hashFile tmpPath
-            let hashText = pack hash
-            let hashDir = hashPath (uploadDir app) hash
+            let hash = pack hash
+            let extension = pack $ takeExtension $ fileName f
 
             currentTime <- liftIO getCurrentTime
             let file = File {
-                  fileSha1 = hashText, fileType = UnknownType
-                , fileSize = size, fileCompressed = Nothing
-                , fileDate = currentTime
+                  fileSha1 = hashText, fileExtension = extension
+                , fileType = UnknownType, fileSize = size
+                , fileCompressed = Nothing, fileDate = currentTime
                 }
+
+            let hashDir = hashPath (uploadDir app) file
 
             -- Checks if the file exists.
             -- eithFileId gets a Right value if its a new file which file needs
@@ -69,19 +71,19 @@ processFile f = do
                         -- retrieves the FileId.
                         liftIO $ removeFile tmpPath
                         liftIO $ print "Existing file"
-                        Just existingFile <- getBy (UniqueSha1 hashText)
+                        Just existingFile <- getBy (UniqueSha1 hashText extension)
                         return $ Left $ entityKey existingFile
 
             -- Process the special feature depending on the file type if it's a
             -- new file.
             case eithFileId of
                 Right fileId ->
-                    let extension = pack $ takeExtension $ fileName f
-                    in processImage extension fileId hashDir   .||.
-                       processArchive extension fileId hashDir .||.
-                        >>
-                       return ()
-                _ -> return ()
+                    processImage extension fileId hashDir   .||.
+                    processArchive extension fileId hashDir .||.
+                    >>
+                    return ()
+                _ ->
+                    return ()
 
             liftIO $ app `putFile` either id id eithFileId
             return $! Left "Error"

@@ -2,7 +2,7 @@ module Foundation where
 
 import Prelude
 import Control.Concurrent.Chan (Chan)
-import Data.Text (unpack)
+import Data.Text (pack, unpack)
 import Data.Word
 import Yesod
 import Yesod.Static
@@ -74,12 +74,9 @@ instance Yesod App where
         master <- getYesod
         mmsg <- getMessage
 
-        -- | FIXME: combile with Upload.Utils.tryAdminKey
-        mAdminKey <- lookupSession "admin_key"
+        mAdminKey <- tryAdminKey
         countHistory <- case mAdminKey of 
-            Just adminKey -> runDB $ count [
-                  UploadAdminKey ==. (read $ unpack adminKey)
-                ]
+            Just adminKey -> runDB $ count [UploadAdminKey ==. adminKey]
             Nothing -> return 0
 
         pc <- widgetToPageContent $ do
@@ -160,6 +157,41 @@ getExtra = fmap (appExtra . settings) getYesod
 -- wiki:
 --
 -- https://github.com/yesodweb/yesod/wiki/Sending-email
+
+-- | Reads the session value to get the admin key of the visitor. Returns
+-- 'Norhing' if the user doesn\'t have a key.
+-- The admin key is a random key given to each user to control their own 
+-- uploads.
+tryAdminKey :: GHandler sub App (Maybe AdminKey)
+tryAdminKey = do
+    mKey <- lookupSession "admin_key"
+    return $ (read . unpack) `fmap` mKey
+
+-- | Reads the session value to get the admin key of the visitor. If the user
+-- doesn\'t have a key, creates a new key.
+getAdminKey :: GHandler sub App AdminKey
+getAdminKey = do
+    mKey <- tryAdminKey
+
+    -- Checks if the user has already an admin key.
+    case mKey of
+        Just k ->
+            return k
+        Nothing -> runDB $ do
+            -- The user hasn't admin key. Takes the next free admin key.
+            mLastK <- selectFirst [] []
+            k <- case mLastK of
+                Just (Entity keyId (LastAdminKey lastK)) -> do
+                    -- Increments the last admin key to get a new value.
+                    update keyId [LastAdminKeyValue +=. 1]
+                    return $ lastK + 1
+                Nothing -> do
+                    -- Inserts the first admin key in the database.
+                    _ <- insert (LastAdminKey 0)
+                    return 0
+
+            lift $ setSession "admin_key" (pack $ show k)
+            return k
 
 word64 :: Integral a => a -> Word64
 word64 = fromIntegral

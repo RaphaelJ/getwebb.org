@@ -14,7 +14,7 @@ import Data.Text (pack)
 import Data.Time.Clock (getCurrentTime)
 
 import Upload.Compression (putFile)
-import Upload.Utils (getAdminKey, getFileSize, hashPath, uploadDir, newTmpFile)
+import Upload.Utils (getFileSize, hashPath, uploadDir, newTmpFile)
 
 -- | Process a upload using a list of files. Returns the ID of the new upload
 -- row in the database.
@@ -39,7 +39,8 @@ processFile f = do
     if size > extraMaxFileSize extras
         then return $! Left "File too large"
         else do
-            -- Checks if the file has been already uploaded.
+            -- Checks if the file has been already uploaded by computing his 
+            -- hash.
             hash <- liftIO $ hashFile tmpPath
             let hashText = pack hash
             let hashDir = hashPath (uploadDir app) hash
@@ -51,6 +52,9 @@ processFile f = do
                 , fileDate = currentTime
                 }
 
+            -- Checks if the file exists.
+            -- eithFileId gets a Right value if its a new file which file needs
+            -- to be processed.
             eithFileId <- runDB $ do
                 mFileId <- insertUnique file
                 case mFileId of
@@ -59,19 +63,36 @@ processFile f = do
                         -- destination and adds the information to the database.
                         liftIO $ moveToUpload tmpPath hashDir
                         liftIO $ print "New file"
-                        return $ Left inseredFileId
+                        return $ Right inseredFileId
                     Nothing -> do
                         -- Existing file: remove the temporary file and
                         -- retrieves the FileId.
                         liftIO $ removeFile tmpPath
                         liftIO $ print "Existing file"
                         Just existingFile <- getBy (UniqueSha1 hashText)
-                        return $ Right $ entityKey existingFile
+                        return $ Left $ entityKey existingFile
 
-            let fileId = either id id eithFileId
+            -- Process the special feature depending on the file type if it's a
+            -- new file.
+            case eithFileId of
+                Right fileId -> do
+                    let extension = pack $ takeExtension $ fileName f
+                    processImage extension fileId hashDir   .||.
+                    processArchive extension fileId hashDir .||.
+                                                   >>
+                    return ()
+                _           -> return ()
 
-            liftIO $ app `putFile` fileId
+            liftIO $ app `putFile` either id id eithFileId
             return $! Left "Error"
+  where
+    -- | Runs the first action, runs the second if the first returned 'False'.
+    -- Returns a || b.
+    (.||.) :: IO Bool -> IO Bool -> IO Bool
+    a .||. b = do
+        retA <- a
+        if retA then return True
+                else b
 
 -- | Moves the uploaded file to a temporary file with a @upload_@ prefix.
 -- Returns the file\'s name.

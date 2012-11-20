@@ -23,6 +23,7 @@ LastAdminKey
 Upload
     adminKey AdminKey
     date UTCTime
+    ip Text
     deriving Show
 
 File
@@ -38,7 +39,6 @@ UploadFile
     uploadId UploadId
     fileId FileId
     name Text
-    ip Text
     views Int64 default=0
     lastView UTCTime
     deriving Show

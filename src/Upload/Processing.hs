@@ -75,20 +75,20 @@ processFile f = do
             -- Process the special feature depending on the file type if it's a
             -- new file.
             case eithFileId of
-                Right fileId -> do
+                Right fileId ->
                     let extension = pack $ takeExtension $ fileName f
-                    processImage extension fileId hashDir   .||.
-                    processArchive extension fileId hashDir .||.
-                                                   >>
-                    return ()
-                _           -> return ()
+                    in processImage extension fileId hashDir   .||.
+                       processArchive extension fileId hashDir .||.
+                        >>
+                       return ()
+                _ -> return ()
 
             liftIO $ app `putFile` either id id eithFileId
             return $! Left "Error"
   where
     -- | Runs the first action, runs the second if the first returned 'False'.
     -- Returns a || b.
-    (.||.) :: IO Bool -> IO Bool -> IO Bool
+    (.||.) :: Monad m => m Bool -> m Bool -> m Bool
     a .||. b = do
         retA <- a
         if retA then return True

@@ -33,8 +33,7 @@ File
     size Word64
     compressed Word64 Maybe -- The compressed size if the file is compressed.
     date UTCTime
-
-    -- Each file is identified by its hash and extension
+    -- Each file is identified by its hash and extension:
     UniqueFiles sha1 extension
     deriving Show
 
@@ -45,4 +44,10 @@ UploadFile
     views Int64 default=0
     lastView UTCTime
     deriving Show
+
+-- Saves the contained files of an archive
+FileArchive
+    fileId FileId
+    path Text
+    size Word64 -- Uncompressed size
 |]

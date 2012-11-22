@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Recognises images and create miniature to them.
 module Upload.Image (processImage, miniature, extensions, miniatureSize)
     where
@@ -24,8 +25,8 @@ extensions = S.fromDistinctAscList [
 miniatureSize = 200
 
 processImage :: Text -> FileId -> FilePath -> Handler Bool
-processImage extension fileId dir = do
-    if not (extension `S.member` extensions)
+processImage ext fileId dir = do
+    if not (ext `S.member` extensions)
         then return False
         else do
             -- Try to open the file as an image.

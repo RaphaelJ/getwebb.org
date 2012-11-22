@@ -43,11 +43,11 @@ processFile f = do
             -- hash.
             hash <- liftIO $ hashFile tmpPath
             let hash = pack hash
-            let extension = pack $ takeExtension $ fileName f
+            let ext = pack $ takeExtension $ fileName f
 
             currentTime <- liftIO getCurrentTime
             let file = File {
-                  fileSha1 = hashText, fileExtension = extension
+                  fileSha1 = hashText, fileExtension = ext
                 , fileType = UnknownType, fileSize = size
                 , fileCompressed = Nothing, fileDate = currentTime
                 }
@@ -71,15 +71,17 @@ processFile f = do
                         -- retrieves the FileId.
                         liftIO $ removeFile tmpPath
                         liftIO $ print "Existing file"
-                        Just existingFile <- getBy (UniqueSha1 hashText extension)
+                        Just existingFile <- getBy (UniqueSha1 hashText ext)
                         return $ Left $ entityKey existingFile
 
             -- Process the special feature depending on the file type if it's a
             -- new file.
             case eithFileId of
                 Right fileId ->
-                    processImage extension fileId hashDir   .||.
-                    processArchive extension fileId hashDir .||.
+                    processImage ext fileId hashDir   .||.
+                    processArchive ext fileId hashDir .||.
+                    processAudio ext fileId hashDir   .||.
+                    
                     >>
                     return ()
                 _ ->
@@ -91,6 +93,7 @@ processFile f = do
     -- | Runs the first action, runs the second if the first returned 'False'.
     -- Returns a || b.
     (.||.) :: Monad m => m Bool -> m Bool -> m Bool
+    infixr 2 .||.
     a .||. b = do
         retA <- a
         if retA then return True

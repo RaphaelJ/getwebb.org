@@ -13,7 +13,6 @@ import System.FilePath
 import Data.Text (pack, unpack)
 import Yesod.Default.Config
 
-
 -- | Returns the size in bytes of the given file.
 getFileSize :: FilePath -> IO Word64
 getFileSize path = fromIntegral <$> withFile path ReadMode hFileSize

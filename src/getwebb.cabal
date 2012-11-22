@@ -96,6 +96,7 @@ library
                  , yaml                          >= 0.8        && < 0.9
                  , zlib-conduit                  >= 0.5        && < 1
                  , zip-archive                   >= 0.1.2      && < 0.2
+                 , exif                          == 3000.0.0
 
 executable         getwebb
     if flag(library-only)

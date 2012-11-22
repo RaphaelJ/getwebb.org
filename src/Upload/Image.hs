@@ -11,6 +11,7 @@ import System.FilePath
 
 import Vision.Image
 import Vision.Primitive
+import Graphics.Exif
 
 -- | Files extensions which are supported by the DevIL image library.
 extensions :: S.Set Text

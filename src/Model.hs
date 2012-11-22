@@ -45,6 +45,12 @@ UploadFile
     lastView UTCTime
     deriving Show
 
+-- Saves EXIF and id3 tags
+FileTags
+    fileId FileId
+    name Text
+    value Text
+
 -- Saves the contained files of an archive
 FileArchive
     fileId FileId

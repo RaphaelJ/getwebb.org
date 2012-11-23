@@ -46,9 +46,9 @@ UploadFile
     deriving Show
 
 -- Saves EXIF and id3 tags
-FileTags
+FileTag
     fileId FileId
-    name Text
+    title Text
     value Text
 
 -- Saves the contained files of an archive

@@ -81,7 +81,6 @@ processFile f = do
                     processImage ext fileId hashDir   .||.
                     processArchive ext fileId hashDir .||.
                     processAudio ext fileId hashDir   .||.
-                    
                     >>
                     return ()
                 _ ->

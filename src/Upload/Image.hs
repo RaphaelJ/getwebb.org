@@ -7,11 +7,13 @@ import Import
 
 import qualified Control.Exception as C
 import qualified Data.Set as S
+import Data.Text (pack)
 import System.FilePath
 
 import Vision.Image
 import Vision.Primitive
-import Graphics.Exif
+import Graphics.Exif (fromFile, allTags)
+import Graphics.Exif.Internal (tagFromName, tagTitle)
 
 -- | Files extensions which are supported by the DevIL image library.
 extensions :: S.Set Text
@@ -30,17 +32,27 @@ processImage ext fileId dir = do
     if not (ext `S.member` extensions)
         then return False
         else do
+            let path = dir </> "original"
             -- Try to open the file as an image.
-            mImg <- liftIO $ C.catch (load (dir </> "original"))
+            mImg <- liftIO $ C.catch (load path)
                                      (const $ return Nothing)
 
             case mImg of
                 Just img -> do
                     -- Creates the miniature and save it as "miniature.png".
-                    -- Update the database row so the file type is Image.
+                    -- Update the database row so the file type is Image and
+                    -- adds possible EXIF tags.
                     let miniImg = miniature img
                     liftIO $ save miniImg (dir </> "miniature" <.> "png")
-                    runDB $ update fileId [FileType =. Image]
+
+                    tags <- liftIO $ exifTags path
+
+                    runDB $ do
+                        update fileId [FileType =. Image]
+
+                        forM_ tags $ \(title, value) ->
+                            insert $ FileTag fileId title value
+
                     return True
                 Nothing  -> return False
 
@@ -68,6 +80,16 @@ miniature img =
 
     Size w h = getSize img
     miniSize = Size miniatureSize miniatureSize
+
+-- | Reads EXIF tags from the image file. Returns an empty list if the image
+-- doesn't support EXIF tags.
+exifTags :: FilePath -> IO [(Text, Text)]
+exifTags path = do
+    C.handle (return []) $ do
+        tags <- fromFile path >>= allTags
+        forM tags $ \(name, value) ->
+            title <- tagFromName name >>= tagTitle
+            return (pack title, pack value)
 
 int :: Integral a => a -> Int
 int = fromIntegral

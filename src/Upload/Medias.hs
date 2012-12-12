@@ -1,4 +1,4 @@
--- | Recognises medias (audio and video),  collects informations and create
+-- | Recognises medias (audio and video), collects informations and create
 -- HTML 5 audio/videos in a separate thread.
 module Upload.Medias (
     -- * Processing queue management
@@ -10,19 +10,27 @@ module Upload.Medias (
 
 import Import
 
-import Control.Concurrent (ThreadId,  Chan,  forkIO,  newChan,  writeChan,  readChan)
+import Control.Concurrent (ThreadId, Chan, forkIO, newChan, writeChan, readChan)
+import qualified Data.ByteString.Lazy.Char8 as B
 import qualified Data.Set as S
-import System.FilePath ((</>),  (<.>))
-import System.IO (ReadMode,  openFile,  hClose)
+import Data.Word
+import System.FilePath ((</>), (<.>))
+import System.IO (ReadMode, openFile, hClose)
 
 import Control.Monad.Trans.Resource (runResourceT)
 import Data.Conduit (($=))
-import Data.Conduit.Binary (sourceHandle,  sinkFile)
+import Data.Conduit.Binary (sourceHandle, sinkFile)
 import Data.Conduit.Zlib (gzip)
+import Network.Lastfm (APIKey (..))
+import Network.Lastfm.JSON.Track ()
+import Sound.TagLib (open, )
 
 import Upload.FFmpeg (MediaInfo (..), Duration (..), encode, getInfo)
 
 type MediasQueue = Chan FileId
+
+lastfmKey :: APIKey
+lastfmKey = APIKey "47a2ea27feb5d9f9cf6450b244130b7e"
 
 -- | Initialises a new encoding queue to be inserted in the foundation type.
 newQueue :: IO MediasQueue
@@ -83,12 +91,12 @@ mediasDaemon app =
                 handle <- openFile path ReadMode
 
                 case fileCompressed file of
-                    Just _ -> Just (file,  handle,  path,  sourceFile path $= gzip)
-                    _      -> Just (file,  handle,  path,  sourceFile path)
+                    Just _ -> Just (file, handle, path, sourceFile path $= gzip)
+                    _      -> Just (file, handle, path, sourceFile path)
 
         when (isJust mFile) $ runResourceT do
             -- Process the file if it still exists.
-            let (file,  handle,  path,  source) = fromJust mFile
+            let (file, handle, path, source) = fromJust mFile
             register $ hClose handle
 
             case fileType file of
@@ -110,10 +118,31 @@ mediasDaemon app =
 forkMediasDaemon :: App -> IO ThreadId
 forkMediasDaemon = forkIO . mediasDaemon
 
--- | Try to open the file as a media. Enqueue the file if 
+-- | Try to open the file as a media. Enqueue the file for re-encoding.
 processMedia :: FilePath -> FilePath -> Text -> FileId -> Handler Bool
 processMedia dir path ext fileId = do
     if not (ext `S.member` extensions)
         then return False
         else do
-            
+            mInfo <- liftIO $ getInfo (sourceFile path)
+
+            case mInfo of
+                Just (MediaInfo mediaType duration) -> do
+                    -- Retrieve the ID3 tags of MP3 files.
+                    tags <- if not (ext == ".mp3")
+                        then
+                        else
+
+                    runDB do
+                        update fileId [FileType =. mediaType]
+
+                        insert $ MediaAttrs fileId (toCentisec duration)
+
+                    getYesod >>= (`putFile` fileId)
+                Nothing -> return False
+  where
+    toCentisec (Duration h m s c) =
+        word64 c + word64 s * 100 + word64 m * 60 * 100 + word64 h * 3600 * 100
+
+word64 :: Integral a => a -> Word64
+word64 = fromIntegral

@@ -35,7 +35,7 @@ processArchive dir path ext fileId = do
                     forM_ entries $ \e ->
                         let path = T.pack $ Z.eRelativePath e
                             size = fromIntegral $ Z.eUncompressedSize e
-                        in insert $ FileArchive fileId path size
+                        in insert $ ArchiveFile fileId path size
                     return True
                 Left (_ :: C.SomeException) -> return False
   where

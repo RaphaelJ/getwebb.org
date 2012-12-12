@@ -53,7 +53,7 @@ FileTag
     value Text
 
 -- Saves the contained files of an archive.
-FileArchive
+ArchiveFile
     fileId FileId
     path Text
     size Word64 -- Uncompressed size
@@ -65,7 +65,8 @@ ImageAttrs
     height Word32
 
 -- Saves the attributes of a media.
-MediasAttrs
+MediaAttrs
     fileId FileId
-    duration Word64 -- Duration in milliseconds
+    duration Word64 -- Duration in centisecond
+    miniature Bool
 |]

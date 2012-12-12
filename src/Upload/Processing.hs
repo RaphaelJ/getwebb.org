@@ -53,11 +53,14 @@ processFile f = do
                 }
 
             let hashDir = hashPath (uploadDir app) file
+                path = hashDir </> "original"
 
             -- Checks if the file exists.
             -- eithFileId gets a Right value if its a new file which file needs
             -- to be processed.
-            eithFileId <- runDB $ do
+            -- Inserts the file before knowing its type to lock others uploads
+            -- to insert the same file during the processing.
+            eithFileId <- runDB do
                 mFileId <- insertUnique file
                 case mFileId of
                     Just inseredFileId -> do
@@ -78,15 +81,13 @@ processFile f = do
             -- new file.
             case eithFileId of
                 Right fileId ->
-                    processImage ext fileId hashDir   .||.
-                    processArchive ext fileId hashDir .||.
-                    processAudio ext fileId hashDir   .||.
-                    >>
-                    return ()
+                    processImage hashDir path ext fileId   .||.
+                    processArchive hashDir path ext fileId .||.
+                    processMedia hashDir path ext fileId   >>
+                    liftIO $ app `putFile` fileId
                 _ ->
                     return ()
 
-            liftIO $ app `putFile` either id id eithFileId
             return $! Left "Error"
   where
     -- | Runs the first action, runs the second if the first returned 'False'.

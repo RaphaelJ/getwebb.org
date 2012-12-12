@@ -1,11 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Recognises images and create miniature to them.
-module Upload.Image (processImage, miniature, extensions, miniatureSize)
-    where
+module Upload.Image (
+      extensions, miniatureSize, processImage, miniature, exifTags
+    ) where
 
 import Import
 
 import qualified Control.Exception as C
+import Control.Monad
 import qualified Data.Set as S
 import Data.Text (pack)
 import System.FilePath
@@ -13,7 +15,7 @@ import System.FilePath
 import Vision.Image
 import Vision.Primitive
 import Graphics.Exif (fromFile, allTags)
-import Graphics.Exif.Internal (tagFromName, tagTitle)
+import Graphics.Exif.Internals (tagFromName, tagTitle)
 
 -- | Files extensions which are supported by the DevIL image library.
 extensions :: S.Set Text
@@ -25,36 +27,39 @@ extensions = S.fromDistinctAscList [
     ]
 
 -- | The size of miniatures in pixels (both in width and height).
+miniatureSize :: Int
 miniatureSize = 200
 
-processImage :: Text -> FileId -> FilePath -> Handler Bool
-processImage ext fileId dir = do
+-- | Try to open the image and to generate a miniature.
+processImage :: FilePath -> FilePath -> Text -> FileId -> Handler Bool
+processImage dir path ext fileId = do
     if not (ext `S.member` extensions)
         then return False
         else do
-            let path = dir </> "original"
             -- Try to open the file as an image.
-            mImg <- liftIO $ C.catch (load path)
-                                     (const $ return Nothing)
+            eImg <- liftIO $ C.try (load path)
 
-            case mImg of
-                Just img -> do
+            case eImg of
+                Right img -> do
                     -- Creates the miniature and save it as "miniature.png".
                     -- Update the database row so the file type is Image and
                     -- adds possible EXIF tags.
-                    let miniImg = miniature img
+                    let Size w h = getSize img
+                        miniImg = miniature img
                     liftIO $ save miniImg (dir </> "miniature" <.> "png")
 
                     tags <- liftIO $ exifTags path
 
-                    runDB $ do
+                    runDB do
                         update fileId [FileType =. Image]
+
+                        insert $ ImageAttrs fileId w h
 
                         forM_ tags $ \(title, value) ->
                             insert $ FileTag fileId title value
 
                     return True
-                Nothing  -> return False
+                Left (_ :: C.SomeException) -> return False
 
 -- | Generates a miniature from the input image.
 miniature :: RGBImage -> RGBImage
@@ -85,11 +90,15 @@ miniature img =
 -- doesn't support EXIF tags.
 exifTags :: FilePath -> IO [(Text, Text)]
 exifTags path = do
-    C.handle (return []) $ do
+    eTags <- C.try do
         tags <- fromFile path >>= allTags
-        forM tags $ \(name, value) ->
+        forM tags $ \(!name, !value) -> do
             title <- tagFromName name >>= tagTitle
-            return (pack title, pack value)
+            C.evaluate (pack title, pack value)
+
+    case eTags of
+        Right tags -> return tags
+        Left (_ :: C.SomeException) -> return []
 
 int :: Integral a => a -> Int
 int = fromIntegral

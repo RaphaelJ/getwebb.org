@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Model where
 
 import Prelude
@@ -45,15 +46,26 @@ UploadFile
     lastView UTCTime
     deriving Show
 
--- Saves EXIF and id3 tags
+-- Saves EXIF and id3 tags.
 FileTag
     fileId FileId
     title Text
     value Text
 
--- Saves the contained files of an archive
+-- Saves the contained files of an archive.
 FileArchive
     fileId FileId
     path Text
     size Word64 -- Uncompressed size
+
+-- Saves the attributes of an image.
+ImageAttrs
+    fileId FileId
+    width  Word32
+    height Word32
+
+-- Saves the attributes of a media.
+MediasAttrs
+    fileId FileId
+    duration Word64 -- Duration in milliseconds
 |]

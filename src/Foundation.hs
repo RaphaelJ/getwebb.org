@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Foundation where
 
 import Prelude
@@ -31,6 +32,7 @@ data App = App {
     , httpManager :: Manager
     , persistConfig :: Settings.PersistConfig
     , compressionQueue :: Chan FileId
+    , mediasQueue :: Chan FileId
     }
 
 -- Set up i18n messages. See the message folder.

@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Settings.StaticFiles where
 
 import Prelude (IO)

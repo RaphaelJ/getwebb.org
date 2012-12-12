@@ -16,7 +16,7 @@ getHomeR = do
     let maxFileSize = extraMaxFileSize extras
     let maxRequestSize = extraMaxRequestSize extras
 
-    defaultLayout $ do
+    defaultLayout do
         setTitle "getwebb | Free file sharing"
         addScriptRemote "http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"
         $(widgetFile "homepage")

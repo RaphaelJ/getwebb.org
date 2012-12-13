@@ -11,7 +11,11 @@ module Upload.Medias (
 import Import
 
 import Control.Concurrent (ThreadId, Chan, forkIO, newChan, writeChan, readChan)
+import Control.Monad
+import Control.Monad.Trans (lift)
+import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
 import qualified Data.ByteString.Lazy.Char8 as B
+import Data.Maybe
 import qualified Data.Set as S
 import Data.Word
 import System.FilePath ((</>), (<.>))
@@ -21,16 +25,16 @@ import Control.Monad.Trans.Resource (runResourceT)
 import Data.Conduit (($=))
 import Data.Conduit.Binary (sourceHandle, sinkFile)
 import Data.Conduit.Zlib (gzip)
-import Network.Lastfm (APIKey (..))
-import Network.Lastfm.JSON.Track ()
-import Sound.TagLib (open, )
+import Network.Lastfm (APIKey (..), AutoCorrect (..), Artist (..), Track (..))
+import Network.Lastfm.JSON.Track (getInfo)
+import qualified Sound.TagLib as T
 
 import Upload.FFmpeg (MediaInfo (..), Duration (..), encode, getInfo)
 
 type MediasQueue = Chan FileId
 
 lastfmKey :: APIKey
-lastfmKey = APIKey "47a2ea27feb5d9f9cf6450b244130b7e"
+lastfmKey = APIKey "d1731c5c052d5cde7c82d56388b5d64e"
 
 -- | Initialises a new encoding queue to be inserted in the foundation type.
 newQueue :: IO MediasQueue
@@ -114,7 +118,8 @@ mediasDaemon app =
 
     encodeFile args source outPath = encode args source (sinkFile outPath)
 
--- | Forks the medias encoding daemon on a new thread and returns its 'ThreadId'.
+-- | Forks the medias encoding daemon on a new thread and returns its
+-- 'ThreadId'.
 forkMediasDaemon :: App -> IO ThreadId
 forkMediasDaemon = forkIO . mediasDaemon
 
@@ -128,10 +133,7 @@ processMedia dir path ext fileId = do
 
             case mInfo of
                 Just (MediaInfo mediaType duration) -> do
-                    -- Retrieve the ID3 tags of MP3 files.
-                    tags <- if not (ext == ".mp3")
-                        then
-                        else
+                    mp3Tags
 
                     runDB do
                         update fileId [FileType =. mediaType]
@@ -143,6 +145,46 @@ processMedia dir path ext fileId = do
   where
     toCentisec (Duration h m s c) =
         word64 c + word64 s * 100 + word64 m * 60 * 100 + word64 h * 3600 * 100
+
+    -- Retrieves the tags of MP3 tracks and their icons from Last.fm.
+    mp3Tags :: IO (Maybe MediaAttrs)
+    mp3Tags | ext /= ".mp3" = return Nothing
+            | otherwise     =
+        runMaybeT do
+            tagFile <- MaybeT $ T.open path
+            tag <- MaybeT $ T.tag tagFile
+
+            mAlbum   <- lift $! maybeTag <$> T.album tag
+            mArtist  <- lift $! maybeTag <$> T.artist tag
+            mComment <- lift $! maybeTag <$> T.comment tag
+            mGenre   <- lift $! maybeTag <$> T.genre tag
+            mTitle   <- lift $! maybeTag <$> T.title tag
+            mTrack   <- lift $! maybeTag <$> T.track tag
+            mYear    <- lift $! maybeTag <$> T.year tag
+
+            -- Ensures that at least one tag has been found.
+            MaybeT $ return $ msum [
+                  mAlbum, mArtist, mComment, mGenre, mTitle, mTrack, mYear
+                ]
+
+            -- Tries to find the album art from Last.fm.
+            case (mArtist, mTitle) of
+                (Just artist, Just title) ->
+                    lastfmTags artist title
+                _                         ->
+                    return $! AudioAttrs fileId mAlbum mArtist mComment mGenre
+                                         mTitle mTrack mYear Nothing False
+
+    -- Returns Nothing if the tag's string is empty.
+    maybeTag xs = Just xs
+    maybeTag "" = Nothing
+
+    -- Returns the 
+    lastfmTags :: String -> String -> IO 
+    lastfmTags artist title =
+        let search = Left (Artist artist, Title title)
+            autocorrect = Just (AutoCorrect True)
+        in getInfo search autocorrect Nothing lastfmKey
 
 word64 :: Integral a => a -> Word64
 word64 = fromIntegral

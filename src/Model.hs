@@ -46,17 +46,11 @@ UploadFile
     lastView UTCTime
     deriving Show
 
--- Saves EXIF and id3 tags.
-FileTag
+-- Saves EXIF tags from an image.
+ExifTag
     fileId FileId
     title Text
     value Text
-
--- Saves the contained files of an archive.
-ArchiveFile
-    fileId FileId
-    path Text
-    size Word64 -- Uncompressed size
 
 -- Saves the attributes of an image.
 ImageAttrs
@@ -64,9 +58,27 @@ ImageAttrs
     width  Word32
     height Word32
 
+-- Saves the contained files of an archive.
+ArchiveFile
+    fileId FileId
+    path Text
+    size Word64 -- Uncompressed size
+
 -- Saves the attributes of a media.
 MediaAttrs
     fileId FileId
     duration Word64 -- Duration in centisecond
+
+-- Saves the attributes of an MP3 track.
+AudioAttrs
+    fileId FileId
+    album Text Maybe
+    artist Text Maybe
+    comment Text Maybe
+    genre Text Maybe
+    title Text Maybe
+    track Text Maybe
+    year Text Maybe
+    lastFmUrl Text Maybe
     miniature Bool
 |]

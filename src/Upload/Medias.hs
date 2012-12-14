@@ -1,4 +1,4 @@
--- | Recognises medias (audio and video), collects informations and create
+-- | Recognises medias (audio and video), collects information and create
 -- HTML 5 audio/videos in a separate thread.
 module Upload.Medias (
     -- * Processing queue management
@@ -171,6 +171,7 @@ processMedia dir path ext fileId = do
             case (mArtist, mTitle) of
                 (Just artist, Just title) ->
                     lastfmTags artist title
+                    
                 _                         ->
                     return $! AudioAttrs fileId mAlbum mArtist mComment mGenre
                                          mTitle mTrack mYear Nothing False
@@ -179,12 +180,18 @@ processMedia dir path ext fileId = do
     maybeTag xs = Just xs
     maybeTag "" = Nothing
 
-    -- Returns the 
-    lastfmTags :: String -> String -> IO 
-    lastfmTags artist title =
+    -- Returns the last.fm url about the track if it exists and 'True' if a
+    -- miniature has been generated.
+    lastfm :: String -> String -> IO (Maybe (Text, Bool))
+    lastfm artist title = do
         let search = Left (Artist artist, Title title)
             autocorrect = Just (AutoCorrect True)
-        in getInfo search autocorrect Nothing lastfmKey
+        response <- getInfo search autocorrect Nothing lastfmKey
+        case response of
+            Left _   -> return (Nothing, False)
+            Right bs ->
+                let json = B.unpack bs
+                in 
 
 word64 :: Integral a => a -> Word64
 word64 = fromIntegral

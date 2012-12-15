@@ -10,18 +10,21 @@ import System.IO
 
 import qualified Data.ByteString.Lazy as LB
 import Data.Digest.Pure.SHA (sha1, showDigest)
-import Data.Text (pack)
+import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
 
-import Upload.Compression (putFile)
-import Upload.Utils (getFileSize, hashPath, uploadDir, newTmpFile)
+import Upload.Archive (processArchive)
+import Upload.Image (processImage)
+import Upload.Media (processMedia)
+import qualified Upload.Compression as C
+import Upload.Utils (getFileSize, hashDir, uploadDir, uploadFile, newTmpFile)
 
 -- | Process a upload using a list of files. Returns the ID of the new upload
 -- row in the database.
 process :: [FileInfo] -> Handler ()
 process fs = do
     adminKey <- getAdminKey
-    liftIO $ print adminKey
+    liftIO $! print adminKey
 
     forM_ fs processFile
 
@@ -41,9 +44,9 @@ processFile f = do
         else do
             -- Checks if the file has been already uploaded by computing his
             -- hash.
-            hash <- liftIO $ hashFile tmpPath
-            let hash = pack hash
-            let ext = pack $ takeExtension $ fileName f
+            hash <- liftIO $! hashFile tmpPath
+            let hash = T.pack hash
+            let ext = T.pack $ takeExtension $ fileName f
 
             currentTime <- liftIO getCurrentTime
             let file = File {
@@ -52,8 +55,7 @@ processFile f = do
                 , fileCompressed = Nothing, fileDate = currentTime
                 }
 
-            let hashDir = hashPath (uploadDir app) file
-                path = hashDir </> "original"
+            let path = uploadFile (hashDir (uploadDir app) file)
 
             -- Checks if the file exists.
             -- eithFileId gets a Right value if its a new file which file needs
@@ -66,25 +68,25 @@ processFile f = do
                     Just inseredFileId -> do
                         -- New file: moves the temporary file to its final
                         -- destination and adds the information to the database.
-                        liftIO $ moveToUpload tmpPath hashDir
-                        liftIO $ print "New file"
-                        return $ Right inseredFileId
+                        liftIO $! moveToUpload tmpPath path
+                        liftIO $! print "New file"
+                        return $! Right inseredFileId
                     Nothing -> do
                         -- Existing file: remove the temporary file and
                         -- retrieves the FileId.
-                        liftIO $ removeFile tmpPath
-                        liftIO $ print "Existing file"
+                        liftIO $! removeFile tmpPath
+                        liftIO $! print "Existing file"
                         Just existingFile <- getBy (UniqueSha1 hashText ext)
-                        return $ Left $ entityKey existingFile
+                        return $! Left $ entityKey existingFile
 
             -- Process the special feature depending on the file type if it's a
-            -- new file.
+            -- new file and puts it on the compressing queue afterward.
             case eithFileId of
                 Right fileId ->
-                    processImage hashDir path ext fileId   .||.
-                    processArchive hashDir path ext fileId .||.
-                    processMedia hashDir path ext fileId   >>
-                    liftIO $ app `putFile` fileId
+                    processImage path ext fileId   .||.
+                    processArchive path ext fileId .||.
+                    processMedia path ext fileId   >>
+                    liftIO $! app `C.putFile` fileId
                 _ ->
                     return ()
 
@@ -100,14 +102,14 @@ processFile f = do
                 else b
 
 -- | Moves the uploaded file to a temporary file with a @upload_@ prefix.
--- Returns the file\'s name.
+-- Returns the temporary file name.
 moveToTmp :: FileInfo -> Handler FilePath
 moveToTmp f = do
     app <- getYesod
     (path, h) <- liftIO $ newTmpFile app "upload_"
-    liftIO $ hClose h
+    liftIO $! hClose h
 
-    liftIO $ fileMove f path
+    liftIO $! fileMove f path
 
     return path
 
@@ -117,9 +119,9 @@ hashFile path = do
     c <- LB.readFile path
     return $! showDigest $ sha1 c
 
--- | Move a file to the upload directory given and name it @original@.
+-- | Move a file to the given path.
 -- Create the parent directories if they don't exist.
 moveToUpload :: FilePath -> FilePath -> IO ()
-moveToUpload path destDir = do
-    createDirectoryIfMissing True destDir
-    renameFile path (destDir </> "original")
+moveToUpload path destPath = do
+    createDirectoryIfMissing True (takeDirectory destPath)
+    renameFile path destPath

@@ -4,7 +4,6 @@ module Foundation where
 import Prelude
 import Control.Concurrent.Chan (Chan)
 import Data.Text (pack, unpack)
-import Data.Word
 import Yesod
 import Yesod.Static
 import Yesod.Default.Config
@@ -194,6 +193,3 @@ getAdminKey = do
 
             lift $ setSession "admin_key" (pack $ show k)
             return k
-
-word64 :: Integral a => a -> Word64
-word64 = fromIntegral

@@ -16,7 +16,7 @@ derivePersistField "FileType"
 
 type AdminKey = Int64
 
-share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistUpperCase|
+share [mkPersist sqlOnlySettings, mkMigrate "migrateAll"] [persistUpperCase|
 LastAdminKey
     value AdminKey
     deriving Show
@@ -77,8 +77,8 @@ AudioAttrs
     comment Text Maybe
     genre Text Maybe
     title Text Maybe
-    track Text Maybe
-    year Text Maybe
+    track Int Maybe
+    year Int Maybe
     lastFmUrl Text Maybe
     miniature Bool
 |]

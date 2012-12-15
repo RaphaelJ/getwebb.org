@@ -1,21 +1,25 @@
 -- | Functions which are useful to communicate with the FFmpeg command.
 module Upload.FFmpeg (
-      MediaInfo (..), Duration (..), FFmpegArgs, executable, runFFmpeg, encode
-    , getInfo
+      MediaInfo (..), MediaDuration (..), FFmpegArgs
+    , executable, argsDuration, argsWebM, argsH264, argsWebMAudio, argsMP3
+    , withFFmpeg, encode, getInfo
     ) where
 
 import Import
 
+import Data.ByteString (ByteString)
+import qualified Data.ByteString.Lazy.Char8 as C
 import System.Exit (ExitCode (..))
-import System.FilePath ((</>), (<.>))
-import System.IO (ReadMode, openFile, hGetContents, hClose)
+import System.IO (Handle, hClose)
 import Text.Printf (printf)
 
-import Control.Monad.Trans.Resource (ResIO, runResourceT, resourceForkIO)
-import Data.Conduit (Source, Sink, ($$)
-import Data.Conduit.Binary (sourceHandle)
+import Control.Monad.Trans.Resource (
+      ResourceT, runResourceT, resourceForkIO, register
+    )
+import Data.Conduit (Source, Sink, ($$))
+import Data.Conduit.Binary (sourceHandle, sinkHandle)
 import Data.Conduit.List (consume)
-import System.Process (runInteractiveProcess)
+import System.Process (ProcessHandle, runInteractiveProcess, waitForProcess)
 import Text.Regex.Posix (MatchResult (..), (=~~), (=~))
 
 type FFmpegArgs = [String]
@@ -26,8 +30,8 @@ data MediaDuration = MediaDuration {
       dHours :: Int, dMins :: Int, dSecs :: Int, dCenti :: Int
     }
 
-instance Show Duration where
-    show (Duration h m s c) = printf "%d:%d:%d.%d" h m s c
+instance Show MediaDuration where
+    show (MediaDuration h m s c) = printf "%d:%d:%d.%d" h m s c
 
 -- | The path to the ffmpeg executable.
 executable :: FilePath
@@ -72,27 +76,29 @@ argsMP3 = ["-i", "pipe:0", "-vn", "-acodec", "libmp3lame", "-b:a", "196k", "-ac"
 -- and closes handles after the action has been executed. Returns the exit code
 -- of the command.
 withFFmpeg :: FFmpegArgs
-           -> (Handle-> Handle -> Handle -> ProcessHandle -> ResIO a)
+           -> (Handle-> Handle -> Handle -> ProcessHandle -> ResourceT IO a)
            -> IO (ExitCode, a)
-withFFmpeg args action = runResourceT do
+withFFmpeg args action = runResourceT $! do
     (hStdin, hStdout, hStderr, pid) <- liftIO $ runFFmpeg
     _ <- register $ hClose hStdin -- hClose two times has no effect.
     _ <- register $ hClose hStdout
     _ <- register $ hClose hStderr
 
-    action hStdin hStdout hStderr pid
+    ret <- action hStdin hStdout hStderr pid
 
-    liftIO $ waitForProcess pid
+    code <- liftIO $! waitForProcess pid
+    return (code, ret)
   where
     runFFmpeg = runInteractiveProcess executable args Nothing Nothing
 
 -- | Pushs a 'Source' in the stdin of ffmpeg called with the given arguments and
 -- fill a 'Sink' with its stdout.
-encode :: FFmpegArgs -> Source ResIO ByteString -> Sink ResIO () -> IO ExitCode
+encode :: FFmpegArgs -> Source (ResourceT IO) ByteString
+       -> Sink ByteString (ResourceT IO) () -> IO ExitCode
 encode args source sink = do
     -- Runs ffmpeg and seeds its input with the source and seeks its output in
     -- the sink.
-    (code, _) <- withFFmpeg argsWebM $ \(hStdin, hStdout, hStderr, _) -> do
+    (code, _) <- withFFmpeg args $ \hStdin hStdout _ _ -> do
         _ <- resourceForkIO $ sourceHandle hStdout $$ sink
         source $$ sinkHandle hStdin
 
@@ -100,19 +106,20 @@ encode args source sink = do
 
 -- | Returns the type and duration of a media given by the source.
 -- Returns 'Nothing' if ffmpeg fails to open the file.
-getInfo :: Source ResIO ByteString -> IO (Maybe MediaInfo)
+getInfo :: Source (ResourceT IO) ByteString -> IO (Maybe MediaInfo)
 getInfo source = do
-    (code, output) <- withFFmpeg argsDuration $ \(hStdin, _, hStderr, _) -> do
+    (code, output) <- withFFmpeg argsDuration $ \hStdin _ hStderr _ -> do
         _ <- resourceForkIO $ source $$ sinkHandle hStdin
-        sourceHandle hStderr $$ consume
+        outputBs <- sourceHandle hStderr $$ consume
+        return $ C.unpack $ C.fromChunks outputBs
 
     case code of
         ExitSuccess ->
-            return do
+            return $! do -- Maybe monad
                 durationMatch <- output =~~ durationRegex
                 let duration = toDuration durationMatch
-                    audio = output =~ "Stream #.*: Audio:"
-                    video = output =~ "Stream #.*: Video:"
+                    audio = output =~ ("Stream #.*: Audio:" :: String)
+                    video = output =~ ("Stream #.*: Video:" :: String)
 
                 case (video, audio) of
                     (True ,    _) -> Just $ MediaInfo Video duration
@@ -121,8 +128,9 @@ getInfo source = do
         ExitFailure _ ->
             return Nothing
   where
+    durationRegex :: String
     durationRegex = "Duration: ([0-9]+):([0-9]+):([0-9]+).([0-9]+)"
 
     toDuration match = 
         let [h, m, s, c] = mrSubList match
-        in Just $ MediaDuration h m s c
+        in MediaDuration (read h) (read m) (read s) (read c)

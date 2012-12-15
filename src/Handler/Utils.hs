@@ -4,6 +4,7 @@ module Handler.Utils (PrettyFileSize (..))
 import Import
 
 import Data.Word
+import Text.Printf (printf)
 
 import Text.Blaze (ToMarkup (..))
 
@@ -14,12 +15,12 @@ newtype PrettyFileSize = PrettyFileSize Word64
 
 instance Show PrettyFileSize where
     show (PrettyFileSize size)
-        | size < 2    = show size               ++ " byte"
-        | size < pow1 = show size               ++ " bytes"
-        | size < pow2 = show (size `quot` pow1) ++ " KiB"
-        | size < pow3 = show (size `quot` pow2) ++ " MiB"
-        | size < pow4 = show (size `quot` pow3) ++ " GiB"
-        | otherwise   = show (size `quot` pow4) ++ " TiB"
+        | size < 2    = printf "%d byte" size
+        | size < pow1 = printf "%d bytes" size
+        | size < pow2 = printf "%d KiB" (size `quot` pow1)
+        | size < pow3 = printf "%d MiB" (size `quot` pow2)
+        | size < pow4 = printf "%d GiB" (size `quot` pow3)
+        | otherwise   = printf "%d TiB" (size `quot` pow4)
       where
         (pow1, pow2, pow3, pow4) = (1024, pow1 * 1024, pow2 * 1024, pow3 * 1024)
 

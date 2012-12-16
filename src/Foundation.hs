@@ -108,10 +108,16 @@ instance Yesod App where
     shouldLog _ _source level =
         development || level == LevelWarn || level == LevelError
 
-    -- Permits a query which can hold ten files of the
-    maximumContentLength app (Just UploadR) =
-        extraMaxRequestSize $ appExtra $ settings app
-    maximumContentLength _   _              = 2 * 1024 * 1024 -- 2 Mio
+    -- Permits a query which can hold the request and the file if its the upload
+    -- page.
+    maximumContentLength app page =
+        case page of
+            Just UploadR -> maxFileSize + maxRequestSize
+            _            -> maxRequestSize
+      where
+        extras = appExtra $ settings app
+        maxFileSize = extraMaxFileSize extras
+        maxRequestSize = extraMaxRequestSize extras
 
 -- How to run database actions.
 instance YesodPersist App where

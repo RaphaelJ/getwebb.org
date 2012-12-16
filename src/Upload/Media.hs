@@ -24,19 +24,24 @@ import qualified Data.Text as T
 import Data.Word
 import System.Directory
 import System.Exit (ExitCode (..))
-import System.FilePath ((<.>), takeDirectory)
+import System.FilePath ((<.>), takeDirectory, takeFileName)
+import System.IO (hClose)
 
-import Control.Monad.Trans.Resource (ResourceT, runResourceT)
+import Control.Monad.Trans.Resource (ResourceT, runResourceT, register)
 import Database.Persist.Store (runPool)
 import Data.Conduit (($$+-))
-import Data.Conduit.Binary (sinkFile)
+import Data.Conduit.Binary (sinkFile, sinkHandle)
 import Network.HTTP.Conduit (http, parseUrl, responseBody)
 import qualified Network.Lastfm as L
 import qualified Network.Lastfm.JSON.Track as L
 import qualified Sound.TagLib as ID3
+import System.Posix.Files (createSymbolicLink, removeLink)
 import qualified Text.JSON as J
 import qualified Vision.Image as I
 
+import Upload.Utils (newTmpFile)
+
+import Debug.Trace
 import System.TimeIt
 
 import Upload.FFmpeg (
@@ -177,7 +182,15 @@ processMedia path ext fileId = do
             | otherwise     =
         runMaybeT $ do
             -- Runs the retrieving of the ID3 tags in the MaybeT monad.
-            tagFile <- MaybeT $! liftIO $ ID3.open path
+
+            -- Creates a symbolic link to the file with an .mp3 extension 
+            -- because taglib requires an .mp3 extension.
+            let mp3Path = path <.> "mp3"
+            liftIO $ createSymbolicLink (takeFileName path) mp3Path
+
+            tagFile <- MaybeT $! liftIO $ ID3.open mp3Path
+            liftIO $ removeLink mp3Path
+
             tag <- MaybeT $! liftIO $ ID3.tag tagFile
 
             mAlbum   <- liftIO $ maybeStrTag <$> ID3.album tag
@@ -187,6 +200,9 @@ processMedia path ext fileId = do
             mTitle   <- liftIO $ maybeStrTag <$> ID3.title tag
             mTrack   <- liftIO $ maybeIntTag <$> ID3.track tag
             mYear    <- liftIO $ maybeIntTag <$> ID3.year tag
+            
+            liftIO $ print [mAlbum, mArtist, mComment, mGenre, mTitle]
+            liftIO $ print [mTrack, mYear]
 
             -- Ensures that at least one tag has been found.
             _ <- MaybeT $! return $! msum [
@@ -213,7 +229,7 @@ processMedia path ext fileId = do
 
     -- Returns Nothing if the tag's string is empty.
     maybeStrTag "" = Nothing
-    maybeStrTag xs = Just (T.pack xs)
+    maybeStrTag xs = trace xs $ Just (T.pack xs)
 
     -- Returns Nothing if the tag's value is zero.
     maybeIntTag 0 = Nothing
@@ -231,24 +247,26 @@ processMedia path ext fileId = do
             Nothing -> return Nothing
             Just (url, Nothing) -> return $! Just (url, False)
             Just (url, Just coverUrl) -> do
-                -- Download the cover image.
-                manager <- httpManager <$> getYesod
+                app <- getYesod
 
-                request <- liftIO $ parseUrl coverUrl
-
+                -- Download the cover image in a temporary file
+                (tmp, hTmp) <- liftIO $ newTmpFile app "cover_"
                 liftIO $ putStrLn "Lastfm:"
+                request <- liftIO $ parseUrl coverUrl
                 liftIO $ timeIt $ runResourceT $ do
-                    imgResponse <- http request manager
-                    responseBody imgResponse $$+- sinkFile miniaturePath
+                    _ <- register $ hClose hTmp
+                    imgResponse <- http request (httpManager app)
+                    responseBody imgResponse $$+- sinkHandle hTmp
 
                 -- Generates the cover image miniature.
-                eImg <- liftIO $ E.try (I.load miniaturePath)
+                eImg <- liftIO $ E.try (I.load tmp)
                 case eImg of
                     Right img -> do
                         liftIO $ I.save (miniature img) miniaturePath
+--                         liftIO $ removeFile tmp
                         return $! Just (url, True)
                     Left (_ :: E.SomeException) -> do
-                        liftIO $ removeFile miniaturePath
+--                         liftIO $ removeFile tmp
                         return $! Just (url, False)
 
     -- Parses the last.fm JSON response and return the possible URL and the

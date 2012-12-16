@@ -60,7 +60,7 @@ argsWebM path = ["-i", path, "-s", "1280x720", "-vpre", "libvpx-720p", "-b:v"
 argsH264 :: FilePath -> FFmpegArgs
 argsH264 path = ["-i", path, "-s", "1280x720", "-vcodec", "libx264", "-preset"
     , "veryfast", "-b:v", "2M", "-acodec", "libmp3lame", "-b:a", "196k", "-ac"
-    , "2", "-y", "pipe:1"
+    , "2", "-f", "matroska", "-y", "pipe:1"
     ]
 
 -- | Arguments to the ffmpeg command which accepts a media on stdin and encode
@@ -104,6 +104,8 @@ encode :: (FilePath -> FFmpegArgs) -> FilePath
 encode args path sink = do
     -- Runs ffmpeg and seeds its input with the source and seeks its output in
     -- the sink.
+    putStrLn $ unwords $ args path
+
     (code, _) <- withExec ffmpeg (args path) $ \_ hStdout hStderr _ -> do
         _ <- resourceForkIO $ sourceHandle hStderr $$ sinkFile "/dev/null"
         sourceHandle hStdout $$ sink
@@ -119,8 +121,6 @@ getInfo path = do
         _ <- resourceForkIO $ sourceHandle hStdout $$ sinkFile "/dev/null"
         outputBs <- sourceHandle hStderr $$ consume
         return $ C.unpack $ C.fromChunks outputBs
-
-    print code
 
     case code of
         ExitSuccess -> do

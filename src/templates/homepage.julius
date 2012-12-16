@@ -22,12 +22,6 @@ $("#upload_form").submit(function ()
             "(#{show $ PrettyFileSize maxFileSize}) :<br />" + 
             larges.join("<br />") + "."
         );
-    } else if (sumFilesSizes(files) > #{show maxRequestSize}) {
-        // Checks if the whole set of files can be uploaded at once.
-        showError(
-            "You can't upload more than " +
-            "#{show $ PrettyFileSize maxRequestSize} at once."
-        );
     } else if (!document.getElementById("upload_email").checkValidity()) {
         // Checks if the email field is valid.
         showError("Please enter a valid email.");
@@ -99,17 +93,6 @@ function largeFiles(files)
     }
 
     return l;
-}
-
-// Computes the sum of the set of files.
-function sumFilesSizes(files) 
-{
-    var s = 0;
-    for (var i = 0; i < files.length; i++) {
-        var f = files[i];
-        s += f.size;
-    }
-    return s;
 }
 
 // Shows the error message above the upload form.

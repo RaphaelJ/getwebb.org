@@ -26,6 +26,9 @@ import Data.Conduit.Zlib (gzip)
 
 import Upload.Utils (hashDir, uploadDir, uploadFile, newTmpFile)
 
+import System.TimeIt (timeIt)
+import Text.Printf
+
 type CompressionQueue = Chan FileId
 
 -- | Initialises a new compression queue to be inserted in the foundation type.
@@ -53,14 +56,16 @@ compressionDaemon app =
 
             -- Compress the file in a new temporary file.
             (tmpPath, tmpH) <- newTmpFile app "compression_"
-            tmpSize <- runResourceT $ do
+
+            putStrLn "Compression:"
+            tmpSize <- timeIt $ runResourceT $ do
                 _ <- register $! hClose tmpH -- hClose two times has no effect.
                 sourceFile path $= gzip $$ sinkHandle tmpH
 
                 -- Computes the size of the new compressed file.
                 liftIO $! fromIntegral <$> hFileSize tmpH
 
-            liftIO $! print (tmpSize, fileSize file)
+            _ <- liftIO $! printf "New size: %d - old: %d - gain: %d\n" tmpSize (fileSize file) (fileSize file - tmpSize)
 
             -- Replaces the file if the compressed one is smaller.
             if tmpSize < fileSize file

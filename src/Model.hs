@@ -34,8 +34,8 @@ File
     size Word64
     compressed Word64 Maybe -- The compressed size if the file is compressed.
     date UTCTime
-    -- Each file is identified by its hash and extension:
-    UniqueFiles sha1 extension
+    -- Each file is identified by its hash:
+    UniqueSHA1 sha1
     deriving Show
 
 UploadFile

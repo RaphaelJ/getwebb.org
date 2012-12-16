@@ -52,9 +52,12 @@ makeFoundation conf = do
               Database.Persist.Store.applyEnv
     p <- Database.Persist.Store.createPoolConfig (dbconf :: Settings.PersistConfig)
     Database.Persist.Store.runPool dbconf (runMigration migrateAll) p
-    compressionQueue <- C.newQueue
-    mediasQueue <- M.newQueue
-    return $ App conf s p manager dbconf compressionQueue mediasQueue
+
+    -- Initialises the concurrent channels used by utility threads.
+    cQueue <- C.newQueue
+    mQueue <- M.newQueue
+
+    return $ App conf s p manager dbconf cQueue mQueue
 
 -- for yesod devel
 getApplicationDev :: IO (Int, Application)

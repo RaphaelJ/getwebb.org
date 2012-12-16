@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 -- | Recognises medias (audio and video), collects information and create
 -- HTML 5 audio/videos in a separate thread.
 module Upload.Media (
@@ -6,6 +7,7 @@ module Upload.Media (
     -- * Starting the daemon
     , mediasDaemon, forkMediasDaemon
     -- * Processing uploads
+    , processMedia
     ) where
 
 import Import
@@ -21,7 +23,8 @@ import qualified Data.Set as S
 import qualified Data.Text as T
 import Data.Word
 import System.Directory
-import System.FilePath ((</>), (<.>), takeDirectory)
+import System.Exit (ExitCode (..))
+import System.FilePath ((<.>), takeDirectory)
 import System.IO (IOMode (ReadMode), openFile, hClose)
 
 import Control.Monad.Trans.Resource (ResourceT, runResourceT, register)
@@ -35,6 +38,8 @@ import qualified Network.Lastfm.JSON.Track as L
 import qualified Sound.TagLib as ID3
 import qualified Text.JSON as J
 import qualified Vision.Image as I
+
+import System.TimeIt
 
 import Upload.FFmpeg (
       MediaInfo (..), MediaDuration (..), argsWebM, argsH264, argsWebMAudio
@@ -98,8 +103,7 @@ mediasDaemon app =
         mFileInfo <- runDBIO $ runMaybeT $ do
             file <- MaybeT $! get fileId
 
-            -- Opens the file inside the transaction to ensures data
-            -- consistence.
+            -- Opens the file inside the transaction to ensure data consistence.
             let hash = T.unpack $ fileSha1 file
                 path = uploadFile (hashDir (uploadDir app) hash)
 
@@ -114,16 +118,16 @@ mediasDaemon app =
         when (isJust mFileInfo) $ runResourceT $ do
             -- Process the file if it still exists.
             let (file, handle, path, source) = fromJust mFileInfo
-            register $ hClose handle
+            _ <- register $ hClose handle
 
             case fileType file of
-                Audio ->
-                    encodeFile argsWebMAudio source (path <.> "webm") >>
-                    encodeFile argsMP3 source (path <.> "mp3") >>
+                Audio -> do
+                    _ <- encodeFile argsWebMAudio source (path <.> "webm")
+                    _ <- encodeFile argsMP3 source (path <.> "mp3")
                     return ()
-                Video ->
-                    encodeFile argsWebM source (path <.> "webm") >>
-                    encodeFile argsH264 source (path <.> "mkv") >>
+                Video -> do
+                    _ <- encodeFile argsWebM source (path <.> "webm")
+                    _ <- encodeFile argsH264 source (path <.> "mkv")
                     return ()
                 _     ->
                     error "Invalid file type."
@@ -131,8 +135,13 @@ mediasDaemon app =
     runDBIO :: YesodPersistBackend App (ResourceT IO) a -> IO a
     runDBIO f = runResourceT $ runPool (persistConfig app) f (connPool app)
 
-    encodeFile args source outPath = 
-        liftIO $ encode args source (sinkFile outPath)
+    encodeFile args source outPath = do
+        code <- liftIO $ encode args source (sinkFile outPath)
+
+        -- Removes the ouput file if the encoding failed.
+        case code of
+            ExitFailure _ -> liftIO $ removeFile outPath
+            _ -> return ()
 
     liftMaybe :: Monad m => Maybe a -> MaybeT m a
     liftMaybe = MaybeT . return
@@ -149,6 +158,7 @@ processMedia path ext fileId = do
         then return False
         else do
             mInfo <- liftIO $ getInfo (sourceFile path)
+            liftIO $ print mInfo
 
             case mInfo of
                 Just (MediaInfo mediaType duration) -> do
@@ -157,10 +167,10 @@ processMedia path ext fileId = do
                     runDB $ do
                         update fileId [FileType =. mediaType]
 
-                        insert $! MediaAttrs fileId (toCentisec duration)
+                        _ <- insert $ MediaAttrs fileId (toCentisec duration)
 
                         when (isJust mAudioAttrs) $ do
-                            insert $! fromJust mAudioAttrs
+                            _ <- insert $! fromJust mAudioAttrs
                             return ()
 
                     -- Adds the media to the media re-encoding queue.
@@ -168,7 +178,8 @@ processMedia path ext fileId = do
                     liftIO $ app `putFile` fileId
 
                     return True
-                Nothing -> return False
+                Nothing -> do
+                    return False
   where
     toCentisec (MediaDuration h m s c) =
         word64 c + word64 s * 100 + word64 m * 60 * 100 + word64 h * 3600 * 100
@@ -191,10 +202,10 @@ processMedia path ext fileId = do
             mYear    <- liftIO $ maybeIntTag <$> ID3.year tag
 
             -- Ensures that at least one tag has been found.
-            MaybeT $! return $! msum [
+            _ <- MaybeT $! return $! msum [
                   mAlbum, mArtist, mComment, mGenre, mTitle
                 ]
-            MaybeT $! return $! mTrack `mplus` mYear
+            _ <- MaybeT $! return $! mTrack `mplus` mYear
 
             -- Tries to find information about the album from Last.fm.
             case (mArtist, mTitle) of
@@ -237,9 +248,11 @@ processMedia path ext fileId = do
                 manager <- httpManager <$> getYesod
 
                 request <- liftIO $ parseUrl coverUrl
-                imgResponse <- liftIO $ http request manager
 
-                liftIO $ responseBody imgResponse $$+- sinkFile miniaturePath
+                liftIO $ putStrLn "Lastfm:"
+                liftIO $ timeIt $ runResourceT $ do
+                    imgResponse <- http request manager
+                    responseBody imgResponse $$+- sinkFile miniaturePath
 
                 -- Generates the cover image miniature.
                 eImg <- liftIO $ C.try (I.load miniaturePath)
@@ -247,7 +260,7 @@ processMedia path ext fileId = do
                     Right img -> do
                         liftIO $ I.save (miniature img) miniaturePath
                         return $! Just (url, True)
-                    Left _    -> do
+                    Left (_ :: C.SomeException) -> do
                         liftIO $ removeFile miniaturePath
                         return $! Just (url, False)
 
@@ -266,7 +279,7 @@ processMedia path ext fileId = do
 
                 let mCoverUrl = do
                     J.JSObject album <- "album" `lookup` J.fromJSObject track
-                    J.JSArray imgs <- "image" `lookup` J.fromJSObject track
+                    J.JSArray imgs <- "image" `lookup` J.fromJSObject album
 
                     -- Takes the largest image.
                     msum [
@@ -283,7 +296,7 @@ processMedia path ext fileId = do
     imgExtract :: [J.JSValue] -> String -> Maybe String
     imgs `imgExtract` size =
         let size' = J.showJSON size
-            cond (J.JSObject img) =
+            cond ~(J.JSObject img) =
                 size' == fromJust ("size" `lookup` J.fromJSObject img)
         in do
             J.JSObject img <- find cond imgs

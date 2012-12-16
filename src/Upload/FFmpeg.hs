@@ -1,8 +1,8 @@
 -- | Functions which are useful to communicate with the FFmpeg command.
 module Upload.FFmpeg (
       MediaInfo (..), MediaDuration (..), FFmpegArgs
-    , executable, argsDuration, argsWebM, argsH264, argsWebMAudio, argsMP3
-    , withFFmpeg, encode, getInfo
+    , ffmpeg, ffprobe, argsProbe, argsWebM, argsH264, argsWebMAudio, argsMP3
+    , withExec, encode, getInfo
     ) where
 
 import Import
@@ -17,7 +17,7 @@ import Control.Monad.Trans.Resource (
       ResourceT, runResourceT, resourceForkIO, register
     )
 import Data.Conduit (Source, Sink, ($$))
-import Data.Conduit.Binary (sourceHandle, sinkHandle)
+import Data.Conduit.Binary (sourceHandle, sinkFile, sinkHandle)
 import Data.Conduit.List (consume)
 import System.Process (ProcessHandle, runInteractiveProcess, waitForProcess)
 import Text.Regex.Posix (MatchResult (..), (=~~), (=~))
@@ -25,6 +25,7 @@ import Text.Regex.Posix (MatchResult (..), (=~~), (=~))
 type FFmpegArgs = [String]
 
 data MediaInfo = MediaInfo { miType :: FileType, miDuration :: MediaDuration }
+    deriving (Show)
 
 data MediaDuration = MediaDuration {
       dHours :: Int, dMins :: Int, dSecs :: Int, dCenti :: Int
@@ -34,13 +35,17 @@ instance Show MediaDuration where
     show (MediaDuration h m s c) = printf "%d:%d:%d.%d" h m s c
 
 -- | The path to the ffmpeg executable.
-executable :: FilePath
-executable = "/usr/bin/ffmpeg"
+ffmpeg :: FilePath
+ffmpeg = "/usr/bin/ffmpeg"
 
--- | Arguments to the ffmpeg command which accepts a media on stdin and returns
+-- | The path to the ffprobe executable.
+ffprobe :: FilePath
+ffprobe = "/usr/bin/ffprobe"
+
+-- | Arguments to the ffprobe command which accepts a media on stdin and returns
 -- media informations on stderr.
-argsDuration :: FFmpegArgs
-argsDuration = ["-i", "pipe:0"]
+argsProbe :: FFmpegArgs
+argsProbe = ["pipe:0"]
 
 -- | Arguments to the ffmpeg command which accepts a media on stdin and encode
 -- the corresponding 720p WebM file on stdout.
@@ -71,15 +76,15 @@ argsMP3 = ["-i", "pipe:0", "-vn", "-acodec", "libmp3lame", "-b:a", "196k", "-ac"
     , "2", "-f", "mp3", "-y", "pipe:1"
     ]
 
--- | Runs a the ffmpeg command and gives its stdin, stdout, stderr and process
--- handle, respectively to an action. Waits for the termination of the process
--- and closes handles after the action has been executed. Returns the exit code
--- of the command.
-withFFmpeg :: FFmpegArgs
+-- | Runs a the command and gives its stdin, stdout, stderr and process handle,
+-- respectively to an action. Waits for the termination of the process and
+-- closes handles after the action has been executed. Returns the exit code of
+-- the command.
+withExec :: FilePath -> FFmpegArgs
            -> (Handle-> Handle -> Handle -> ProcessHandle -> ResourceT IO a)
            -> IO (ExitCode, a)
-withFFmpeg args action = runResourceT $! do
-    (hStdin, hStdout, hStderr, pid) <- liftIO $ runFFmpeg
+withExec exec args action = runResourceT $! do
+    (hStdin, hStdout, hStderr, pid) <- liftIO $ runExec
     _ <- register $ hClose hStdin -- hClose two times has no effect.
     _ <- register $ hClose hStdout
     _ <- register $ hClose hStderr
@@ -89,7 +94,7 @@ withFFmpeg args action = runResourceT $! do
     code <- liftIO $! waitForProcess pid
     return (code, ret)
   where
-    runFFmpeg = runInteractiveProcess executable args Nothing Nothing
+    runExec = runInteractiveProcess exec args Nothing Nothing
 
 -- | Pushs a 'Source' in the stdin of ffmpeg called with the given arguments and
 -- fill a 'Sink' with its stdout.
@@ -98,9 +103,13 @@ encode :: FFmpegArgs -> Source (ResourceT IO) ByteString
 encode args source sink = do
     -- Runs ffmpeg and seeds its input with the source and seeks its output in
     -- the sink.
-    (code, _) <- withFFmpeg args $ \hStdin hStdout _ _ -> do
-        _ <- resourceForkIO $ sourceHandle hStdout $$ sink
-        source $$ sinkHandle hStdin
+    liftIO $ putStrLn $ unwords args
+    (code, _) <- withExec ffmpeg args $ \hStdin hStdout hStderr _ -> do
+        _ <- resourceForkIO $ do
+            source $$ sinkHandle hStdin
+            liftIO $ hClose hStdin
+        _ <- resourceForkIO $ sourceHandle hStderr $$ sinkFile "/dev/null"
+        sourceHandle hStdout $$ sink
 
     return code
 
@@ -108,18 +117,21 @@ encode args source sink = do
 -- Returns 'Nothing' if ffmpeg fails to open the file.
 getInfo :: Source (ResourceT IO) ByteString -> IO (Maybe MediaInfo)
 getInfo source = do
-    (code, output) <- withFFmpeg argsDuration $ \hStdin _ hStderr _ -> do
-        _ <- resourceForkIO $ source $$ sinkHandle hStdin
+    (code, out) <- withExec ffprobe argsProbe $ \hStdin hStdout hStderr _ -> do
+        _ <- resourceForkIO $ do
+            source $$ sinkHandle hStdin
+            liftIO $ hClose hStdin
+        _ <- resourceForkIO $ sourceHandle hStdout $$ sinkFile "/dev/null"
         outputBs <- sourceHandle hStderr $$ consume
         return $ C.unpack $ C.fromChunks outputBs
 
     case code of
         ExitSuccess ->
             return $! do -- Maybe monad
-                durationMatch <- output =~~ durationRegex
+                durationMatch <- out =~~ durationRegex
                 let duration = toDuration durationMatch
-                    audio = output =~ ("Stream #.*: Audio:" :: String)
-                    video = output =~ ("Stream #.*: Video:" :: String)
+                    audio = out =~ ("Stream #.*: Audio:" :: String)
+                    video = out =~ ("Stream #.*: Video:" :: String)
 
                 case (video, audio) of
                     (True ,    _) -> Just $ MediaInfo Video duration

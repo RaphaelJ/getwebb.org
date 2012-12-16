@@ -19,6 +19,7 @@ import qualified Vision.Image as I
 import qualified Vision.Primitive as I
 import Graphics.Exif (fromFile, allTags)
 import Graphics.Exif.Internals (tagFromName, tagTitle)
+import System.TimeIt (timeIt)
 
 import Upload.Utils (miniatureFile)
 
@@ -42,7 +43,8 @@ processImage path ext fileId = do
         then return False
         else do
             -- Try to open the file as an image.
-            eImg <- liftIO $ C.try (I.load path)
+            liftIO $ putStrLn "Load original image:"
+            eImg <- liftIO $ timeIt $ C.try (I.load path)
 
             case eImg of
                 Right img -> do
@@ -50,10 +52,13 @@ processImage path ext fileId = do
                     -- Update the database row so the file type is Image and
                     -- adds possible EXIF tags.
                     let I.Size w h = I.getSize img
-                        miniImg = miniature img
-                    liftIO $! I.save miniImg (miniatureFile (takeDirectory path))
+                    liftIO $! putStrLn "Miniature: "
+                    liftIO $! timeIt $ do
+                        let miniImg = miniature img
+                        I.save miniImg (miniatureFile (takeDirectory path))
 
-                    tags <- liftIO $ exifTags path
+                    liftIO $! putStrLn "Tags: "
+                    tags <- liftIO $ timeIt $ exifTags path
 
                     runDB $ do
                         update fileId [FileType =. Image]
@@ -69,29 +74,32 @@ processImage path ext fileId = do
 -- | Generates a miniature from the input image.
 miniature :: I.RGBImage -> I.RGBImage
 miniature img =
-    I.fromFunction miniSize drawBorder
-  where
     -- Crops the image in a square rectangle as large as the largest side of the
     -- image.
-    cropped | w > h     = I.crop img (I.Rect ((w - h) `quot` 2) 0 h h)
-            | otherwise = I.crop img (I.Rect 0 ((h - w) `quot` 2) w w)
-
+    if w > h
+        then drawBorder $ resize $ I.crop img (I.Rect ((w - h) `quot` 2) 0 h h)
+        else drawBorder $ resize $ I.crop img (I.Rect 0 ((h - w) `quot` 2) w w)
+  where
     -- Resizes the cropped image to a square of miniatureSize.
-    resized = I.resize cropped miniSize
+    resize img' = I.resize I.NearestNeighbor img' miniSize
+    {-# INLINE resize #-}
 
     -- Draw a bright border surrounded by a dark border.
-    drawBorder p@(I.Point x y)
-        | x == 0 || y == 0 || x == (w-1) || y == (h-1) =
+    drawBorder img' = I.fromFunction miniSize (drawBorderStep img')
+    {-# INLINE drawBorder #-}
+    drawBorderStep img' p@(I.Point x y)
+        | x == 0 || y == 0 || x == (miniatureSize-1) || y == (miniatureSize-1) =
             pix `I.pixApply` const 0
-        | x == 1 || y == 1 || x == (w-2) || y == (h-2) =
+        | x == 1 || y == 1 || x == (miniatureSize-2) || y == (miniatureSize-2) =
             pix `I.pixApply` brighter
         | otherwise = pix
       where
-        !pix = I.getPixel resized p
+        pix = img' `I.getPixel` p
         brighter val = fromIntegral $ min 255 $ int val + 50
+    {-# INLINE drawBorderStep #-}
 
     I.Size w h = I.getSize img
-    miniSize = I.Size miniatureSize miniatureSize
+    !miniSize = I.Size miniatureSize miniatureSize
 
 -- | Reads EXIF tags from the image file. Returns an empty list if the image
 -- doesn't support EXIF tags.

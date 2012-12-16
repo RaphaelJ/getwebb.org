@@ -1,4 +1,4 @@
-module Upload.Processing (process, processFile, hashFile, hashPath)
+module Upload.Processing (process, processFile)
     where
 
 import Import
@@ -19,12 +19,14 @@ import Upload.Media (processMedia)
 import qualified Upload.Compression as C
 import Upload.Utils (getFileSize, hashDir, uploadDir, uploadFile, newTmpFile)
 
+import System.TimeIt (timeIt)
+
 -- | Process a upload using a list of files. Returns the ID of the new upload
 -- row in the database.
 process :: [FileInfo] -> Handler ()
 process fs = do
     adminKey <- getAdminKey
-    liftIO $! print adminKey
+    liftIO $ print adminKey
 
     forM_ fs processFile
 
@@ -44,9 +46,10 @@ processFile f = do
         else do
             -- Checks if the file has been already uploaded by computing his
             -- hash.
-            hash <- liftIO $! hashFile tmpPath
-            let hash = T.pack hash
-            let ext = T.pack $ takeExtension $ fileName f
+            liftIO $ putStrLn "Hash file:"
+            hash <- liftIO $ timeIt $ hashFile tmpPath
+            let hashText = T.pack hash
+                ext = T.pack $ takeExtension $ T.unpack $ fileName f
 
             currentTime <- liftIO getCurrentTime
             let file = File {
@@ -55,28 +58,28 @@ processFile f = do
                 , fileCompressed = Nothing, fileDate = currentTime
                 }
 
-            let path = uploadFile (hashDir (uploadDir app) file)
+            let path = uploadFile (hashDir (uploadDir app) hash)
 
             -- Checks if the file exists.
             -- eithFileId gets a Right value if its a new file which file needs
             -- to be processed.
             -- Inserts the file before knowing its type to lock others uploads
             -- to insert the same file during the processing.
-            eithFileId <- runDB do
+            eithFileId <- runDB $ do
                 mFileId <- insertUnique file
                 case mFileId of
                     Just inseredFileId -> do
                         -- New file: moves the temporary file to its final
                         -- destination and adds the information to the database.
-                        liftIO $! moveToUpload tmpPath path
-                        liftIO $! print "New file"
+                        liftIO $ moveToUpload tmpPath path
+                        liftIO $ putStrLn $ "New file " ++ path
                         return $! Right inseredFileId
                     Nothing -> do
                         -- Existing file: remove the temporary file and
                         -- retrieves the FileId.
-                        liftIO $! removeFile tmpPath
-                        liftIO $! print "Existing file"
-                        Just existingFile <- getBy (UniqueSha1 hashText ext)
+                        liftIO $ removeFile tmpPath
+                        liftIO $ putStrLn "Existing file"
+                        Just existingFile <- getBy (UniqueSHA1 hashText)
                         return $! Left $ entityKey existingFile
 
             -- Process the special feature depending on the file type if it's a
@@ -86,7 +89,7 @@ processFile f = do
                     processImage path ext fileId   .||.
                     processArchive path ext fileId .||.
                     processMedia path ext fileId   >>
-                    liftIO $! app `C.putFile` fileId
+                    liftIO (app `C.putFile` fileId)
                 _ ->
                     return ()
 
@@ -107,9 +110,10 @@ moveToTmp :: FileInfo -> Handler FilePath
 moveToTmp f = do
     app <- getYesod
     (path, h) <- liftIO $ newTmpFile app "upload_"
-    liftIO $! hClose h
+    liftIO $ hClose h
 
-    liftIO $! fileMove f path
+    liftIO $ putStrLn "Move file:"
+    liftIO $ timeIt $ fileMove f path
 
     return path
 

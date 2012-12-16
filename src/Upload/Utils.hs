@@ -19,7 +19,7 @@ getFileSize path = fromIntegral <$> withFile path ReadMode hFileSize
 
 -- | Splits the hash of the file in four parts and constucts a four level
 -- directory path in the given directory.
-hashDir :: FilePath -> FilePath -> FilePath
+hashDir :: FilePath -> String -> FilePath
 hashDir dir hash =
     let (p1, hash') = splitAt 2 hash
         (p2, hash'') = splitAt 2 hash'

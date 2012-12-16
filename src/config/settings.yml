@@ -1,12 +1,12 @@
 Default: &defaults
   host: "*4" # any IPv4 host
   port: 3000
-  approot: "http://localhost:3000"
+  approot: "http://127.0.0.1:3000"
   author: "Raphael Javaux"
   authorMail: "raphaeljavaux[at]gmail.com"
   uploadDir: "files"
   maxFileSize: 157286400 # 150 MiB
-  maxRequestSize: 1073741824 # 1 GiB
+  maxRequestSize: 10485760 # 10 MiB
   timeout: 60 # Application timeout in seconds
   #analytics: UA-YOURCODE
 

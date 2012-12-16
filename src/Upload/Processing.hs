@@ -88,8 +88,9 @@ processFile f = do
                 Right fileId ->
                     processImage path ext fileId   .||.
                     processArchive path ext fileId .||.
-                    processMedia path ext fileId   >>
-                    liftIO (app `C.putFile` fileId)
+                    processMedia path ext fileId   .||.
+                    processUnknown app fileId      >>
+                    return ()
                 _ ->
                     return ()
 
@@ -103,6 +104,10 @@ processFile f = do
         retA <- a
         if retA then return True
                 else b
+
+    processUnknown app fileId = do
+        liftIO $ app `C.putFile` fileId
+        return True
 
 -- | Moves the uploaded file to a temporary file with a @upload_@ prefix.
 -- Returns the temporary file name.

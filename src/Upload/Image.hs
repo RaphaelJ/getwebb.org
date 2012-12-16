@@ -8,7 +8,7 @@ module Upload.Image (
 
 import Import
 
-import qualified Control.Exception as C
+import qualified Control.Exception as E
 import Control.Monad
 import qualified Data.Set as S
 import qualified Data.Text as T
@@ -21,6 +21,7 @@ import Graphics.Exif (fromFile, allTags)
 import Graphics.Exif.Internals (tagFromName, tagTitle)
 import System.TimeIt (timeIt)
 
+import qualified Upload.Compression as C
 import Upload.Utils (miniatureFile)
 
 -- | Files extensions which are supported by the DevIL image library.
@@ -44,7 +45,7 @@ processImage path ext fileId = do
         else do
             -- Try to open the file as an image.
             liftIO $ putStrLn "Load original image:"
-            eImg <- liftIO $ timeIt $ C.try (I.load path)
+            eImg <- liftIO $ timeIt $ E.try (I.load path)
 
             case eImg of
                 Right img -> do
@@ -68,8 +69,10 @@ processImage path ext fileId = do
                         forM_ tags $ \(title, value) ->
                             insert $! ExifTag fileId title value
 
+                    app <- getYesod
+                    liftIO $ app `C.putFile` fileId
                     return True
-                Left (_ :: C.SomeException) -> return False
+                Left (_ :: E.SomeException) -> return False
 
 -- | Generates a miniature from the input image.
 miniature :: I.RGBImage -> I.RGBImage
@@ -105,15 +108,15 @@ miniature img =
 -- doesn't support EXIF tags.
 exifTags :: FilePath -> IO [(Text, Text)]
 exifTags path = do
-    eTags <- C.try $ do
+    eTags <- E.try $ do
         tags <- fromFile path >>= allTags
         forM tags $ \(!name, !value) -> do
             title <- tagFromName name >>= tagTitle
-            C.evaluate (T.pack title, T.pack value)
+            E.evaluate (T.pack title, T.pack value)
 
     case eTags of
         Right tags -> return tags
-        Left (_ :: C.SomeException) -> return []
+        Left (_ :: E.SomeException) -> return []
 
 int :: Integral a => a -> Int
 int = fromIntegral

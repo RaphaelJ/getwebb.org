@@ -7,7 +7,7 @@ module Upload.Archive (processArchive, extensions)
 
 import Import
 
-import qualified Control.Exception as C
+import qualified Control.Exception as E
 import Control.Monad
 import qualified Data.ByteString.Lazy as B
 import qualified Data.Set as S
@@ -15,6 +15,8 @@ import qualified Data.Text as T
 import Data.Word
 
 import qualified Codec.Archive.Zip as Z
+
+import qualified Upload.Compression as C
 
 -- | Files extensions which are supported by the zip-archive package.
 extensions :: S.Set Text
@@ -26,17 +28,21 @@ processArchive path ext fileId = do
     if not (ext `S.member` extensions)
         then return False
         else do
-            eEntries <- liftIO $! C.try (readArchiveFiles >>= C.evaluate)
+            eEntries <- liftIO $! E.try (readArchiveFiles >>= E.evaluate)
 
             case eEntries of
-                Right entries -> runDB $ do
-                    -- Appends the files of the archive to the database.
-                    forM_ entries $ \e ->
-                        let ePath = T.pack $! Z.eRelativePath e
-                            size = word64 $! Z.eUncompressedSize e
-                        in insert $! ArchiveFile fileId ePath size
+                Right entries -> do
+                    runDB $ do
+                        -- Appends the files of the archive to the database.
+                        forM_ entries $ \e ->
+                            let ePath = T.pack $! Z.eRelativePath e
+                                size = word64 $! Z.eUncompressedSize e
+                            in insert $! ArchiveFile fileId ePath size
+
+                    app <- getYesod
+                    liftIO $ app `C.putFile` fileId
                     return True
-                Left (_ :: C.SomeException) -> return False
+                Left (_ :: E.SomeException) -> return False
   where
     -- Try to read the archive index of a zip file.
     readArchiveFiles =

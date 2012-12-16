@@ -13,7 +13,7 @@ module Upload.Media (
 import Import
 
 import Control.Concurrent (ThreadId, Chan, forkIO, newChan, writeChan, readChan)
-import qualified Control.Exception as C
+import qualified Control.Exception as E
 import Control.Monad
 import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
 import qualified Data.ByteString.Lazy.Char8 as B
@@ -25,13 +25,11 @@ import Data.Word
 import System.Directory
 import System.Exit (ExitCode (..))
 import System.FilePath ((<.>), takeDirectory)
-import System.IO (IOMode (ReadMode), openFile, hClose)
 
-import Control.Monad.Trans.Resource (ResourceT, runResourceT, register)
+import Control.Monad.Trans.Resource (ResourceT, runResourceT)
 import Database.Persist.Store (runPool)
-import Data.Conduit (($=), ($$+-))
-import Data.Conduit.Binary (sourceFile, sinkFile)
-import Data.Conduit.Zlib (gzip)
+import Data.Conduit (($$+-))
+import Data.Conduit.Binary (sinkFile)
 import Network.HTTP.Conduit (http, parseUrl, responseBody)
 import qualified Network.Lastfm as L
 import qualified Network.Lastfm.JSON.Track as L
@@ -45,6 +43,7 @@ import Upload.FFmpeg (
       MediaInfo (..), MediaDuration (..), argsWebM, argsH264, argsWebMAudio
     , argsMP3, encode, getInfo
     )
+import qualified Upload.Compression as C
 import Upload.Image (miniature)
 import Upload.Utils (hashDir, uploadDir, uploadFile, miniatureFile)
 
@@ -100,51 +99,39 @@ mediasDaemon app =
         -- Waits until an FileId has been inserted in the queue.
         fileId <- readChan $ mediasQueue app
 
-        mFileInfo <- runDBIO $ runMaybeT $ do
-            file <- MaybeT $! get fileId
+        mFile <- runDBIO $ get fileId
 
-            -- Opens the file inside the transaction to ensure data consistence.
-            let hash = T.unpack $ fileSha1 file
-                path = uploadFile (hashDir (uploadDir app) hash)
-
-            handle <- liftIO $ openFile path ReadMode
-
-            case fileCompressed file of
-                Just _ -> liftMaybe $!
-                    Just (file, handle, path, sourceFile path $= gzip)
-                _      -> liftMaybe $!
-                    Just (file, handle, path, sourceFile path)
-
-        when (isJust mFileInfo) $ runResourceT $ do
+        when (isJust mFile) $ runResourceT $ do
             -- Process the file if it still exists.
-            let (file, handle, path, source) = fromJust mFileInfo
-            _ <- register $ hClose handle
+            let file = fromJust mFile
+                hash = T.unpack $ fileSha1 file
+                path = uploadFile (hashDir (uploadDir app) hash)
 
             case fileType file of
                 Audio -> do
-                    _ <- encodeFile argsWebMAudio source (path <.> "webm")
-                    _ <- encodeFile argsMP3 source (path <.> "mp3")
+                    _ <- encodeFile argsWebMAudio path "webm"
+                    _ <- encodeFile argsMP3 path "mp3"
                     return ()
                 Video -> do
-                    _ <- encodeFile argsWebM source (path <.> "webm")
-                    _ <- encodeFile argsH264 source (path <.> "mkv")
+                    _ <- encodeFile argsWebM path "webm"
+                    _ <- encodeFile argsH264 path "mkv"
                     return ()
                 _     ->
                     error "Invalid file type."
+
+            liftIO $ app `C.putFile` fileId
   where
     runDBIO :: YesodPersistBackend App (ResourceT IO) a -> IO a
     runDBIO f = runResourceT $ runPool (persistConfig app) f (connPool app)
 
-    encodeFile args source outPath = do
-        code <- liftIO $ encode args source (sinkFile outPath)
+    encodeFile args path ext = do
+        let outPath = path <.> ext
+        code <- liftIO $ encode args path (sinkFile outPath)
 
         -- Removes the ouput file if the encoding failed.
         case code of
             ExitFailure _ -> liftIO $ removeFile outPath
             _ -> return ()
-
-    liftMaybe :: Monad m => Maybe a -> MaybeT m a
-    liftMaybe = MaybeT . return
 
 -- | Forks the medias encoding daemon on a new thread and returns its
 -- 'ThreadId'.
@@ -157,7 +144,7 @@ processMedia path ext fileId = do
     if not (ext `S.member` extensions)
         then return False
         else do
-            mInfo <- liftIO $ getInfo (sourceFile path)
+            mInfo <- liftIO $ getInfo path
             liftIO $ print mInfo
 
             case mInfo of
@@ -255,12 +242,12 @@ processMedia path ext fileId = do
                     responseBody imgResponse $$+- sinkFile miniaturePath
 
                 -- Generates the cover image miniature.
-                eImg <- liftIO $ C.try (I.load miniaturePath)
+                eImg <- liftIO $ E.try (I.load miniaturePath)
                 case eImg of
                     Right img -> do
                         liftIO $ I.save (miniature img) miniaturePath
                         return $! Just (url, True)
-                    Left (_ :: C.SomeException) -> do
+                    Left (_ :: E.SomeException) -> do
                         liftIO $ removeFile miniaturePath
                         return $! Just (url, False)
 

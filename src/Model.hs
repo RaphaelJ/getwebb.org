@@ -54,6 +54,7 @@ ImageAttrs
     fileId FileId
     width  Word32
     height Word32
+    inBrowser Bool -- True if the image can be displayed in a browser.
     UniqueImageAttrs fileId
     deriving Show
 

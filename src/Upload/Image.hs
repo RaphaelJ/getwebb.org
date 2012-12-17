@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 -- | Recognises images and create miniature to them.
 module Upload.Image (
-      extensions, miniatureSize, processImage, miniature, exifTags
+      extensions, displayable, miniatureSize, processImage, miniature, exifTags
     ) where
 
 import Import
@@ -13,7 +13,7 @@ import Control.Monad
 import qualified Data.Set as S
 import qualified Data.Text as T
 import Data.Word
-import System.FilePath
+import System.FilePath ((<.>), takeDirectory)
 
 import qualified Vision.Image as I
 import qualified Vision.Primitive as I
@@ -33,6 +33,10 @@ extensions = S.fromDistinctAscList [
     , ".tga", ".tif", ".tiff"
     ]
 
+-- | Files extensions which can be displayed in a browser.
+displayable :: S.Set Text
+displayable = S.fromDistinctAscList [".gif", ".jpeg", ".jpg", ".png"]
+
 -- | The size of miniatures in pixels (both in width and height).
 miniatureSize :: Int
 miniatureSize = 200
@@ -50,21 +54,34 @@ processImage path ext fileId = do
             case eImg of
                 Right img -> do
                     -- Creates the miniature and save it as "miniature.png".
-                    -- Update the database row so the file type is Image and
-                    -- adds possible EXIF tags.
                     let I.Size w h = I.getSize img
                     liftIO $! putStrLn "Miniature: "
                     liftIO $! timeIt $ do
                         let miniImg = miniature img
                         I.save miniImg (miniatureFile (takeDirectory path))
 
+                    -- If the image isn't displayable in a browser, creates
+                    -- an additional .PNG.
+                    inBrowser <- if ext `S.member` displayable
+                        then return True
+                        else do
+                            liftIO $ I.save i ("path" <.> ".png")
+                            return False
+
+                    -- Update the database row so the file type is Image and
+                    -- adds possible EXIF tags.
                     liftIO $! putStrLn "Tags: "
                     tags <- liftIO $ timeIt $ exifTags path
 
                     runDB $ do
                         update fileId [FileType =. Image]
 
-                        _ <- insert $! ImageAttrs fileId (word32 w) (word32 h)
+                        _ <- insert $ ImageAttrs {
+                              imageAttrsFileId = fileId
+                            , imageAttrsWidth = word32 w
+                            , imageAttrsHeight = word32 h
+                            , imageAttrsInBrowser = inBrowser
+                            }
 
                         forM_ tags $ \(title, value) ->
                             insert $! ExifTag fileId title value

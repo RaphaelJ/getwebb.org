@@ -7,7 +7,7 @@ import Import
 import Control.Monad.Writer
 import Data.Map (elems)
 
-import Upload.Processing (process)
+import Upload.Processing (processFile)
 
 data Options = Options {
       optEmail :: Maybe Text
@@ -21,8 +21,8 @@ postUploadR = do
     ((res, _), _) <- runFormPostNoToken uploadForm'
 
     case res of
-        FormSuccess (file, Options email) -> do
-            processFIle file
+        FormSuccess (files@(file:_), Options email) -> do
+            processFile file
             jsonToRepJson $! object [ (fileName f, fileContentType f) | f <- files ]
         FormFailure ms -> jsonToRepJson $ object [("errors", array ms)]
         FormMissing -> undefined

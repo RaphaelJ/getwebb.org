@@ -1,4 +1,5 @@
-module Upload.Processing (process, processFile)
+-- | This module handles the processing of an uploaded file.
+module Upload.Processing (processFile, moveToTmp, hashFile, moveToUpload)
     where
 
 import Import
@@ -21,19 +22,10 @@ import Upload.Utils (getFileSize, hashDir, uploadDir, uploadFile, newTmpFile)
 
 import System.TimeIt (timeIt)
 
--- | Process a upload using a list of files. Returns the ID of the new upload
--- row in the database.
-process :: [FileInfo] -> Handler ()
-process fs = do
-    adminKey <- getAdminKey
-    liftIO $ print adminKey
-
-    forM_ fs processFile
-
 -- | Process a file and returns its new ID from the database.
 -- Returns either the uploaded file ID in the DB or an error message to be
 -- returned to the user.
-processFile :: FileInfo -> Handler (Either Text UploadFileId)
+processFile :: FileInfo -> Handler (Either Text UploadId)
 processFile f = do
     app <- getYesod
     extras <- getExtra
@@ -53,9 +45,9 @@ processFile f = do
 
             currentTime <- liftIO getCurrentTime
             let file = File {
-                  fileSha1 = hashText, fileExtension = ext
-                , fileType = UnknownType, fileSize = size
-                , fileCompressed = Nothing, fileDate = currentTime
+                  fileSha1 = hashText, fileType = UnknownType
+                , fileSize = size, fileCompressed = Nothing
+                , fileDate = currentTime
                 }
 
             let path = uploadFile (hashDir (uploadDir app) hash)

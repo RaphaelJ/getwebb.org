@@ -21,15 +21,8 @@ LastAdminKey
     value AdminKey
     deriving Show
 
-Upload
-    adminKey AdminKey
-    date UTCTime
-    ip Text
-    deriving Show
-
 File
     sha1 Text
-    extension Text
     type FileType
     size Word64
     compressed Word64 Maybe -- The compressed size if the file is compressed.
@@ -38,12 +31,14 @@ File
     UniqueSHA1 sha1
     deriving Show
 
-UploadFile
-    uploadId UploadId
+Upload
     fileId FileId
     name Text
     views Int64 default=0
+    date UTCTime
+    ip Text
     lastView UTCTime
+    adminKey AdminKey
     deriving Show
 
 -- Saves EXIF tags from an image.
@@ -51,23 +46,31 @@ ExifTag
     fileId FileId
     title Text
     value Text
+    UniqueExifTagTitle fileId title
+    deriving Show
 
 -- Saves the attributes of an image.
 ImageAttrs
     fileId FileId
     width  Word32
     height Word32
+    UniqueImageAttrs fileId
+    deriving Show
 
 -- Saves the contained files of an archive.
 ArchiveFile
     fileId FileId
     path Text
     size Word64 -- Uncompressed size
+    UniqueArchiveFile fileId path
+    deriving Show
 
 -- Saves the attributes of a media.
 MediaAttrs
     fileId FileId
     duration Word64 -- Duration in centisecond
+    UniqueMediaAttrs fileId
+    deriving Show
 
 -- Saves the attributes of an MP3 track.
 AudioAttrs
@@ -81,4 +84,6 @@ AudioAttrs
     year Int Maybe
     lastFmUrl Text Maybe
     miniature Bool
+    UniqueAudioAttrs fileId
+    deriving Show
 |]

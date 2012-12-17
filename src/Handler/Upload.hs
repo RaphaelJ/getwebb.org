@@ -21,8 +21,8 @@ postUploadR = do
     ((res, _), _) <- runFormPostNoToken uploadForm'
 
     case res of
-        FormSuccess (files, Options email) -> do
-            process files
+        FormSuccess (file, Options email) -> do
+            processFIle file
             jsonToRepJson $! object [ (fileName f, fileContentType f) | f <- files ]
         FormFailure ms -> jsonToRepJson $ object [("errors", array ms)]
         FormMissing -> undefined

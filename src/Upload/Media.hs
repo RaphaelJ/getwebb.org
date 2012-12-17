@@ -16,8 +16,6 @@ import Control.Concurrent (ThreadId, Chan, forkIO, newChan, writeChan, readChan)
 import qualified Control.Exception as E
 import Control.Monad
 import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
-import qualified Data.ByteString.Lazy.Char8 as B
-import Data.List (find)
 import Data.Maybe
 import qualified Data.Set as S
 import qualified Data.Text as T
@@ -29,14 +27,16 @@ import System.IO (hClose)
 
 import Control.Monad.Trans.Resource (ResourceT, runResourceT, register)
 import Database.Persist.Store (runPool)
+import qualified Data.Aeson as J
 import Data.Conduit (($$+-))
 import Data.Conduit.Binary (sinkFile, sinkHandle)
+import qualified Data.HashMap.Strict as H
+import qualified Data.Vector as V
 import Network.HTTP.Conduit (http, parseUrl, responseBody)
 import qualified Network.Lastfm as L
 import qualified Network.Lastfm.JSON.Track as L
 import qualified Sound.TagLib as ID3
 import System.Posix.Files (createSymbolicLink, removeLink)
-import qualified Text.JSON as J
 import qualified Vision.Image as I
 
 import Upload.Utils (newTmpFile)
@@ -200,7 +200,7 @@ processMedia path ext fileId = do
             mTitle   <- liftIO $ maybeStrTag <$> ID3.title tag
             mTrack   <- liftIO $ maybeIntTag <$> ID3.track tag
             mYear    <- liftIO $ maybeIntTag <$> ID3.year tag
-            
+
             liftIO $ print [mAlbum, mArtist, mComment, mGenre, mTitle]
             liftIO $ print [mTrack, mYear]
 
@@ -252,7 +252,7 @@ processMedia path ext fileId = do
                 -- Download the cover image in a temporary file
                 (tmp, hTmp) <- liftIO $ newTmpFile app "cover_"
                 liftIO $ putStrLn "Lastfm:"
-                request <- liftIO $ parseUrl coverUrl
+                request <- liftIO $ parseUrl $ T.unpack coverUrl
                 liftIO $ timeIt $ runResourceT $ do
                     _ <- register $ hClose hTmp
                     imgResponse <- http request (httpManager app)
@@ -272,41 +272,39 @@ processMedia path ext fileId = do
     -- Parses the last.fm JSON response and return the possible URL and the
     -- possible URL to the track's cover art.
     parseLastfmResponse :: Either L.LastfmError L.Response
-                        -> Maybe (Text, Maybe String)
+                        -> Maybe (Text, Maybe Text)
     parseLastfmResponse (Left _)   = Nothing
     parseLastfmResponse (Right bs) = do
-        let decoded = J.decodeStrict $ B.unpack bs
-        case decoded of
-            J.Ok obj  -> do
-                -- Runs the parsing of the JSON object in the Maybe monad.
-                J.JSObject track <- "track" `lookup` J.fromJSObject obj
-                J.JSString url <- "url" `lookup` J.fromJSObject track
+        -- Runs the parsing of the JSON object in the Maybe monad.
+        J.Object obj <- J.decode' bs
 
-                let mCoverUrl = do
-                    J.JSObject album <- "album" `lookup` J.fromJSObject track
-                    J.JSArray imgs <- "image" `lookup` J.fromJSObject album
+        J.Object track <- "track" `H.lookup` obj
+        J.String url <- "url" `H.lookup` track
 
-                    -- Takes the largest image.
-                    msum [
-                          imgs `imgExtract` "extralarge"
-                        , imgs `imgExtract` "large", imgs `imgExtract` "medium"
-                        , imgs `imgExtract` "small"
-                        ]
+        let mCoverUrl = do
+            J.Object album <- "album" `H.lookup` track
+            J.Array imgs <- "image" `H.lookup` album
 
-                Just (T.pack $ J.fromJSString url, mCoverUrl)
-            J.Error _ -> Nothing
+            -- Takes the largest image.
+            msum [
+                  imgs `imgExtract` "extralarge"
+                , imgs `imgExtract` "large", imgs `imgExtract` "medium"
+                , imgs `imgExtract` "small"
+                ]
+
+        Just (url, mCoverUrl)
 
     -- Returns the image url from the given size if it exists, 'Nothing' 
     -- otherwise.
-    imgExtract :: [J.JSValue] -> String -> Maybe String
+    imgExtract :: J.Array -> Text -> Maybe Text
     imgs `imgExtract` size =
-        let size' = J.showJSON size
-            cond ~(J.JSObject img) =
-                size' == fromJust ("size" `lookup` J.fromJSObject img)
+        let size' = Just $ J.String size
+            cond ~(J.Object img) =
+                size' == "size" `H.lookup` img
         in do
-            J.JSObject img <- find cond imgs
-            J.JSString jstr <- "#text" `lookup` J.fromJSObject img
-            return $ J.fromJSString jstr
+            J.Object img <- V.find cond imgs
+            J.String imgUrl <- "#text" `H.lookup` img
+            return imgUrl
 
     miniaturePath = miniatureFile (takeDirectory path)
 

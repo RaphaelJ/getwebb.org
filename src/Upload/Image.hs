@@ -55,8 +55,8 @@ processImage path ext fileId = do
                 Right img -> do
                     -- Creates the miniature and save it as "miniature.png".
                     let I.Size w h = I.getSize img
-                    liftIO $! putStrLn "Miniature: "
-                    liftIO $! timeIt $ do
+                    liftIO $ putStrLn "Miniature: "
+                    liftIO $ timeIt $ do
                         let miniImg = miniature img
                         I.save miniImg (miniatureFile (takeDirectory path))
 
@@ -65,12 +65,13 @@ processImage path ext fileId = do
                     inBrowser <- if ext `S.member` displayable
                         then return True
                         else do
-                            liftIO $ I.save img ("path" <.> ".png")
+                            print "Displayable: "
+                            liftIO $ timeit $ I.save img ("path" <.> ".png")
                             return False
 
                     -- Update the database row so the file type is Image and
                     -- adds possible EXIF tags.
-                    liftIO $! putStrLn "Tags: "
+                    liftIO $ putStrLn "Tags: "
                     tags <- liftIO $ timeIt $ exifTags path
 
                     runDB $ do

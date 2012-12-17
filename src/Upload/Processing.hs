@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | This module handles the processing of an uploaded file.
 module Upload.Processing (
       process, processFile, moveToTmp, hashFile, moveToUpload
@@ -13,7 +14,7 @@ import System.IO
 import qualified Data.ByteString.Lazy as LB
 import Data.Digest.Pure.SHA (sha1, showDigest)
 import qualified Data.Text as T
-import Data.Time.Clock (getCurrentTime)
+import Data.Time.Clock (UTCTime (..), getCurrentTime, addUTCTime)
 
 import Upload.Archive (processArchive)
 import Upload.Image (processImage)
@@ -35,6 +36,12 @@ processFile :: FileInfo -> Handler (Either Text UploadId)
 processFile f = do
     app <- getYesod
     extras <- getExtra
+    clientIp <- (T.pack . show . remoteHost) <$> waiRequest
+    currentTime <- liftIO getCurrentTime
+
+    -- Checks the user limits to fail as soon as possible.
+    let yesterday = (-3600 * 24) `addUTCTime` currentTime
+    runDB $ checksIpLimits extras clientIp yesterday
 
     tmpPath <- moveToTmp f
     size <- liftIO $ getFileSize tmpPath
@@ -49,11 +56,10 @@ processFile f = do
             let hashText = T.pack hash
                 ext = T.pack $ takeExtension $ T.unpack $ fileName f
 
-            currentTime <- liftIO getCurrentTime
             let file = File {
                   fileSha1 = hashText, fileType = UnknownType
                 , fileSize = size, fileCompressed = Nothing
-                , fileDate = currentTime
+                , fileUpload = currentTime
                 }
 
             let path = uploadFile (hashDir (uploadDir app) hash)
@@ -83,18 +89,31 @@ processFile f = do
             -- Process the special feature depending on the file type if it's a
             -- new file and puts it on the compressing queue afterward.
             case eithFileId of
-                Right fileId ->
-                    processImage path ext fileId   .||.
-                    processArchive path ext fileId .||.
-                    processMedia path ext fileId   .||.
-                    processUnknown app fileId      >>
-                    return ()
+                Right fileId -> do
+                    _ <- processImage path ext fileId   .||.
+                         processArchive path ext fileId .||.
+                         processMedia path ext fileId   .||.
+                         processUnknown app fileId
+                    
                 _ ->
                     return ()
 
-            return $! Left "Error"
+            return $! Right 
   where
-    -- | Runs the first action, runs the second if the first returned 'False'.
+    -- Checks if the client hasn't reach the upload limits since minDate.
+    -- Returns True if the client is allowed to upload one more file.
+    checksIpLimits clientIp extras minDate currentSize =
+        (n, size) <- rawSql "SELECT COUNT(*), SUM(f.size)            \
+                            \FROM Upload AS u                        \
+                            \INNER JOIN File AS f ON f.id = u.fileId \
+                            \WHERE u.ip = ? and date >= ?;"
+                            [PersistText clientIp, PersistUTCTime minDate]
+
+        let maxN = extraMaxDailyUploads extras
+            maxSize = extraMaxDailySize extras
+        return $ maxN > n && maxSize > size + currentSize
+
+    -- Runs the first action, runs the second if the first returned 'False'.
     -- Returns a || b.
     (.||.) :: Monad m => m Bool -> m Bool -> m Bool
     infixr 2 .||.

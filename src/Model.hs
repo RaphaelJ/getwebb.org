@@ -26,7 +26,7 @@ File
     type FileType
     size Word64
     compressed Word64 Maybe -- The compressed size if the file is compressed.
-    date UTCTime
+    upload UTCTime
     -- Each file is identified by its hash:
     UniqueSHA1 sha1
     deriving Show
@@ -35,9 +35,9 @@ Upload
     fileId FileId
     name Text
     views Int64 default=0
-    date UTCTime
+    upload ZonedTime
     ip Text
-    lastView UTCTime
+    lastView ZonedTime
     adminKey AdminKey
     deriving Show
 
@@ -46,7 +46,6 @@ ExifTag
     fileId FileId
     title Text
     value Text
-    UniqueExifTagTitle fileId title
     deriving Show
 
 -- Saves the attributes of an image.

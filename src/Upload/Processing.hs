@@ -1,6 +1,7 @@
 -- | This module handles the processing of an uploaded file.
-module Upload.Processing (processFile, moveToTmp, hashFile, moveToUpload)
-    where
+module Upload.Processing (
+      process, processFile, moveToTmp, hashFile, moveToUpload
+    ) where
 
 import Import
 
@@ -21,6 +22,11 @@ import qualified Upload.Compression as C
 import Upload.Utils (getFileSize, hashDir, uploadDir, uploadFile, newTmpFile)
 
 import System.TimeIt (timeIt)
+
+-- | Process a list of files and return the list of the resulting database id
+-- or the triggered error for each file.
+process :: [FileInfo] -> Handler [Either Text UploadId]
+process fs = forM fs processFile
 
 -- | Process a file and returns its new ID from the database.
 -- Returns either the uploaded file ID in the DB or an error message to be

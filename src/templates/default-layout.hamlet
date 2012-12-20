@@ -21,7 +21,8 @@ $doctype 5
         ^{pageBody pc}
 
     <footer>
-        Icons by P.J. Onori, O. Frolov, J. Wieser, M. Zlatar &amp; A. Whitcroft
+        Icons by P.J. Onori, O. Frolov, J. Wieser, M. Zlatar, A. Ramadan &amp;
+        A. Whitcroft
         &nbsp;-&nbsp;
         <a href="@{HomeR}">
             API

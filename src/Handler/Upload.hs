@@ -90,9 +90,9 @@ uploadForm prefix extra = do
 
     return (res, (filesWidget, optWidget))
 
--- | Same as 'uploadForm' but with upload_ as a predefined prefix.
+-- | Same as 'uploadForm' but without a prefix.
 uploadForm' :: Html
             -> MForm App App (
                     FormResult ([FileInfo], Options), (Widget, Widget)
                )
-uploadForm' = uploadForm "upload_"
+uploadForm' = uploadForm ""

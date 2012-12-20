@@ -1,6 +1,6 @@
 <div #home_screen>
-    <div #upload_progress style="display: none">
-        <div #upload_progress_complete .complete>
+    <div #upload_global_progress style="display: none">
+        <div #upload_global_progress_complete .complete>
 
     <div #upload_box>
         <div #upload_error style="display: none">
@@ -26,17 +26,14 @@
             <div #options style="display: none">
                 ^{widgetOpt}
 
-        <div #uploads_progress style="display: none">
-            <h2 #upload_status>Connecting ...
+        <div #upload_progress style="display: none">
+            <h2 #upload_status>
 
             <div #upload_speed>
 
             <div .clear_float>
 
-            <div .upload>
-                <h3 .uploaded>wallpaper.png
-                <div .progress>
-                    <div .complete style="width: 100%">
+            <div #uploads>
 <div #page>
     <div align=center>
         <ul>

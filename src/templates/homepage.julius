@@ -11,7 +11,7 @@ $("#options_toggle").click(function ()
 // Hides the upload form, start the upload and shows the uploads progress.
 $("#upload_form").submit(function () 
 {
-    var files = document.getElementById("upload_files").files;
+    var files = document.getElementById("files").files;
     if (files.length < 1) {
         // Checks if at least a file as been selected for upload.
         showError("Please select at least one file to upload.");
@@ -22,7 +22,7 @@ $("#upload_form").submit(function ()
             "(#{show $ PrettyFileSize maxFileSize}) :<br />" + 
             larges.join("<br />") + "."
         );
-    } else if (!document.getElementById("upload_email").checkValidity()) {
+    } else if (!document.getElementById("email").checkValidity()) {
         // Checks if the email field is valid.
         showError("Please enter a valid email.");
     } else {
@@ -32,54 +32,129 @@ $("#upload_form").submit(function ()
         var xhr = new XMLHttpRequest();
         var data = new FormData(document.getElementById("upload_form"));
 
-        $("#upload_progress_complete").width(0);
-        $("#upload_progress").fadeIn();
-        $("#uploads_progress").show("fast");
+        // Copies the info of the file in an array and create a new HTML element
+        // for the status of the upload of this file.
+        var files_info = new Array();
+        var total = 0;
+        for (var file in files) {
+            var info = new Object();
+            info.file = file;
 
-        var oldPercent = 0;
-        var oldBytes = 0;
-        var oldTime = new Date().getTime();
-        updateProgress(0, 0, 0);
+            // Creates the HTML element.
+            info.div = $("<div>", { class: "upload" });
 
-        xhr.upload.addEventListener("progress", function (e) {
-            var percent = parseInt(e.loaded / e.total * 100)
-            if (percent != oldPercent) { // Doesn't update if no change.
-                newTime = new Date().getTime();
-                updateProgress(percent, e.loaded - oldBytes, newTime - oldTime);
-                oldPercent = percent;
-                oldBytes = e.loaded;
-                oldTime = newTime;
+            var file_title = $("<h3>", { class: "uploaded" });
+            file_title.html(file.name);
+            info.div.add(file_title);
+
+            var progress = $("<div>", { class: "progress" });
+            var progress_complete = $("<div>", { class: "complete" });
+            progress.add(progress_complete);
+            info.div.add(progress);
+
+            info.changeStatus = function (status, percent) 
+            {
+                file_title.attr("class", status);
+                progress_complete.width(percent+"%");
             }
-        }, false);
 
-        xhr.addEventListener("load", function (e) {
-            alert(e.target.responseText);
-            restoreUploadForm();
-        }, false);
+            info.changeStatus("waiting", 0);
 
-        xhr.addEventListener("error", function (e) {
-            showError("An error occured during the upload, please try again.");
-            restoreUploadForm();
-        }, false);
+            total += file.size;
+            files_info.push(info);
+        }
 
-        xhr.addEventListener("abort", restoreUploadForm, false);
+        $("#upload_progress").show("fast");
+        $("#upload_global_progress_complete").width(0);
+        $("#upload_global_progress").fadeIn();
 
-        xhr.open("POST", "@{UploadR}");
-        xhr.send(data);
+        uploadFiles(0, total, files_info, new Array(), new Array());
     }
 
     return false;
 });
 
-// Restores the upload form and hide the current uploads status.
+function uploadFiles(loaded, total, files_info, uploaded, errors)
+{
+    var info = files_info.pop();
+
+    var data = new FormData();
+    data.append("email", $("#email").val());
+
+    var old_percent = 0;
+    var old_global_percent = loaded / total * 100;
+    var old_global_bytes = 0;
+    var old_global_time = new Date().getTime();
+
+    updateGlobalProgress(old_global_percent, 0, 0);
+    info.changeStatus("uploading", 0);
+
+    var xhr = new XMLHttpRequest();
+
+    xhr.upload.addEventListener("progress", function (e) {
+        var percent = parseInt(e.loaded / e.total * 100);
+
+        // Doesn't update if no change.
+        if (percent != old_percent) {
+            info.changeStatus("uploading", percent);
+
+            old_percent = percent;
+        }
+
+        var global_bytes = loaded + e.loaded;
+        var global_percent = parseInt(global_bytes / total * 100);
+
+        if (global_percent != old_global_percent) {
+            new_time = new Date().getTime();
+
+            updateGlobalProgress(old_global_percent, 0, 0);
+
+            old_global_bytes = global_bytes;
+            old_time = new_time;
+        }
+    }, false);
+
+    xhr.addEventListener("load", function (e) {
+        res = jQuery.parseJSON(e.target.responseText)[0];
+
+        if (typeof(res) == "string") { // error, skips the file
+            info.changeStatus("error", 100);
+            errors.push({ filename: info.file.name, error: res });
+        } else {
+            alert(res.url);
+            uploaded.push(res.id);
+            continueUpload(
+                loaded + info.file.size, total, files_info, uploaded, errors
+            );
+        }
+
+        restoreUploadForm();
+    }, false);
+
+    xhr.addEventListener("error", function (e) {
+        showError("An error occured during the upload, please try again.");
+        restoreUploadForm();
+    }, false);
+
+    xhr.addEventListener("abort", function (e) {
+        restoreUploadForm();
+    }, false);
+
+    xhr.open("POST", "@{UploadR}");
+    xhr.send(data);
+}
+
+// Restores the upload form and hides the current uploads status.
 function restoreUploadForm()
 {
-    $("#upload_progress").fadeOut();
-    $("#uploads_progress").hide("fast");
+    $("#upload_progress").hide("fast");
     $("#upload_form").show("fast");
     document.title = originalTitle;
-    $("#upload_status").html("Connecting ...");
-    $("#upload_speed").html();
+
+    $("#upload_global_progress").fadeOut();
+    $("#upload_status").html("");
+    $("#upload_speed").html("");
+    $("#uploads").html("");
 }
 
 // Returns the list of the files which are to large to be uploaded.
@@ -106,18 +181,21 @@ function showError(message)
 // Update the different elements of the interface with the status of the upload,
 // given the percent of the upload, and the number of bytes transmitted during
 // the elapsed time.
-function updateProgress(percent, bytes, elapsed)
+function updateGlobalProgress(percent, bytes, elapsed)
 {
     if (percent < 100) {
         $("#upload_status").html("Uploading ...");
 
         var strPercent = percent + "%"
-        $("#upload_progress_complete").width(strPercent);
+        $("#upload_global_progress").width(strPercent);
         document.title = strPercent + " | " + originalTitle;
 
         // Computes the speed in bytes per second
-        var speed = bytes * 1000 / elapsed;
-        $("#upload_speed").html(prettySpeed(speed));
+        if (elapsed > 0) {
+            var speed = bytes * 1000 / elapsed;
+            $("#upload_speed").html(prettySpeed(speed));
+        } else
+            $("#upload_speed").html("");
     } else {
         $("#upload_status").html("Waiting on server response ...");
         document.title = "Waiting ... | " + originalTitle;
@@ -135,8 +213,7 @@ function prettySpeed(bytesPerSecond)
     var pow4 = pow3 * 1024;
 
     // Rounnd the speed two number after the comma.
-    function roundSpeed(speed)
-    {
+    function roundSpeed(speed){
         return Math.round(speed * 100) / 100;
     }
 

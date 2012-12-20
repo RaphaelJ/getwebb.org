@@ -140,6 +140,12 @@
                         '@{StaticR img_homepage_uploaded_png}'
                     );
                 }
+
+                h3.uploaded {
+                    background-image: url(
+                        '@{StaticR img_homepage_error_png}'
+                    );
+                }
             }
         }
     }

@@ -6,8 +6,9 @@ import Import
 
 import Control.Monad.Writer
 import Data.Map (elems)
+import qualified Data.Text as T
 
-import Upload.Processing (process, processFile)
+import Upload.Processing (process)
 
 data Options = Options {
       optEmail :: Maybe Text
@@ -15,17 +16,28 @@ data Options = Options {
     deriving (Show, Read)
 
 -- | Uploads files to the server. Returns a Json object which contains the
--- id of the upload or the error.
+-- id and the link of the upload or the errors.
 postUploadR :: Handler RepJson
 postUploadR = do
+    urlRender <- getUrlRender
     ((res, _), _) <- runFormPostNoToken uploadForm'
 
     case res of
         FormSuccess (files, Options email) -> do
-            processFile files
-            jsonToRepJson $! object [ (fileName f, fileContentType f) | f <- files ]
-        FormFailure ms -> jsonToRepJson $ object [("errors", array ms)]
+            uploads <- process files
+            jsonToRepJson $! array $ map (uploadJson urlRender) uploads
+        FormFailure errs -> 
+            jsonToRepJson $ object [("invalid request", array errs)]
         FormMissing -> undefined
+  where
+    -- Constructs a json object if uploaded successfully or the error.
+    uploadJson _         (Left err) = String $ T.pack $ show err
+    uploadJson urlRender (Right (Upload hmac _ name _ _ _ _ _)) =
+        object [
+              "id"   .= hmac
+            , "name" .= name
+            , "url"  .= urlRender (ViewR hmac)
+            ]
 
 -- | Creates a form for the upload and its options.
 uploadForm :: Text -- ^ The prefix which will precede each field name and id.

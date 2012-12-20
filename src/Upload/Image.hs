@@ -65,8 +65,8 @@ processImage path ext fileId = do
                     inBrowser <- if ext `S.member` displayable
                         then return True
                         else do
-                            print "Displayable: "
-                            liftIO $ timeit $ I.save img ("path" <.> ".png")
+                            liftIO $ putStrLn "Displayable: "
+                            liftIO $ timeIt $ I.save img (path <.> ".png")
                             return False
 
                     -- Update the database row so the file type is Image and

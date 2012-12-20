@@ -3,4 +3,5 @@
 /robots.txt     RobotsR GET
 
 /               HomeR   GET
-/upload         UploadR POST
+/u              UploadR POST
+/v/#Text        ViewR   GET

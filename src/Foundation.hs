@@ -3,7 +3,8 @@ module Foundation where
 
 import Prelude
 import Control.Concurrent.Chan (Chan)
-import Data.Text (pack, unpack)
+import qualified Data.ByteString.Lazy as B
+import Data.Text (Text, pack, unpack)
 import Yesod
 import Yesod.Static
 import Yesod.Default.Config
@@ -16,7 +17,7 @@ import Database.Persist.GenericSql
 import Settings (widgetFile, Extra (..))
 import Text.Jasmine (minifym)
 import Text.Hamlet (hamletFile)
-import Web.ClientSession (getKey)
+import qualified Web.ClientSession as S
 
 import Model
 
@@ -30,6 +31,7 @@ data App = App {
     , connPool :: Database.Persist.Store.PersistConfigPool Settings.PersistConfig -- ^ Database connection pool.
     , httpManager :: Manager
     , persistConfig :: Settings.PersistConfig
+    , encryptKey :: B.ByteString
     , compressionQueue :: Chan FileId
     , mediasQueue :: Chan FileId
     }
@@ -60,6 +62,9 @@ mkYesodData "App" $(parseRoutesFile "config/routes")
 
 type Form x = Html -> MForm App App (FormResult x, Widget)
 
+encryptKeyFile :: FilePath
+encryptKeyFile = "config/client_session_key.aes"
+
 -- Please see the documentation for the Yesod typeclass. There are a number
 -- of settings which can be configured by overriding methods here.
 instance Yesod App where
@@ -68,7 +73,7 @@ instance Yesod App where
     -- Store session data on the client in encrypted cookies,
     -- default session idle timeout is two year.
     makeSessionBackend _ = do
-        key <- getKey "config/client_session_key.aes"
+        key <- S.getKey encryptKeyFile
         return . Just $ clientSessionBackend key (2 * 365 * 24 * 60)
 
     defaultLayout widget = do

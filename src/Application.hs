@@ -10,15 +10,17 @@ import Settings
 import Yesod.Default.Config
 import Yesod.Default.Main
 import Yesod.Default.Handlers
-import Network.Wai.Middleware.RequestLogger (logStdout, logStdoutDev)
-import qualified Database.Persist.Store
 import Database.Persist.GenericSql (runMigration)
+import qualified Database.Persist.Store
+import qualified Data.ByteString.Lazy as B
+import Network.Wai.Middleware.RequestLogger (logStdout, logStdoutDev)
 import Network.HTTP.Conduit (newManager, def)
 
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
 import Handler.Home
 import Handler.Upload
+import Handler.View
 
 import qualified Upload.Compression as C
 import qualified Upload.Media as M
@@ -52,12 +54,13 @@ makeFoundation conf = do
               Database.Persist.Store.applyEnv
     p <- Database.Persist.Store.createPoolConfig (dbconf :: Settings.PersistConfig)
     Database.Persist.Store.runPool dbconf (runMigration migrateAll) p
+    key <- B.readFile encryptKeyFile
 
     -- Initialises the concurrent channels used by utility threads.
     cQueue <- C.newQueue
     mQueue <- M.newQueue
 
-    return $ App conf s p manager dbconf cQueue mQueue
+    return $ App conf s p manager dbconf key cQueue mQueue
 
 -- for yesod devel
 getApplicationDev :: IO (Int, Application)

@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | This module handles the processing of an uploaded file.
 module Upload.Processing (
-      process, processFile, moveToTmp, hashFile, moveToUpload
+      UploadError (..), process, processFile, moveToTmp, hashFile, moveToUpload
+    , computeHmac, toBase62
     ) where
 
 import Import
@@ -11,10 +12,17 @@ import System.Directory
 import System.FilePath
 import System.IO
 
-import qualified Data.ByteString.Lazy as LB
-import Data.Digest.Pure.SHA (sha1, showDigest)
+import Control.Monad.Trans.Either
+import Database.Persist.GenericSql (Single (..), rawSql)
+import Database.Persist.Store (PersistValue (..))
+import Data.Array.Unboxed (UArray, listArray, (!))
+import qualified Data.ByteString.Lazy as B
+import qualified Data.ByteString.Lazy.Char8 as C
+import Data.Digest.Pure.SHA (sha1, hmacSha1, showDigest, integerDigest)
+import Data.Digits (digits)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime (..), getCurrentTime, addUTCTime)
+import Data.Time.Clock (getCurrentTime, addUTCTime)
+import Network.Wai (remoteHost)
 
 import Upload.Archive (processArchive)
 import Upload.Image (processImage)
@@ -24,90 +32,126 @@ import Upload.Utils (getFileSize, hashDir, uploadDir, uploadFile, newTmpFile)
 
 import System.TimeIt (timeIt)
 
+-- | Contains the diferents kinds of error that may occur during the processing
+-- of an upload.
+data UploadError = IPDailyLimitReached | FileTooLarge
+    deriving (Show, Read)
+
 -- | Process a list of files and return the list of the resulting database id
 -- or the triggered error for each file.
-process :: [FileInfo] -> Handler [Either Text UploadId]
-process fs = forM fs processFile
+process :: [FileInfo] -> Handler [Either UploadError Upload]
+process fs = do
+    admiKey <- getAdminKey
+    forM fs (processFile admiKey)
 
 -- | Process a file and returns its new ID from the database.
--- Returns either the uploaded file ID in the DB or an error message to be
--- returned to the user.
-processFile :: FileInfo -> Handler (Either Text UploadId)
-processFile f = do
+-- Returns either the uploaded file or an error message to be returned to the 
+-- user.
+processFile :: AdminKey -> FileInfo 
+            -> Handler (Either UploadError Upload)
+processFile adminKey f = do
     app <- getYesod
     extras <- getExtra
     clientIp <- (T.pack . show . remoteHost) <$> waiRequest
     currentTime <- liftIO getCurrentTime
-
-    -- Checks the user limits to fail as soon as possible.
     let yesterday = (-3600 * 24) `addUTCTime` currentTime
-    runDB $ checksIpLimits extras clientIp yesterday
 
-    tmpPath <- moveToTmp f
-    size <- liftIO $ getFileSize tmpPath
+    runEitherT $ do
+        -- Checks the user limits before moving the file to fail as soon as 
+        -- possible.
+        allowed <- lift $ runDB $ checksIpLimits extras clientIp yesterday 0
+        when (not allowed) $
+            left IPDailyLimitReached
 
-    if size > extraMaxFileSize extras
-        then return $! Left "File too large"
-        else do
-            -- Checks if the file has been already uploaded by computing his
-            -- hash.
-            liftIO $ putStrLn "Hash file:"
-            hash <- liftIO $ timeIt $ hashFile tmpPath
-            let hashText = T.pack hash
-                ext = T.pack $ takeExtension $ T.unpack $ fileName f
+        tmpPath <- lift $ moveToTmp f
+        size <- liftIO $ getFileSize tmpPath
 
-            let file = File {
-                  fileSha1 = hashText, fileType = UnknownType
-                , fileSize = size, fileCompressed = Nothing
-                , fileUpload = currentTime
+        when (size > extraMaxFileSize extras) $ do
+            liftIO $ removeFile tmpPath
+            left FileTooLarge
+
+        -- Checks if the file has been already uploaded by computing its hash.
+        liftIO $ putStrLn "Hash file:"
+        hash <- liftIO $ timeIt $ hashFile tmpPath
+        let hashText = T.pack hash
+            ext = T.pack $ takeExtension $ T.unpack $ fileName f
+
+        let file = File {
+              fileSha1 = hashText, fileType = UnknownType
+            , fileSize = size, fileCompressed = Nothing
+            , fileUploaded = currentTime
+            }
+
+        let path = uploadFile (hashDir (uploadDir app) hash)
+
+        -- Checks if the file exists.
+        -- eithFileId gets a Right value if its a new file which file needs
+        -- to be processed.
+        -- Inserts the file before knowing its type to lock and prevent others 
+        -- uploads to insert the same file during the processing.
+        (upload, new) <- EitherT $ runDB $ runEitherT $ do
+            -- Checks again if the user hasn't reach the upload limit.
+            allowed' <- lift $ checksIpLimits extras clientIp yesterday size
+            when (not allowed') $ do
+                liftIO $ removeFile tmpPath
+                left IPDailyLimitReached
+
+            mFileId <- lift $ insertUnique file
+            (fileId, new) <- case mFileId of
+                Just insertedFileId -> do
+                    -- New file: moves the temporary file to its final
+                    -- destination and adds the information to the database.
+                    liftIO $ moveToUpload tmpPath path
+                    liftIO $ putStrLn $ "New file " ++ path
+                    return $! (insertedFileId, True)
+                Nothing -> do
+                    -- Existing file: remove the temporary file and
+                    -- retrieves the FileId.
+                    liftIO $ removeFile tmpPath
+                    liftIO $ putStrLn "Existing file"
+                    Just existingFile <- lift $ getBy (UniqueSHA1 hashText)
+                    return $! (entityKey existingFile, False)
+
+            let upload = Upload {
+                  uploadHmac = "",  uploadFileId = fileId
+                , uploadName = fileName f, uploadViews = 0
+                , uploadUploaded = currentTime, uploadIp = clientIp
+                , uploadLastView = currentTime, uploadAdminKey = adminKey
                 }
 
-            let path = uploadFile (hashDir (uploadDir app) hash)
+            uploadId <- lift $ insert upload
 
-            -- Checks if the file exists.
-            -- eithFileId gets a Right value if its a new file which file needs
-            -- to be processed.
-            -- Inserts the file before knowing its type to lock others uploads
-            -- to insert the same file during the processing.
-            eithFileId <- runDB $ do
-                mFileId <- insertUnique file
-                case mFileId of
-                    Just inseredFileId -> do
-                        -- New file: moves the temporary file to its final
-                        -- destination and adds the information to the database.
-                        liftIO $ moveToUpload tmpPath path
-                        liftIO $ putStrLn $ "New file " ++ path
-                        return $! Right inseredFileId
-                    Nothing -> do
-                        -- Existing file: remove the temporary file and
-                        -- retrieves the FileId.
-                        liftIO $ removeFile tmpPath
-                        liftIO $ putStrLn "Existing file"
-                        Just existingFile <- getBy (UniqueSHA1 hashText)
-                        return $! Left $ entityKey existingFile
+            -- Computes and update the hmac of the upload.
+            let hmac = computeHmac app uploadId
+            lift $ update uploadId [UploadHmac =. hmac]
 
-            -- Process the special feature depending on the file type if it's a
-            -- new file and puts it on the compressing queue afterward.
-            case eithFileId of
-                Right fileId -> do
-                    _ <- processImage path ext fileId   .||.
-                         processArchive path ext fileId .||.
-                         processMedia path ext fileId   .||.
-                         processUnknown app fileId
-                    
-                _ ->
-                    return ()
+            return (upload { uploadHmac = hmac }, new)
 
-            return $! Right 
+        -- Process the special feature depending on the file type if it's a new
+        -- file and puts it on the compressing queue afterward.
+        let fileId = uploadFileId $ upload
+        when new $
+            lift (processImage path ext fileId)   .||.
+            lift (processArchive path ext fileId) .||.
+            lift (processMedia path ext fileId)   .||.
+            lift (processUnknown app fileId)      >>
+            return ()
+
+        return upload
   where
     -- Checks if the client hasn't reach the upload limits since minDate.
     -- Returns True if the client is allowed to upload one more file.
-    checksIpLimits clientIp extras minDate currentSize =
-        (n, size) <- rawSql "SELECT COUNT(*), SUM(f.size)            \
-                            \FROM Upload AS u                        \
-                            \INNER JOIN File AS f ON f.id = u.fileId \
-                            \WHERE u.ip = ? and date >= ?;"
-                            [PersistText clientIp, PersistUTCTime minDate]
+    checksIpLimits extras clientIp minDate currentSize = do
+        let sql = T.pack $ unlines [
+                  "SELECT COUNT(*), COALESCE(SUM(f.size), 0)"
+                , "FROM Upload AS u"
+                , "INNER JOIN File AS f ON f.id = u.fileId"
+                , "WHERE u.ip = ? and u.uploaded >= ?;"
+                ]
+        [(Single n, Single size)] <- rawSql sql [
+                  PersistText clientIp
+                , PersistUTCTime minDate
+                ]
 
         let maxN = extraMaxDailyUploads extras
             maxSize = extraMaxDailySize extras
@@ -142,7 +186,7 @@ moveToTmp f = do
 -- | Computes the digest of a file.
 hashFile :: FilePath -> IO String
 hashFile path = do
-    c <- LB.readFile path
+    c <- B.readFile path
     return $! showDigest $ sha1 c
 
 -- | Move a file to the given path.
@@ -151,3 +195,19 @@ moveToUpload :: FilePath -> FilePath -> IO ()
 moveToUpload path destPath = do
     createDirectoryIfMissing True (takeDirectory destPath)
     renameFile path destPath
+
+-- | Returns the first height base 62 encoded digits of the upload hmac.
+computeHmac :: App -> UploadId -> Text
+computeHmac app uploadId =
+    let key = encryptKey app
+        PersistInt64 idInt = unKey uploadId
+        hmac = integerDigest $ hmacSha1 key $ C.pack $ show idInt
+    in T.pack $ take 8 $ toBase62 $ hmac
+
+-- | Encodes an integer in base 62 (using letters and numbers).
+toBase62 :: Integer -> String
+toBase62 i =
+    map (digitToChar !) $ digits 62 i
+  where
+    digitToChar :: UArray Integer Char
+    digitToChar = listArray (0, 61) $ ['a'..'z'] ++ ['A'..'Z'] ++ ['0'..'9'] 

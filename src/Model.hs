@@ -26,19 +26,21 @@ File
     type FileType
     size Word64
     compressed Word64 Maybe -- The compressed size if the file is compressed.
-    upload UTCTime
+    uploaded UTCTime
     -- Each file is identified by its hash:
     UniqueSHA1 sha1
     deriving Show
 
 Upload
+    hmac Text -- An unique identifier of the upload generated from its ID.
     fileId FileId
     name Text
     views Int64 default=0
-    upload ZonedTime
+    uploaded UTCTime
     ip Text
-    lastView ZonedTime
+    lastView UTCTime
     adminKey AdminKey
+    UniqueHmac hmac
     deriving Show
 
 -- Saves EXIF tags from an image.

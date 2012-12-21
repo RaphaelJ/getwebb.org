@@ -123,17 +123,21 @@ function uploadFiles(loaded, total, files_info, uploaded, errors)
         } else {
             alert(res.url);
             uploaded.push(res.id);
-            continueUpload(
-                loaded + info.file.size, total, files_info, uploaded, errors
-            );
         }
 
-        restoreUploadForm();
+        continueUpload(
+            loaded + info.file.size, total, files_info, uploaded, errors
+        );
+
     }, false);
 
+    restoreUploadForm();
+
     xhr.addEventListener("error", function (e) {
+                    info.changeStatus("error", 100);
+            errors.push({ filename: info.file.name, error: res });
+        
         showError("An error occured during the upload, please try again.");
-        restoreUploadForm();
     }, false);
 
     xhr.addEventListener("abort", function (e) {
@@ -142,6 +146,38 @@ function uploadFiles(loaded, total, files_info, uploaded, errors)
 
     xhr.open("POST", "@{UploadR}");
     xhr.send(data);
+}
+
+// Starts the next upload if the remaining file to upload is not empty.
+// Redirects to the page of the first upload if there is no more file to upload.
+function continueUpload(loaded, total, files_info, uploaded, errors)
+{
+    if (files_info.length == 0) { // No more upload
+        restoreUploadForm();
+
+        if (uploaded.length > 0) { 
+            // At least one file has been successfully uploaded.
+            // Redirects to the download page.
+            for (var error in errors) {
+                
+            }
+        } else {
+            
+        }
+    } else
+        uploadFiles(loaded, total, files_info, uploaded, error);
+}
+
+// Returns an error message which explains how some files failed to be uploaded.
+function errorsToStr(errors)
+{
+    var str = "The following files failed to be uploaded:\n";
+
+    for (var error in errors) {
+        
+    }
+
+    return str;
 }
 
 // Restores the upload form and hides the current uploads status.

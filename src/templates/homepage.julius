@@ -169,13 +169,12 @@ function continueUpload(loaded, total, files_info, uploaded, errors)
 }
 
 // Returns an error message which explains how some files failed to be uploaded.
-function errorsToStr(errors)
+function errorsToStr(errors, new_page)
 {
-    var str = "The following files failed to be uploaded:\n";
+    var str = "The following files failed to be uploaded :" + new_page;
 
-    for (var error in errors) {
-        
-    }
+    for (var error in errors)
+        str += error.filename + " : " + error.error + new_page;
 
     return str;
 }

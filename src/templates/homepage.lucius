@@ -91,7 +91,7 @@
             }
         }
 
-        #uploads_progress {
+        #upload_progress {
             margin-top: 15px;
 
             h2 {
@@ -141,7 +141,7 @@
                     );
                 }
 
-                h3.uploaded {
+                h3.error {
                     background-image: url(
                         '@{StaticR img_homepage_error_png}'
                     );
@@ -150,14 +150,14 @@
         }
     }
 
-    #upload_progress {
+    #upload_global_progress {
         position: fixed;
         bottom: 0;
         width: 100%;
         height: 5px;
     }
 
-    #upload_progress .complete {
+    #upload_global_progress .complete {
         height: 100%;
         background-color: #6AAB27;
         opacity: 0.8;

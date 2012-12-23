@@ -12,10 +12,8 @@ Testing:
 
 Staging:
   database: getwebb_staging.sqlite3
-  poolsize: 100
   <<: *defaults
 
 Production:
   database: getwebb_production.sqlite3
-  poolsize: 100
   <<: *defaults

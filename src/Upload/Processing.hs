@@ -8,6 +8,7 @@ module Upload.Processing (
 import Import
 
 import Control.Monad
+import Network.Socket (NameInfoFlag (..), getNameInfo)
 import System.Directory
 import System.FilePath
 import System.IO
@@ -52,14 +53,14 @@ processFile :: AdminKey -> FileInfo
 processFile adminKey f = do
     app <- getYesod
     extras <- getExtra
-    clientIp <- (T.pack . show . remoteHost) <$> waiRequest
+    clientHost <- remoteTextHost
     currentTime <- liftIO getCurrentTime
     let yesterday = (-3600 * 24) `addUTCTime` currentTime
 
     runEitherT $ do
         -- Checks the user limits before moving the file to fail as soon as 
         -- possible.
-        allowed <- lift $ runDB $ checksIpLimits extras clientIp yesterday 0
+        allowed <- lift $ runDB $ checksIpLimits extras clientHost yesterday 0
         when (not allowed) $
             left IPDailyLimitReached
 
@@ -91,7 +92,7 @@ processFile adminKey f = do
         -- uploads to insert the same file during the processing.
         (upload, new) <- EitherT $ runDB $ runEitherT $ do
             -- Checks again if the user hasn't reach the upload limit.
-            allowed' <- lift $ checksIpLimits extras clientIp yesterday size
+            allowed' <- lift $ checksIpLimits extras clientHost yesterday size
             when (not allowed') $ do
                 liftIO $ removeFile tmpPath
                 left IPDailyLimitReached
@@ -115,7 +116,7 @@ processFile adminKey f = do
             let upload = Upload {
                   uploadHmac = "",  uploadFileId = fileId
                 , uploadName = fileName f, uploadViews = 0
-                , uploadUploaded = currentTime, uploadIp = clientIp
+                , uploadUploaded = currentTime, uploadHost = clientHost
                 , uploadLastView = currentTime, uploadAdminKey = adminKey
                 }
 
@@ -141,15 +142,15 @@ processFile adminKey f = do
   where
     -- Checks if the client hasn't reach the upload limits since minDate.
     -- Returns True if the client is allowed to upload one more file.
-    checksIpLimits extras clientIp minDate currentSize = do
+    checksIpLimits extras clientHost minDate currentSize = do
         let sql = T.pack $ unlines [
                   "SELECT COUNT(*), COALESCE(SUM(f.size), 0)"
                 , "FROM Upload AS u"
                 , "INNER JOIN File AS f ON f.id = u.fileId"
-                , "WHERE u.ip = ? and u.uploaded >= ?;"
+                , "WHERE u.host = ? and u.uploaded >= ?;"
                 ]
         [(Single n, Single size)] <- rawSql sql [
-                  PersistText clientIp
+                  PersistText clientHost
                 , PersistUTCTime minDate
                 ]
 
@@ -169,6 +170,11 @@ processFile adminKey f = do
     processUnknown app fileId = do
         liftIO $ app `C.putFile` fileId
         return True
+
+    remoteTextHost = do
+        addr <- remoteHost <$> waiRequest
+        (Just host, _) <- liftIO $ getNameInfo [NI_NUMERICHOST] True False addr
+        return $ T.pack $ host
 
 -- | Moves the uploaded file to a temporary file with a @upload_@ prefix.
 -- Returns the temporary file name.

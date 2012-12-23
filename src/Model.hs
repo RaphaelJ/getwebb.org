@@ -37,7 +37,7 @@ Upload
     name Text
     views Int64 default=0
     uploaded UTCTime
-    ip Text
+    host Text
     lastView UTCTime
     adminKey AdminKey
     UniqueHmac hmac

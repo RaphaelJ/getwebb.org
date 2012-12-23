@@ -90,6 +90,7 @@ instance Yesod App where
             $(widgetFile "default-layout-style")
             $(widgetFile "default-layout-header")
             $(widgetFile "default-layout-body")
+            addScriptRemote "http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"
 --             $(widgetFile "default-layout-footer")
         hamletToRepHtml $(hamletFile "templates/default-layout.hamlet")
 

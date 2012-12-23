@@ -41,24 +41,55 @@ $("#upload_form").submit(function ()
             // Creates the HTML element.
             info.div = $("<div>", { class: "upload" });
 
-            var file_title = $("<h3>", { class: "uploaded" });
+            // Displays a thumbnail for images.
+            var preview = $("<div>", { class: "preview" });
+            info.div.append(preview);
+            if (typeof FileReader !== "undefined" && isImage(file.type)) {
+                var preview_img = $("<div>", { class: "img" });
+                preview.append(preview_img);
+                preview_img.append($("<div>", { class: "border" }));
+
+                var preview_img_tag = $("<img>", { alt: file.name });
+                preview_img.append(preview_img_tag);
+
+                var reader = new FileReader();
+                reader.onload = function (img_tag) {
+                    return function (img_e) {
+                        img_tag.attr("src", img_e.target.result);
+                    };
+                }(preview_img_tag);
+                reader.readAsDataURL(file);
+            } else {
+                var preview_text = $("<p>");
+                preview_text.html("No preview");
+                preview.append(preview_text);
+            }
+
+            // Displays the name and the progress of an upload.
+            var file_status = $("<div>", { class: "status" });
+            info.div.append(file_status);
+
+            var file_title = $("<h3>");
             file_title.html(file.name);
-            info.div.append(file_title);
+            file_status.append(file_title);
 
             var progress = $("<div>", { class: "progress" });
             var progress_complete = $("<div>", { class: "complete" });
             progress.append(progress_complete);
-            info.div.append(progress);
+            file_status.append(progress);
 
             info.changeStatus = function (title, complete_div) {
                 return function (status, percent) 
                 {
                     title.attr("class", status);
-                    complete_div.width(percent+"%");
+                    complete_div.animate({
+                        width : percent + "%"
+                    }, "fast");
                 }
             } (file_title, progress_complete);
 
             $("#uploads").append(info.div);
+            $("#uploads").append($("<div>", { class : "clear_float" }));
 
             info.changeStatus("waiting", 0);
 
@@ -76,6 +107,15 @@ $("#upload_form").submit(function ()
     return false;
 });
 
+// Returns true if the mime-type stands for a JPEG, PNG or GIF image.
+function isImage(mime) 
+{
+    var lower = mime.toLowerCase();
+
+    return lower == "image/jpeg" || lower == "image/png" 
+        || lower == "image/gif";
+}
+
 // Uploads the files in files_info one by one.
 function uploadFiles(loaded, total, files_info, uploaded, errors)
 {
@@ -86,8 +126,7 @@ function uploadFiles(loaded, total, files_info, uploaded, errors)
     data.append("file", info.file);
 
     var old_percent = 0;
-    var old_global_percent = Math.round(loaded / total * 100);
-    alert(old_global_percent);
+    var old_global_percent = Math.floor(loaded / total * 100);
     var old_global_bytes = 0;
     var old_global_time = new Date().getTime();
 
@@ -97,7 +136,7 @@ function uploadFiles(loaded, total, files_info, uploaded, errors)
     var xhr = new XMLHttpRequest();
 
     xhr.upload.addEventListener("progress", function (e) {
-        var percent = Math.round(e.loaded / e.total * 100);
+        var percent = Math.floor(e.loaded / e.total * 100);
 
         // Doesn't update if no change.
         if (percent != old_percent) {
@@ -107,7 +146,7 @@ function uploadFiles(loaded, total, files_info, uploaded, errors)
         }
 
         var global_bytes = loaded + e.loaded;
-        var global_percent = Math.round(global_bytes / total * 100);
+        var global_percent = Math.floor(global_bytes / total * 100);
 
         if (global_percent != old_global_percent) {
             new_global_time = new Date().getTime();
@@ -166,7 +205,11 @@ function continueUpload(loaded, total, files_info, uploaded, errors)
             // Redirects to the download page.
             if (errors.length > 0)
                 alert(errorsToStr(errors, "\n"));
-            document.location.href = "@{ViewR ""}" + uploaded.join(",");
+
+            // Yesod generates an - at the end of empty string url. Removes it.
+            viewRoute = "@{ViewR ""}";
+            viewRoute  = viewRoute.substr(0, viewRoute.length - 1);
+            document.location.href = viewRoute + uploaded.join(",");
         } else
             showError(errorsToStr(errors, "<br />"));
     } else
@@ -221,20 +264,22 @@ function showError(message)
 }
 
 // Update the different elements of the interface with the status of the upload,
-// given the percent of the upload, and the number of bytes transmitted during
+// given the status of the upload, and the number of bytes transmitted during
 // the elapsed time.
-function updateGlobalProgress(percent, bytes, elapsed)
+function updateGlobalProgress(percent, step_bytes, step_elapsed)
 {
+    var strPercent = percent.toString() + "%"
+    $("#upload_global_progress_complete").animate({
+        width : strPercent
+    }, "fast");
+
     if (percent < 100) {
         $("#upload_status").html("Uploading ...");
-
-        var strPercent = percent.toString() + "%"
-        $("#upload_global_progress_complete").width(strPercent);
         document.title = strPercent + " | " + originalTitle;
 
         // Computes the speed in bytes per second
-        if (elapsed > 0) {
-            var speed = bytes * 1000 / elapsed;
+        if (step_elapsed > 0) {
+            var speed = step_bytes * 1000 / step_elapsed;
             $("#upload_speed").html(prettySpeed(speed));
         } else
             $("#upload_speed").html("");
@@ -271,4 +316,15 @@ function prettySpeed(bytesPerSecond)
         return roundSpeed(bytesPerSecond / pow2) + " GiB/s";
     else // Boy, this is crazy fast !
         return roundSpeed(bytesPerSecond / pow2) + " TiB/s";
+}
+
+// Add a sprintf-like method to String objects.
+String.prototype.format = function() 
+{
+    var formatted = this;
+    for (var i = 0; i < arguments.length; i++) {
+        var regexp = new RegExp('\\{'+i+'\\}', 'gi');
+        formatted = formatted.replace(regexp, arguments[i]);
+    }
+    return formatted;
 }

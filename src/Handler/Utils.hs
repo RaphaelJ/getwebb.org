@@ -1,9 +1,10 @@
-module Handler.Utils (PrettyFileSize (..))
+module Handler.Utils (PrettyFileSize (..), splitCommas, splitHmacs)
     where
 
 import Import
 
 import Data.Word
+import qualified Data.Text as T
 import Text.Printf (printf)
 
 import Text.Blaze (ToMarkup (..))
@@ -26,3 +27,15 @@ instance Show PrettyFileSize where
 
 instance ToMarkup PrettyFileSize where
     toMarkup = toMarkup . show
+
+-- | Splits a string on commas and removes spaces.
+splitCommas :: String -> [String]
+splitCommas [] = []
+splitCommas xs =
+    let (ys, zs) = break (== ',') xs
+     in ys : splitCommas (dropWhile (== ' ') $ tail zs)
+
+-- | Returns a list of hmacs from a list of url string of hmacs separated by
+-- commas.
+splitHmacs :: Text -> [Text]
+splitHmacs = T.pack . splitCommas . T.unpack

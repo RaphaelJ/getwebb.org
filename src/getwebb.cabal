@@ -29,6 +29,7 @@ library
                      Settings.StaticFiles
                      Settings.Development
                      Handler.Home
+                     Handler.Download
                      Handler.Upload
                      Handler.Utils
                      Handler.View

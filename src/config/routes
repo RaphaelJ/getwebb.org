@@ -1,7 +1,8 @@
-/static         StaticR Static getStatic
+/static         StaticR         Static getStatic
 
-/robots.txt     RobotsR GET
+/robots.txt     RobotsR         GET
 
-/               HomeR   GET
-/u              UploadR POST
-/v/#Text        ViewR   GET
+/               HomeR           GET
+/u              UploadR         POST
+/v/#Text        ViewR           GET
+/d/#Text        DownloadR       GET

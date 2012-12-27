@@ -263,10 +263,10 @@ processMedia path ext fileId = do
                 case eImg of
                     Right img -> do
                         liftIO $ I.save (miniature img) miniaturePath
---                         liftIO $ removeFile tmp
+                        liftIO $ removeFile tmp
                         return $! Just (url, True)
                     Left (_ :: E.SomeException) -> do
---                         liftIO $ removeFile tmp
+                        liftIO $ removeFile tmp
                         return $! Just (url, False)
 
     -- Parses the last.fm JSON response and return the possible URL and the

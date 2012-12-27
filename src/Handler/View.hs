@@ -4,17 +4,12 @@ module Handler.View (getViewR)
 
 import Import
 
-import Handler.Upload (uploadForm')
-import Handler.Utils (PrettyFileSize (..))
+import Handler.Utils (PrettyFileSize (..), splitHmacs)
 
 -- Shows information about a file
 getViewR :: Text -> Handler RepHtml
-getViewR hmac = do
-    ((widgetFiles, widgetOpt), enctype) <- generateFormPost uploadForm'
-
-    extras <- getExtra
-    let maxFileSize = extraMaxFileSize extras
-    let maxRequestSize = extraMaxRequestSize extras
-
+getViewR hmacs = do
     defaultLayout $ do
         setTitle "getwebb | Free file sharing"
+  where
+    hmacs@(hmac:_) = splitHmacs joinedHmacs

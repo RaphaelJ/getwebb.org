@@ -129,9 +129,12 @@ getInfo path = do
                 let duration = toDuration durationMatch
                     audio = out =~ ("Stream #.*: Audio:" :: String)
                     video = out =~ ("Stream #.*: Video:" :: String)
+                    mp3   = out =~ ("Input #0, mp3," :: String)
 
                 case (video, audio) of
-                    (True ,    _) -> Just $ MediaInfo Video duration
+                    (True ,    _) 
+                        | mp3       -> Just $ MediaInfo Audio duration
+                        | otherwise -> Just $ MediaInfo Video duration
                     (False, True) -> Just $ MediaInfo Audio duration
                     _             -> Nothing
         ExitFailure _ ->

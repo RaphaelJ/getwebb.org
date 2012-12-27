@@ -1,8 +1,9 @@
--- | Defines a few utilities function which are used by the modules which
--- process the files upload.
-module Upload.Utils (
-      getFileSize, hashDir, uploadDir, tmpDir, uploadFile,miniatureFile
-    , newTmpFile
+-- | Defines a few utilities to process files during the processing of an
+-- upload.
+module Upload.Path (
+      ObjectType (..)
+    , getFileSize, hashDir, uploadDir, tmpDir, newTmpFile
+    , getPath
     ) where
 
 import Import
@@ -12,6 +13,9 @@ import System.IO
 import System.FilePath
 
 import Yesod.Default.Config
+
+-- | Used to represents the different items which can be downloaded.
+data ObjectType = Original | Miniature | WebM | MKV | MP3 | PNG
 
 -- | Returns the size in bytes of the given file.
 getFileSize :: FilePath -> IO Word64
@@ -34,14 +38,15 @@ uploadDir app = extraUploadDir $ appExtra $ settings app
 tmpDir :: App -> FilePath
 tmpDir app = uploadDir app </> "tmp"
 
--- | Returns the path of the uploaded file of a given directory.
-uploadFile :: FilePath -> FilePath
-uploadFile dir = dir </> "original"
-
--- | Returns the path of the miniature file of a given directory.
-miniatureFile :: FilePath -> FilePath
-miniatureFile dir = dir </> "miniature" <.> "png"
-
 -- | Opens a new temporary file with the given prefix.
 newTmpFile :: App -> String -> IO (FilePath, Handle)
 newTmpFile app prefix = openTempFile (tmpDir app) prefix
+
+-- | Returns the path to the given object in the upload directory.
+getPath :: ObjectType -> FilePath -> FilePath
+getPath Original  dir = dir </> "original"
+getPath Miniature dir = dir </> "miniature" <.> "png"
+getPath WebM      dir = dir </> "original" <.> "webm"
+getPath MKV       dir = dir </> "original" <.> "mkv"
+getPath MP3       dir = dir </> "original" <.> "mp3"
+getPath PNG       dir = dir </> "original" <.> "png"

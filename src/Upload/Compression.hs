@@ -24,7 +24,7 @@ import Data.Conduit (($$), ($=))
 import Data.Conduit.Binary (sourceFile, sinkHandle)
 import Data.Conduit.Zlib (gzip)
 
-import Upload.Utils (hashDir, uploadDir, uploadFile, newTmpFile)
+import Upload.Utils (ObjectType (..), hashDir, uploadDir, newTmpFile, getPath)
 
 import System.TimeIt (timeIt)
 import Text.Printf
@@ -52,7 +52,7 @@ compressionDaemon app =
             -- Process the file if it still exists.
             let file = fromJust mFile
                 hash = T.unpack $! fileSha1 file
-                path = uploadFile (hashDir (uploadDir app) hash)
+                path = getPath Original (hashDir (uploadDir app) hash)
 
             -- Compress the file in a new temporary file.
             (tmpPath, tmpH) <- newTmpFile app "compression_"

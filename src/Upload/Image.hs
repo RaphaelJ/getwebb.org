@@ -54,11 +54,12 @@ processImage path ext fileId = do
             case eImg of
                 Right img -> do
                     -- Creates the miniature and save it as "miniature.png".
-                    let I.Size w h = I.getSize img
+                    let dir = takeDirectory path
+                        I.Size w h = I.getSize img
                     liftIO $ putStrLn "Miniature: "
                     liftIO $ timeIt $ do
                         let miniImg = miniature img
-                        I.save miniImg (miniatureFile (takeDirectory path))
+                        I.save miniImg (miniatureFile dir)
 
                     -- If the image isn't displayable in a browser, creates
                     -- an additional .PNG.
@@ -66,7 +67,7 @@ processImage path ext fileId = do
                         then return True
                         else do
                             liftIO $ putStrLn "Displayable: "
-                            liftIO $ timeIt $ I.save img (path <.> ".png")
+                            liftIO $ timeIt $ I.save img (displayableFile dir)
                             return False
 
                     -- Update the database row so the file type is Image and

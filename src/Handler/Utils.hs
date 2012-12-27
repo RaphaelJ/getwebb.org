@@ -2,6 +2,7 @@ module Handler.Utils (PrettyFileSize (..), splitCommas, splitHmacs)
     where
 
 import Import
+import Prelude (tail)
 
 import Data.Word
 import qualified Data.Text as T
@@ -38,4 +39,4 @@ splitCommas xs =
 -- | Returns a list of hmacs from a list of url string of hmacs separated by
 -- commas.
 splitHmacs :: Text -> [Text]
-splitHmacs = T.pack . splitCommas . T.unpack
+splitHmacs = map T.pack . splitCommas . T.unpack

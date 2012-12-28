@@ -1,15 +1,21 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Handler.Download (getDownloadR)
     where
 
 import Import
 
 import qualified Control.Exception as E
+import Control.Monad
+import qualified Data.ByteString.Char8 as C
+import qualified Data.ByteString.Lazy as B
+import qualified Data.Text as T
 import Data.Maybe
-import System.IO (openFile)
 
 import Blaze.ByteString.Builder.ByteString (fromLazyByteString)
-import Network.Wai (Response (..))
+import Codec.Compression.GZip (decompress)
+import Network.Wai (Response (..), requestHeaders)
 
+import Handler.Utils (splitCommas)
 import Upload.Path (ObjectType (..), hashDir, uploadDir, getPath)
 
 -- Streams the content of a file over HTTP.
@@ -21,7 +27,7 @@ getDownloadR hmac = do
     let Just requestType = mRequestType
 
     app <- getYesod
-    (compressed, handle) <- runDB $ do
+    (compressed, bs) <- runDB $ do
         mFile <- getBy $ UniqueHmac hmac
 
         when (isNothing mFile) $ 
@@ -32,21 +38,21 @@ getDownloadR hmac = do
             compressed = requestType == Original && fileCompressed file
 
         -- Opens the file inside the transaction to ensure data consistency.
-        handler <- lift $ openHandler (getPath dir requestType)
+        bs <- lift $ openFile (getPath dir requestType)
 
-        return (compressed, handler)
+        return (compressed, bs)
 
     if compressed
         then do
-            
-        allowGzip = 
-        else do
-            
-    
-    setHeader "" "gzip" ContentEncoding
-    let content = ContentBuilder (fromLazyByteString bs) (Just size)
-    sendResponse typeOctet content
-
+            allowGzip <- getGzipClientSupport
+            if allowGzip
+                then do
+                    setHeader "Content-Encoding" "gzip"
+                    sendByteString bs
+                else
+                    sendByteString $ decompress bs
+        else
+            sendByteString bs
   where
     parseType Nothing            = Just Original
     parseType (Just "")          = Just Original
@@ -58,29 +64,19 @@ getDownloadR hmac = do
     parseType _                  = Nothing
 
     -- Try to open the file. 404 Not found if doesn't exists.
-    openHandler path = do
-        eHandler <- liftIO $ E.try (openFile path)
-        case eHandler of
-            Right handler -> return handler
-            _             -> notFound
+    openFile path = do
+        eBs <- liftIO $ E.try (B.readFile path)
+        case eBs of
+            Right bs -> return bs
+            _        -> notFound
 
-            
-            gzip set app env = do
-    res <- app env
-    case res of
-        ResponseFile{} | gzipFiles set == GzipIgnore -> return res
-        _ -> if "gzip" `elem` enc && not isMSIE6
-                then
-                    case (res, gzipFiles set) of
-                        (ResponseFile s hs file Nothing, GzipCacheFolder cache) ->
-                            case lookup "content-type" hs of
-                                Just m
-                                    | gzipCheckMime set m -> liftIO $ compressFile s hs file cache
-                                _ -> return res
-                        _ -> return $ compressE set res
-                else return res
-  where
-    enc = fromMaybe [] $ (splitCommas . S8.unpack)
-                    `fmap` lookup "Accept-Encoding" (requestHeaders env)
-    ua = fromMaybe "" $ lookup "user-agent" $ requestHeaders env
-    isMSIE6 = "MSIE 6" `S.isInfixOf` ua
+    getGzipClientSupport = do
+        request <- waiRequest
+        let headers = requestHeaders request
+        case "accept-encoding" `lookup` headers of
+            Just str ->
+                let encodings = splitCommas $ C.unpack encodings
+                in return $ "gzip" `elem` encodings
+            Nothing -> return False
+
+    sendByteString bs = sendResponse (typeOctet, fromLazyByteString bs)

@@ -38,8 +38,8 @@ library
                      Upload.FFmpeg
                      Upload.Image
                      Upload.Media
+                     Upload.Path
                      Upload.Processing
-                     Upload.Utils
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT

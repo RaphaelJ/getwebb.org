@@ -39,7 +39,7 @@ import qualified Sound.TagLib as ID3
 import System.Posix.Files (createSymbolicLink, removeLink)
 import qualified Vision.Image as I
 
-import Upload.Utils (newTmpFile)
+import Upload.Path (newTmpFile)
 
 import Debug.Trace
 import System.TimeIt
@@ -50,7 +50,7 @@ import Upload.FFmpeg (
     )
 import qualified Upload.Compression as C
 import Upload.Image (miniature)
-import Upload.Utils (hashDir, uploadDir, uploadFile, miniatureFile)
+import Upload.Path (ObjectType (..), hashDir, uploadDir, getPath)
 
 type MediasQueue = Chan FileId
 
@@ -110,16 +110,17 @@ mediasDaemon app =
             -- Process the file if it still exists.
             let file = fromJust mFile
                 hash = T.unpack $ fileSha1 file
-                path = uploadFile (hashDir (uploadDir app) hash)
+                dir = hashDir (uploadDir app) hash
+                getPath' = getPath dir
 
             case fileType file of
                 Audio -> do
-                    _ <- encodeFile argsWebMAudio path "webm"
-                    _ <- encodeFile argsMP3 path "mp3"
+                    _ <- encodeFile argsWebMAudio (getPath' "webm")
+                    _ <- encodeFile argsMP3       (getPath' "mp3")
                     return ()
                 Video -> do
-                    _ <- encodeFile argsWebM path "webm"
-                    _ <- encodeFile argsH264 path "mkv"
+                    _ <- encodeFile argsWebM (getPath' "webm")
+                    _ <- encodeFile argsH264 (getPath' "mkv")
                     return ()
                 _     ->
                     error "Invalid file type."
@@ -129,8 +130,7 @@ mediasDaemon app =
     runDBIO :: YesodPersistBackend App (ResourceT IO) a -> IO a
     runDBIO f = runResourceT $ runPool (persistConfig app) f (connPool app)
 
-    encodeFile args path ext = do
-        let outPath = path <.> ext
+    encodeFile args outPath = do
         code <- liftIO $ encode args path (sinkFile outPath)
 
         -- Removes the ouput file if the encoding failed.
@@ -294,7 +294,7 @@ processMedia path ext fileId = do
 
         Just (url, mCoverUrl)
 
-    -- Returns the image url from the given size if it exists, 'Nothing' 
+    -- Returns the url of the image from the given size if it exists, 'Nothing'
     -- otherwise.
     imgExtract :: J.Array -> Text -> Maybe Text
     imgs `imgExtract` size =

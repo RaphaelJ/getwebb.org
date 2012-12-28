@@ -26,10 +26,12 @@ import Data.Time.Clock (getCurrentTime, addUTCTime)
 import Network.Wai (remoteHost)
 
 import Upload.Archive (processArchive)
+import qualified Upload.Compression as C
 import Upload.Image (processImage)
 import Upload.Media (processMedia)
-import qualified Upload.Compression as C
-import Upload.Utils (getFileSize, hashDir, uploadDir, uploadFile, newTmpFile)
+import Upload.Path (
+      ObjectType (..), getFileSize, hashDir, uploadDir, newTmpFile, getPath
+    )
 
 import System.TimeIt (timeIt)
 
@@ -83,7 +85,7 @@ processFile adminKey f = do
             , fileUploaded = currentTime
             }
 
-        let path = uploadFile (hashDir (uploadDir app) hash)
+        let path = getPath (hashDir (uploadDir app) hash) Original
 
         -- Checks if the file exists.
         -- eithFileId gets a Right value if its a new file which file needs

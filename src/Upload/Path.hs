@@ -16,6 +16,7 @@ import Yesod.Default.Config
 
 -- | Used to represents the different items which can be downloaded.
 data ObjectType = Original | Miniature | WebM | MKV | MP3 | PNG
+    deriving (Show, Read, Eq)
 
 -- | Returns the size in bytes of the given file.
 getFileSize :: FilePath -> IO Word64
@@ -43,10 +44,10 @@ newTmpFile :: App -> String -> IO (FilePath, Handle)
 newTmpFile app prefix = openTempFile (tmpDir app) prefix
 
 -- | Returns the path to the given object in the upload directory.
-getPath :: ObjectType -> FilePath -> FilePath
-getPath Original  dir = dir </> "original"
-getPath Miniature dir = dir </> "miniature" <.> "png"
-getPath WebM      dir = dir </> "original" <.> "webm"
-getPath MKV       dir = dir </> "original" <.> "mkv"
-getPath MP3       dir = dir </> "original" <.> "mp3"
-getPath PNG       dir = dir </> "original" <.> "png"
+getPath :: FilePath -> ObjectType -> FilePath
+getPath dir Original  = dir </> "original"
+getPath dir Miniature = dir </> "miniature" <.> "png"
+getPath dir WebM      = dir </> "original" <.> "webm"
+getPath dir MKV       = dir </> "original" <.> "mkv"
+getPath dir MP3       = dir </> "original" <.> "mp3"
+getPath dir PNG       = dir </> "original" <.> "png"

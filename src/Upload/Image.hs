@@ -22,7 +22,7 @@ import Graphics.Exif.Internals (tagFromName, tagTitle)
 import System.TimeIt (timeIt)
 
 import qualified Upload.Compression as C
-import Upload.Utils (miniatureFile)
+import Upload.Path (ObjectType (..), getPath)
 
 -- | Files extensions which are supported by the DevIL image library.
 extensions :: S.Set Text
@@ -59,7 +59,7 @@ processImage path ext fileId = do
                     liftIO $ putStrLn "Miniature: "
                     liftIO $ timeIt $ do
                         let miniImg = miniature img
-                        I.save miniImg (miniatureFile dir)
+                        I.save miniImg (getPath dir Miniature)
 
                     -- If the image isn't displayable in a browser, creates
                     -- an additional .PNG.
@@ -67,7 +67,7 @@ processImage path ext fileId = do
                         then return True
                         else do
                             liftIO $ putStrLn "Displayable: "
-                            liftIO $ timeIt $ I.save img (displayableFile dir)
+                            liftIO $ timeIt $ I.save img (getPath dir PNG)
                             return False
 
                     -- Update the database row so the file type is Image and

@@ -13,7 +13,9 @@ import System.FilePath (takeExtension)
 import Text.Hamlet (shamlet)
 
 import Handler.Download (ObjectType (..), routeType)
-import Handler.Utils (PrettyFileSize (..), wrappedText, splitHmacs, joinHmacs)
+import Handler.Utils (
+      PrettyNumber (..), PrettyFileSize (..), wrappedText, splitHmacs, joinHmacs
+    )
 
 -- | Used to retrieve the attributes about each file type from the database.
 data Extras = ImageExtras ImageAttrs [ExifTag]
@@ -72,7 +74,6 @@ getViewR hmacsJoined = do
 
     defaultLayout $ do
         setTitle [shamlet|#{wrappedName} | getwebb | Free file sharing|]
-        addScriptRemote "http://pagead2.googlesyndication.com/pagead/show_ads.js"
         $(widgetFile "view")
   where
     hmacs = splitHmacs hmacsJoined
@@ -137,3 +138,6 @@ getViewR hmacsJoined = do
     extsVector = S.fromAscList [".ai", ".eps", ".ps", ".svg", ".ttf"]
     extsVideo = S.fromAscList [".3g2", ".3gp", ".asf", ".asx", ".avi", ".flv"
         , ".mov", ".mp4", ".mpg", ".ogv", ".swf", ".vob", ".webm", ".wmv"]
+
+int :: Integral a => a -> Int
+int = fromIntegral

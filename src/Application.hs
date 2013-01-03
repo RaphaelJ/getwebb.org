@@ -12,9 +12,12 @@ import Yesod.Default.Main
 import Yesod.Default.Handlers
 import Database.Persist.GenericSql (runMigration)
 import qualified Database.Persist.Store
-import qualified Data.ByteString.Lazy as B
+import qualified Data.ByteString as S
+import qualified Data.ByteString.Lazy as L
 import Network.Wai.Middleware.RequestLogger (logStdout, logStdoutDev)
 import Network.HTTP.Conduit (newManager, def)
+import System.Directory (doesFileExist)
+import Web.ClientSession (randomKey)
 
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
@@ -59,7 +62,7 @@ makeFoundation conf = do
               Database.Persist.Store.applyEnv
     p <- Database.Persist.Store.createPoolConfig (dbconf :: Settings.PersistConfig)
     Database.Persist.Store.runPool dbconf (runMigration migrateAll) p
-    key <- B.readFile encryptKeyFile
+    key <- getEncryptionKey
 
     -- Initialises the concurrent channels and variables used by utility threads.
     cQueue <- C.newQueue
@@ -67,6 +70,17 @@ makeFoundation conf = do
     vCache <- D.newCache
 
     return $ App conf s p manager dbconf key cQueue mQueue vCache
+
+-- | Try to read the key file or initialize it with a random key.
+getEncryptionKey :: IO L.ByteString
+getEncryptionKey = do
+    exists <- doesFileExist encryptKeyFile
+    if exists
+        then L.readFile encryptKeyFile
+        else do
+            (bs, _) <- randomKey
+            S.writeFile encryptKeyFile bs
+            return $ L.fromStrict bs
 
 -- for yesod devel
 getApplicationDev :: IO (Int, Application)

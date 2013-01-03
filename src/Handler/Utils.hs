@@ -1,14 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Handler.Utils (
-      WrappedText (wtText, wtMaxLength), PrettyFileSize (..)
+      WrappedText (wtText, wtMaxLength), PrettyNumber (..), PrettyFileSize (..)
     , wrappedText, splitHmacs, joinHmacs
     ) where
 
 import Import
 import Prelude (tail)
 
-import Data.Word
+import Data.Char (intToDigit)
 import qualified Data.Text as T
+import Data.Word
 import Text.Printf (printf)
 
 import Text.Blaze (ToMarkup (..))
@@ -35,9 +36,28 @@ instance Show WrappedText where
 instance ToMarkup WrappedText where
     toMarkup = toMarkup . wtTruncated
 
--- | A new type to represents file size which will be displayed in a human
--- readable way. This type is an instance of 'ToMarkup' and so can be used with
--- the 'toHtml' function.
+-- | A new type to represent large numbers with a separator between thousands.
+newtype PrettyNumber = PrettyNumber Int
+
+instance Show PrettyNumber where
+    show (PrettyNumber n) | n < 0     = '-' : str
+                          | n == 0    = "0"
+                          | otherwise = str
+      where
+        str = go (0 :: Int) (abs n) []
+
+        go _   0 acc = acc
+        go len i acc =
+            let (d, m) = i `divMod` 10
+                c = intToDigit m
+            in if len == 3 then go 0         d (c : ',' : acc)
+                           else go (len + 1) d (c : acc)
+
+instance ToMarkup PrettyNumber where
+    toMarkup = toMarkup . show
+
+-- | A new type to represent file size which will be displayed in a human
+-- readable way.
 newtype PrettyFileSize = PrettyFileSize Word64
 
 instance Show PrettyFileSize where

@@ -6,10 +6,10 @@ import Prelude
 import Control.Concurrent (Chan, MVar)
 import qualified Data.ByteString.Lazy as B
 import qualified Data.ByteString.Char8 as S8
-import Data.Int
 import qualified Data.Map as M
 import Data.Text (Text, pack, unpack)
 import Data.Time.Clock (UTCTime)
+import Data.Word
 
 import Yesod
 import Yesod.Static
@@ -42,7 +42,7 @@ data App = App {
     , encryptKey :: B.ByteString
     , compressionQueue :: Chan FileId
     , mediasQueue :: Chan FileId
-    , viewsCache :: MVar (M.Map UploadId (Int64, UTCTime))
+    , viewsCache :: MVar (M.Map UploadId (Word64, UTCTime))
     }
 
 -- Set up i18n messages. See the message folder.

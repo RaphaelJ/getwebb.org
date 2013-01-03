@@ -41,7 +41,7 @@ import System.TimeIt
 
 -- | Temporary cache for the count of views and the last view which have not
 -- been commited yet to the database.
-type ViewsCache = MVar (M.Map UploadId (Int64, UTCTime))
+type ViewsCache = MVar (M.Map UploadId (Word64, UTCTime))
 
 -- | Initialises a new view cache to be inserted in the foundation type.
 newCache :: IO ViewsCache
@@ -59,7 +59,7 @@ mvar `uploadView` uploadId = do
 
 -- | Returns the cache entry for the given upload. 'Nothing' if the database is
 -- up to date.
-getCacheEntry :: ViewsCache -> UploadId -> IO (Maybe (Int64, UTCTime))
+getCacheEntry :: ViewsCache -> UploadId -> IO (Maybe (Word64, UTCTime))
 mvar `getCacheEntry` uploadId = do
     accum <- readMVar mvar
     return $ uploadId `M.lookup` accum

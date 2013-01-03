@@ -19,10 +19,20 @@ $maybe (previous, next) <- links
         <h1>#{wrappedName}
 
     <div #right_pane>
-        <p>
-            <a .big_button href=@{DownloadR hmac} download=#{uploadName upload}>
-                Download
-            <span .size>File size : #{PrettyFileSize (fileSize file)}
+        <a .big_button href=@{DownloadR hmac} download=#{uploadName upload}>
+            Download
+        <span .size>
+            <span .key>File size : 
+            <span .value>#{PrettyFileSize (fileSize file)}
+
+        <div .stats>
+            <h3>Statistics
+            <span .key>Totalled
+            <span .value>#{PrettyNumber (int $ uploadViews upload)} download(s)
+            <span .key>in
+            <span .value>12 months
+            <span .key>for a total bandwith of
+            <span .value>13 GiB
 
         <div .ad>
             <script type="text/javascript">
@@ -30,6 +40,7 @@ $maybe (previous, next) <- links
                 google_ad_slot = "5853507369";
                 google_ad_width = 250;
                 google_ad_height = 250;
+            <script type="text/javascript" 
+                href="http://pagead2.googlesyndication.com/pagead/show_ads.js">
 
-        <div .stats>
-            <h3>Statistics
+    <div .clear_float>

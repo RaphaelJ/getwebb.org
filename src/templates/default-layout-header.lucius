@@ -1,9 +1,10 @@
 header {
     background-color: #3D94B6;
-    box-shadow: 1px 0 2px grey;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 
     nav {
         margin: auto;
+        padding: 0;
         width: 950px;
         height: 37px;
 
@@ -17,11 +18,11 @@ header {
         color: white;
         font-size: 25px;
         text-decoration: none;
-        text-shadow: 0 -1px 0 #2D6F88;
+        text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
     }
 
     nav #logo:hover {
-        text-shadow: 0 0 3px #BABDB6;
+        text-shadow: 0 0 3px rgba(255, 255, 255, 0.4);
     }
 
     nav #free_file_sharing {
@@ -32,17 +33,19 @@ header {
 
     nav ul#links {
         float: right;
-        margin-top: 8px;
+        margin: 0;
+        padding: 0;
 
         font-size: 15px;
-        line-height: 21px;
+        height: 37px;
 
         list-style-type: none;
 
         li {
             display: inline;
+            line-height: 37px;
 
-            text-shadow: 0 -1px 0 #2D6F88;
+            text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
 
             a {
                 color: white;
@@ -66,8 +69,8 @@ header {
             padding: 2px 5px;
             background-color: rgba(255, 255, 255, 0.2);
             border-radius: 2px;
-            box-shadow: 0 -1px 0 #2F758F;
-            
+            box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
+
             font-size: 12px;
         }
     }

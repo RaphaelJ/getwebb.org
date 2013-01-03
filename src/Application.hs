@@ -20,6 +20,7 @@ import Network.HTTP.Conduit (newManager, def)
 -- Don't forget to add new modules to your cabal file!
 import Handler.Home
 import Handler.Download
+import qualified Handler.Download as D
 import Handler.Upload
 import Handler.View
 
@@ -38,8 +39,11 @@ mkYesodDispatch "App" resourcesApp
 makeApplication :: AppConfig DefaultEnv Extra -> IO Application
 makeApplication conf = do
     foundation <- makeFoundation conf
+
     _ <- C.forkCompressionDaemon foundation
     _ <- M.forkMediasDaemon foundation
+    _ <- D.forkViewsDaemon foundation
+
     app <- toWaiAppPlain foundation
     return $ logWare app
   where
@@ -57,11 +61,12 @@ makeFoundation conf = do
     Database.Persist.Store.runPool dbconf (runMigration migrateAll) p
     key <- B.readFile encryptKeyFile
 
-    -- Initialises the concurrent channels used by utility threads.
+    -- Initialises the concurrent channels and variables used by utility threads.
     cQueue <- C.newQueue
     mQueue <- M.newQueue
+    vCache <- D.newCache
 
-    return $ App conf s p manager dbconf key cQueue mQueue
+    return $ App conf s p manager dbconf key cQueue mQueue vCache
 
 -- for yesod devel
 getApplicationDev :: IO (Int, Application)

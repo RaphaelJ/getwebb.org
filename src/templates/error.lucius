@@ -1,0 +1,30 @@
+#home_screen {
+    background-image: url('@{StaticR img_error_homescreen_png}');
+
+    #error_box {
+        width: 950px;
+        min-height: 400px;
+        margin: auto;
+        position: relative;
+
+        h1 {
+            position: absolute;
+            top: 25px;
+            left: 50px;
+
+            font-family: "Chau Philomene One", sans-serif;
+        }
+
+        .message {
+            position: absolute;
+            top: 100px;
+            left: 50px;
+            width: 820px;
+
+            background-color: rgba(255, 255, 255, 0.15);
+            padding: 15px;
+            border: 0;
+            border-radius: 5px;
+        }
+    }
+}

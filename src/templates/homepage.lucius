@@ -1,15 +1,5 @@
 #home_screen {
-    margin: 0;
-    width: 100%;
-    min-height: 400px;
-
-    background-color: black;
     background-image: url('@{StaticR img_homepage_homescreen_png}');
-    background-position: top center;
-    background-repeat: no-repeat;
-
-    color: white;
-    text-shadow: 0 0 3px black;
 
     #upload_box {
         width: 550px;
@@ -203,13 +193,6 @@
 }
 
 #page {
-    width: 950px;
-    min-height: 150px;
-    margin: 0 auto;
-    box-shadow: #939393 0 0 3px;
-
-    background-color: #F0F1F2;
-
     ul {
         margin: auto;
         padding: 0;

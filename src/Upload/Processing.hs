@@ -50,7 +50,7 @@ process fs = do
 -- | Process a file and returns its new ID from the database.
 -- Returns either the uploaded file or an error message to be returned to the 
 -- user.
-processFile :: AdminKey -> FileInfo 
+processFile :: AdminKey -> FileInfo
             -> Handler (Either UploadError Upload)
 processFile adminKey f = do
     app <- getYesod
@@ -117,9 +117,10 @@ processFile adminKey f = do
 
             let upload = Upload {
                   uploadHmac = "",  uploadFileId = fileId
-                , uploadName = fileName f, uploadViews = 0
-                , uploadUploaded = currentTime, uploadHost = clientHost
-                , uploadLastView = currentTime, uploadAdminKey = adminKey
+                , uploadName = fileName f, uploadMime = fileContentType f
+                , uploadUploaded = currentTime, uploadHostname = clientHost
+                , uploadAdminKey = adminKey, uploadViews = 0
+                , uploadLastView = currentTime
                 }
 
             uploadId <- lift $ insert upload
@@ -149,7 +150,7 @@ processFile adminKey f = do
                   "SELECT COUNT(*), COALESCE(SUM(f.size), 0)"
                 , "FROM Upload AS u"
                 , "INNER JOIN File AS f ON f.id = u.fileId"
-                , "WHERE u.host = ? and u.uploaded >= ?;"
+                , "WHERE u.hostname = ? and u.uploaded >= ?;"
                 ]
         [(Single n, Single size)] <- rawSql sql [
                   PersistText clientHost

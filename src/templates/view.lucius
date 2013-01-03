@@ -1,0 +1,103 @@
+#browser {
+    width: 100%;
+    height: 30px;
+    margin: 0 auto 0 auto;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    background-color: #6AAE26;
+
+    font-family: "Chau Philomene One", sans-serif;
+    color: #FFFFFF;
+
+    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.2);
+
+    #links {
+        width: 950px;
+        margin: auto;
+
+        a {
+            display: block;
+            float: left;
+
+            color: white;
+            text-decoration: none;
+            line-height: 30px;
+        }
+
+        a:hover {
+            background-color: #609E22;
+            text-decoration: none;
+        }
+
+        a:active {
+            background: #609E22;
+        }
+
+        #previous {
+            width: 459px;
+            padding-left: 15px;
+            border-right: 1px solid rgba(0, 0, 0, 0.2);
+        }
+
+        #next {
+            width: 459px;
+            padding-right: 15px;
+            border-left: 1px solid rgba(255, 255, 255, 0.3);
+
+            text-align: right;
+        }
+    }
+}
+
+#page {
+    margin: 10px auto 0 auto;
+    padding: 0;
+
+    #left_pane, #right_pane {
+        float: left;
+    }
+
+    #left_pane {
+        width: 700px;
+
+        .icon {
+            float: left;
+            margin: 10px;
+            width: 125px;
+            height: 125px;
+            box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
+            background-color: white;
+
+            transition-property: all;
+            transition-duration: 0.1s;
+        }
+
+        .icon:hover {
+            padding: 3px;
+            margin: 7px;
+        }
+    }
+
+    #right_pane {
+        width: 249px;
+        background-color: #E6E6E6;
+        border-left: 1px solid rgba(0, 0, 0, 0.1);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+
+        .big_button {
+            display: block;
+            margin: 0 5px;
+        }
+
+        .size {
+            display: block;
+            margin: 2px 7px;
+
+            font-size: 0.9em;
+            color: #777777;
+
+            text-align: right;
+            
+            text-shadow: 0 1px 0 rgb(255, 255, 255);
+        }
+    }
+}

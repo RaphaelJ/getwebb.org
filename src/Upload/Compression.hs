@@ -3,7 +3,7 @@
 -- update the database entry if the compressed file is smaller than the original
 -- file.
 module Upload.Compression (
-    -- * Processing queue management
+    -- * Daemon processing queue management
       CompressionQueue, newQueue, putFile
     -- * Starting the daemon
     , compressionDaemon, forkCompressionDaemon
@@ -42,10 +42,11 @@ putFile = writeChan . compressionQueue
 -- | Waits files to compress on the concurrent queue and process them. Never
 -- returns.
 compressionDaemon :: App -> IO ()
-compressionDaemon app =
+compressionDaemon app = do
+    let queue = compressionQueue app
     forever $ do
         -- Waits until an FileId has been inserted in the queue.
-        fileId <- readChan $! compressionQueue app
+        fileId <- readChan queue
 
         mFile <- runDBIO $! get fileId
         when (isJust mFile) $ do

@@ -27,6 +27,8 @@ $doctype 5
         <a href="@{HomeR}">
             API
         &nbsp;-&nbsp;
-        2012&nbsp;
+        <a href="https://github.com/RaphaelJ/getwebb.org">
+            Sources
+        &nbsp;-&nbsp;
         <a href="mailto:#{extraAuthorMail $ appExtra $ settings master}">
-            #{extraAuthor $ appExtra $ settings master}
+            Report a file

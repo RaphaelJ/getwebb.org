@@ -21,7 +21,6 @@ postUploadR :: Handler RepJson
 postUploadR = do
     urlRender <- getUrlRender
     ((res, _), _) <- runFormPostNoToken uploadForm'
-
     case res of
         FormSuccess (files, Options email) -> do
             uploads <- process files
@@ -32,10 +31,11 @@ postUploadR = do
   where
     -- Constructs a json object if uploaded successfully or the error.
     uploadJson _         (Left err) = String $ T.pack $ show err
-    uploadJson urlRender (Right (Upload hmac _ name _ _ _ _ _)) =
-        object [
+    uploadJson urlRender (Right upload) =
+        let hmac = uploadHmac upload
+        in object [
               "id"   .= hmac
-            , "name" .= name
+            , "name" .= uploadName upload
             , "url"  .= urlRender (ViewR hmac)
             ]
 

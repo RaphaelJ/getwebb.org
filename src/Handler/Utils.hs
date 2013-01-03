@@ -1,5 +1,8 @@
-module Handler.Utils (PrettyFileSize (..), splitCommas, splitHmacs)
-    where
+{-# LANGUAGE OverloadedStrings #-}
+module Handler.Utils (
+      WrappedText (wtText, wtMaxLength), PrettyFileSize (..)
+    , wrappedText, splitHmacs, joinHmacs
+    ) where
 
 import Import
 import Prelude (tail)
@@ -9,6 +12,28 @@ import qualified Data.Text as T
 import Text.Printf (printf)
 
 import Text.Blaze (ToMarkup (..))
+
+-- | A new type to represents a showable object on which the string
+-- representation will be truncated if too long.
+data WrappedText = WrappedText {
+      wtText :: T.Text -- ^ The original value.
+    , wtTruncated :: T.Text -- ^ The truncated result of the show function.
+    , wtMaxLength :: Int -- ^ The maximum length of the truncated result.
+    }
+
+-- | Truncates the text if longer than the given integer.
+wrappedText :: T.Text -> Int -> WrappedText
+wrappedText text len =
+    WrappedText text trunc len
+  where
+    trunc | T.length text > len = T.take (len - 3) text `T.append` "..."
+          | otherwise           = text
+
+instance Show WrappedText where
+    show = T.unpack . wtTruncated
+
+instance ToMarkup WrappedText where
+    toMarkup = toMarkup . wtTruncated
 
 -- | A new type to represents file size which will be displayed in a human
 -- readable way. This type is an instance of 'ToMarkup' and so can be used with
@@ -29,14 +54,10 @@ instance Show PrettyFileSize where
 instance ToMarkup PrettyFileSize where
     toMarkup = toMarkup . show
 
--- | Splits a string on commas and removes spaces.
-splitCommas :: String -> [String]
-splitCommas [] = []
-splitCommas xs =
-    let (ys, zs) = break (== ',') xs
-     in ys : splitCommas (dropWhile (== ' ') $ tail zs)
-
 -- | Returns a list of hmacs from a list of url string of hmacs separated by
 -- commas.
 splitHmacs :: Text -> [Text]
-splitHmacs = map T.pack . splitCommas . T.unpack
+splitHmacs = T.split (== ',')
+
+joinHmacs :: [Text] -> Text
+joinHmacs = T.intercalate ","

@@ -52,7 +52,8 @@
                      alt="Formats icon">
                 <h3>Format aware
                 <span .description>
-                    We didn't restrict the format the files are uploaded.
+                    We didn't restrict file formats which are allowed to be
+                    uploaded.
                     Moreover, we provide special features for images, medias and
                     archives.
 

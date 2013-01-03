@@ -49,7 +49,10 @@ $("#upload_form").submit(function ()
                 preview.append(preview_img);
                 preview_img.append($("<div>", { class: "border" }));
 
-                var preview_img_tag = $("<img>", { alt: file.name });
+                var preview_img_tag = $("<img>", { 
+                    alt: file.name,
+                    src: '@{StaticR img_homepage_preview_waiting_png}'
+                });
                 preview_img.append(preview_img_tag);
 
                 var reader = new FileReader();
@@ -163,13 +166,21 @@ function uploadFiles(loaded, total, files_info, uploaded, errors)
     }, false);
 
     xhr.addEventListener("load", function (e) {
-        res = jQuery.parseJSON(e.target.responseText)[0];
-        if (typeof(res) == "string") { // error, skips the file
-            info.changeStatus("error", 100);
-            errors.push({ filename: info.file.name, error: res });
+        if (e.target.status == 200) {
+            res = jQuery.parseJSON(e.target.responseText)[0];
+            if (typeof(res) == "string") { // error, skips the file
+                info.changeStatus("error", 100);
+                errors.push({ filename: info.file.name, error: res });
+            } else {
+                info.changeStatus("uploaded", 100);
+                uploaded.push(res.id);
+            }
         } else {
-            info.changeStatus("uploaded", 100);
-            uploaded.push(res.id);
+            info.changeStatus("error", 100);
+            errors.push({
+                filename: info.file.name,
+                error: e.target.responseText
+            });
         }
 
         continueUpload(
@@ -191,6 +202,7 @@ function uploadFiles(loaded, total, files_info, uploaded, errors)
     }, false);
 
     xhr.open("POST", "@{UploadR}");
+    xhr.setRequestHeader("Accept", "application/json");
     xhr.send(data);
 }
 

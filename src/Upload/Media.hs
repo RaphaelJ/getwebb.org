@@ -2,7 +2,7 @@
 -- | Recognises medias (audio and video), collects information and create
 -- HTML 5 audio/videos in a separate thread.
 module Upload.Media (
-    -- * Processing queue management
+    -- * Daemon processing queue management
       MediasQueue, newQueue, putFile
     -- * Starting the daemon
     , mediasDaemon, forkMediasDaemon
@@ -61,7 +61,7 @@ lastfmKey = L.APIKey "d1731c5c052d5cde7c82d56388b5d64e"
 newQueue :: IO MediasQueue
 newQueue = newChan
 
--- | Adds a file to the compression queue.
+-- | Adds a file to the encoding queue.
 putFile :: App -> FileId -> IO ()
 putFile = writeChan . mediasQueue
 
@@ -99,10 +99,11 @@ extensions = S.fromDistinctAscList [
 -- | Waits files to encode on the concurrent queue and process them. Never
 -- returns.
 mediasDaemon :: App -> IO ()
-mediasDaemon app =
+mediasDaemon app = do
+    let queue = mediasQueue app
     forever $ do
         -- Waits until an FileId has been inserted in the queue.
-        fileId <- readChan $ mediasQueue app
+        fileId <- readChan queue
 
         mFile <- runDBIO $ get fileId
 
@@ -112,15 +113,16 @@ mediasDaemon app =
                 hash = T.unpack $ fileSha1 file
                 dir = hashDir (uploadDir app) hash
                 getPath' = getPath dir
+                path = getPath' Original
 
             case fileType file of
                 Audio -> do
-                    _ <- encodeFile argsWebMAudio (getPath' "webm")
-                    _ <- encodeFile argsMP3       (getPath' "mp3")
+                    _ <- encodeFile argsWebMAudio path (getPath' WebMAudio)
+                    _ <- encodeFile argsMP3       path (getPath' MP3)
                     return ()
                 Video -> do
-                    _ <- encodeFile argsWebM (getPath' "webm")
-                    _ <- encodeFile argsH264 (getPath' "mkv")
+                    _ <- encodeFile argsWebM path (getPath' WebMVideo)
+                    _ <- encodeFile argsH264 path (getPath' MKV)
                     return ()
                 _     ->
                     error "Invalid file type."
@@ -130,8 +132,8 @@ mediasDaemon app =
     runDBIO :: YesodPersistBackend App (ResourceT IO) a -> IO a
     runDBIO f = runResourceT $ runPool (persistConfig app) f (connPool app)
 
-    encodeFile args outPath = do
-        code <- liftIO $ encode args path (sinkFile outPath)
+    encodeFile args inPath outPath = do
+        code <- liftIO $ encode args inPath (sinkFile outPath)
 
         -- Removes the ouput file if the encoding failed.
         case code of
@@ -306,7 +308,7 @@ processMedia path ext fileId = do
             J.String imgUrl <- "#text" `H.lookup` img
             return imgUrl
 
-    miniaturePath = miniatureFile (takeDirectory path)
+    miniaturePath = getPath (takeDirectory path) Miniature
 
 int :: Integral a => a -> Int
 int = fromIntegral

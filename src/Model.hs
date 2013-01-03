@@ -35,19 +35,13 @@ Upload
     hmac Text -- An unique identifier of the upload generated from its ID.
     fileId FileId
     name Text
-    views Int64 default=0
+    mime Text
     uploaded UTCTime
-    host Text
-    lastView UTCTime
+    hostname Text
     adminKey AdminKey
+    views Int64 default=0
+    lastView UTCTime
     UniqueHmac hmac
-    deriving Show
-
--- Saves EXIF tags from an image.
-ExifTag
-    fileId FileId
-    title Text
-    value Text
     deriving Show
 
 -- Saves the attributes of an image.
@@ -59,12 +53,12 @@ ImageAttrs
     UniqueImageAttrs fileId
     deriving Show
 
--- Saves the contained files of an archive.
-ArchiveFile
+-- Saves EXIF tags from an image.
+ExifTag
     fileId FileId
-    path Text
-    size Word64 -- Uncompressed size
-    UniqueArchiveFile fileId path
+    title Text
+    value Text
+    UniqueExifTag fileId title
     deriving Show
 
 -- Saves the attributes of a media.
@@ -74,7 +68,7 @@ MediaAttrs
     UniqueMediaAttrs fileId
     deriving Show
 
--- Saves the attributes of an MP3 track.
+-- Saves the attributes and tags of an MP3 track.
 AudioAttrs
     fileId FileId
     album Text Maybe
@@ -87,5 +81,13 @@ AudioAttrs
     lastFmUrl Text Maybe
     miniature Bool
     UniqueAudioAttrs fileId
+    deriving Show
+
+-- Saves the contained files of an archive.
+ArchiveFile
+    fileId FileId
+    path Text
+    size Word64 -- Uncompressed size
+    UniqueArchiveFile fileId path
     deriving Show
 |]

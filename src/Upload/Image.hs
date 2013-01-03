@@ -13,7 +13,7 @@ import Control.Monad
 import qualified Data.Set as S
 import qualified Data.Text as T
 import Data.Word
-import System.FilePath ((<.>), takeDirectory)
+import System.FilePath (takeDirectory)
 
 import qualified Vision.Image as I
 import qualified Vision.Primitive as I
@@ -39,7 +39,7 @@ displayable = S.fromDistinctAscList [".gif", ".jpeg", ".jpg", ".png"]
 
 -- | The size of miniatures in pixels (both in width and height).
 miniatureSize :: Int
-miniatureSize = 200
+miniatureSize = 125
 
 -- | Try to open the image and to generate a miniature.
 processImage :: FilePath -> Text -> FileId -> Handler Bool
@@ -86,7 +86,7 @@ processImage path ext fileId = do
                             }
 
                         forM_ tags $ \(title, value) ->
-                            insert $! ExifTag fileId title value
+                            insertUnique $ ExifTag fileId title value
 
                     app <- getYesod
                     liftIO $ app `C.putFile` fileId
@@ -104,6 +104,7 @@ miniature img =
   where
     -- Resizes the cropped image to a square of miniatureSize.
     resize img' = I.resize I.NearestNeighbor img' miniSize
+    -- resize img' = I.resize I.Bilinear img' miniSize
     {-# INLINE resize #-}
 
     -- Draw a bright border surrounded by a dark border.

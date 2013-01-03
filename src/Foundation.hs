@@ -1,22 +1,30 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Foundation where
 
 import Prelude
-import Control.Concurrent.Chan (Chan)
+import Control.Concurrent (Chan, MVar)
 import qualified Data.ByteString.Lazy as B
+import qualified Data.ByteString.Char8 as S8
+import Data.Int
+import qualified Data.Map as M
 import Data.Text (Text, pack, unpack)
+import Data.Time.Clock (UTCTime)
+
 import Yesod
 import Yesod.Static
 import Yesod.Default.Config
 import Yesod.Default.Util (addStaticContentExternal)
-import Network.HTTP.Conduit (Manager)
-import qualified Settings
-import Settings.Development (development)
 import qualified Database.Persist.Store
 import Database.Persist.GenericSql
+import Network.HTTP.Conduit (Manager)
+import qualified Settings
 import Settings (widgetFile, Extra (..))
+import Settings.Development (development)
+import Settings.StaticFiles as Import
+import Text.Blaze.Renderer.Text (renderMarkup)
 import Text.Jasmine (minifym)
-import Text.Hamlet (hamletFile)
+import Text.Hamlet (shamlet, hamletFile)
 import qualified Web.ClientSession as S
 
 import Model
@@ -34,6 +42,7 @@ data App = App {
     , encryptKey :: B.ByteString
     , compressionQueue :: Chan FileId
     , mediasQueue :: Chan FileId
+    , viewsCache :: MVar (M.Map UploadId (Int64, UTCTime))
     }
 
 -- Set up i18n messages. See the message folder.
@@ -69,6 +78,44 @@ encryptKeyFile = "config/client_session_key.aes"
 -- of settings which can be configured by overriding methods here.
 instance Yesod App where
     approot = ApprootMaster $ appRoot . settings
+
+    errorHandler e = do
+        let ((title :: Text), mMsg) = case e of
+                NotFound ->
+                    let msg = [shamlet|
+                            The page you are looking for is no longer available.
+                            <br />
+                            If this was an uploaded file, it has been removed.
+                        |]
+                    in ("404 Not Found", Just msg)
+                PermissionDenied _ -> 
+                    let msg = [shamlet|
+                            You don't have the permission to access this page.
+                        |]
+                    in ("403 Permission Denied", Just msg)
+                InvalidArgs _ -> ("Invalid Arguments", Nothing)
+                InternalError err ->
+                    let msg = [shamlet|
+                            Our internal software failed for the following 
+                            reason :
+                            <pre>
+                                #{err}
+                        |]
+                    in ("500 Internal Server Error", Just msg)
+                BadMethod m ->
+                    let msg = [shamlet|
+                            Method <code>#{S8.unpack m}</code> not supported
+                        |]
+                    in ("405 Method Not Allowed", Just msg)
+
+        let repHtml = do
+                setTitle [shamlet|#{title} | getwebb | Free file sharing|]
+                $(widgetFile "error")
+            repJson = case mMsg of
+                Just msg -> object [(title, renderMarkup msg)]
+                Nothing  -> object [(title, "" :: Text)]
+        rep <- defaultLayoutJson repHtml repJson
+        return $ chooseRep rep
 
     -- Store session data on the client in encrypted cookies,
     -- default session idle timeout is two year.

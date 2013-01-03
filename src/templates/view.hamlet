@@ -1,0 +1,35 @@
+$maybe (previous, next) <- links
+    <div #browser>
+        <div #links>
+            <a #previous href=@{ViewR  previous}>← Previous file
+            <a #next href=@{ViewR  next}>Next file →
+
+    <script type="text/javascript">
+        document.onkeydown = function(e) {
+            if (e.keyCode == 37)
+                document.location.href = previous;
+            else if (e.keyCode == 39)
+                document.location.href = next;
+        };
+
+<div #page>
+    <div #left_pane>
+        <a .icon_link href=@{DownloadR hmac}>
+            <img .icon alt="File icon" src=#{iconUrl}>
+        <h1>#{wrappedName}
+
+    <div #right_pane>
+        <p>
+            <a .big_button href=@{DownloadR hmac} download=#{uploadName upload}>
+                Download
+            <span .size>File size : #{PrettyFileSize (fileSize file)}
+
+        <div .ad>
+            <script type="text/javascript">
+                google_ad_client = "ca-pub-8544036589375641";
+                google_ad_slot = "5853507369";
+                google_ad_width = 250;
+                google_ad_height = 250;
+
+        <div .stats>
+            <h3>Statistics

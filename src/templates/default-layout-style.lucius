@@ -6,7 +6,7 @@ body {
     font-size: 15px;
 }
 
-a {
+a, a:visited {
     color: #4D4D4D;
     text-decoration: underline;
 }
@@ -32,13 +32,18 @@ a:hover {
 
     color: white;
     font-size: 20px;
-    font-weight:700;
+    font-weight: 700;
     text-align: center;
-    text-shadow: #4E801C 0px -1px 0px;
+    text-shadow: 0px -1px 0px rgba(0, 0, 0, 0.2);
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
 
     transition-property: all;
-    transition-duration: 0.1s;
+    transition-duration: 0.2s;
+}
+
+a.big_button, a.big_button:hover {
+    color: white;
+    text-decoration: none;
 }
 
 .big_button:hover {
@@ -46,10 +51,8 @@ a:hover {
 }
 
 .big_button:active {
-    padding: 9px 15px 7px 15px;
     background: #609E22;
-    box-shadow: inset 0 0 8px 4px rgba(0, 0, 0, 0.2),
-                0 1px 0 0 rgba(255, 255, 255, 0.3);
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
 .big_button[disabled] {
@@ -77,6 +80,36 @@ a:hover {
 .progress .complete {
     background-color: #65A625;
     height: 100%;
+}
+
+#home_screen {
+    margin: 0;
+    width: 100%;
+    min-height: 400px;
+
+    background-color: black;
+    background-position: top center;
+    background-repeat: no-repeat;
+
+    color: white;
+    text-shadow: 0 0 3px black;
+
+    a, a:visited {
+        color: white;
+    }
+}
+
+#page {
+    width: 950px;
+    min-height: 150px;
+    margin: 0 auto;
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
+
+    background-color: #F0F1F2;
+
+    h1 {
+        margin: 15px 5px;
+    }
 }
 
 footer {

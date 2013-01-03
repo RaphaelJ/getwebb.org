@@ -1,0 +1,12 @@
+<div #home_screen>
+    <div #error_box>
+        <h1>#{title}
+
+        <div .message>
+            $maybe msg <- mMsg
+                <p>#{msg}
+
+            <p>
+                Clic here to return to our <a href="@{HomeR}">home page</a> or
+                to the <a href="javascript: history.go(-1);">previous page</a>
+                you visited.

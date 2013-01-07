@@ -70,6 +70,69 @@ a.big_button, a.big_button:hover {
     padding: 8px 15px;
 }
 
+.toggle_button, .toggle_button_left, .toggle_button_central,
+.toggle_button_right {
+    padding: 5px;
+    background-color: transparent;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 1);
+
+    color: rgba(0, 0, 0, 0.5);
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    text-shadow: 0px 1px 0px rgba(255, 255, 255, 1);
+
+    transition-property: all;
+    transition-duration: 0.2s;
+}
+
+.toggle_button {
+    border-radius: 3px;
+    border: 1px solid #ACACAC;
+}
+
+.toggle_button_left, .toggle_button_central, .toggle_button_right {
+    float: left;
+}
+
+.toggle_button_left {
+    border-top: 1px solid #ACACAC;
+    border-right: 0;
+    border-bottom: 1px solid #ACACAC;
+    border-left: 1px solid #ACACAC;
+    border-radius: 3px 0 0 3px;
+}
+
+.toggle_button_central {
+    border-top: 1px solid #ACACAC;
+    border-right: 0;
+    border-bottom: 1px solid #ACACAC;
+    border-left: 1px solid #ACACAC;
+    border-radius: 0;
+}
+
+.toggle_button_right {
+    border-top: 1px solid #ACACAC;
+    border-right: 1px solid #ACACAC;
+    border-bottom: 1px solid #ACACAC;
+    border-left: 1px solid #ACACAC;
+    border-radius: 0 3px 3px 0;
+}
+
+.toggle_button:hover, .toggle_button_left:hover, .toggle_button_central:hover,
+.toggle_button_right:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: rgba(0, 0, 0, 0.7);
+}
+
+.toggle_button:active, .toggle_button.active,
+.toggle_button_left:active, .toggle_button_left.active,
+.toggle_button_central:active, .toggle_button_central.active,
+.toggle_button_right:active, .toggle_button_right.active {
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4);
+    color: rgba(0, 0, 0, 0.7);
+}
+
 .progress {
     width: 100px;
     height: 5px;
@@ -104,8 +167,9 @@ a.big_button, a.big_button:hover {
     min-height: 150px;
     margin: 0 auto;
     box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
-
     background-color: #F0F1F2;
+
+    text-shadow: 0 1px 0 rgb(255, 255, 255);
 
     h1 {
         margin: 15px 5px;

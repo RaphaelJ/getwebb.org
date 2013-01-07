@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module Handler.Download (
-    -- * Views daemon cache management
-      ViewsCache, newCache, uploadView, getCacheEntry
+    -- * Views daemon buffer management
+      ViewsBuffer, newBuffer, uploadView, getBufferEntry
     -- * Starting the daemon
     , viewsCommitDelay, viewsDaemon, forkViewsDaemon
     -- * Page handler
@@ -14,14 +14,13 @@ module Handler.Download (
 import Import
 
 import Control.Concurrent (
-      ThreadId, MVar, forkIO, newMVar, readMVar, modifyMVar_, swapMVar
-     , threadDelay
+      ThreadId, MVar, forkIO, newMVar, newEmptyMVar, readMVar, modifyMVar_
+    , takeMVar, tryPutMVar, swapMVar, threadDelay
     )
 import qualified Control.Exception as E
 import Control.Monad
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as B
-import Data.Int
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Text as T
@@ -39,32 +38,45 @@ import Upload.Path (ObjectType (..), hashDir, uploadDir, getPath)
 
 import System.TimeIt
 
--- | Temporary cache for the count of views and the last view which have not
--- been commited yet to the database.
-type ViewsCache = MVar (M.Map UploadId (Word64, UTCTime))
+-- | Temporary buffer for the count of views and the last view which have not
+-- been commited yet to the database. The second MVar is used to signal
+-- that at least a file view has been added to the buffer.
+type ViewsBuffer = (MVar (M.Map UploadId (Word64, UTCTime)), MVar ())
 
--- | Initialises a new view cache to be inserted in the foundation type.
-newCache :: IO ViewsCache
-newCache = newMVar M.empty
+-- | Initialises a new view buffer to be inserted in the foundation type.
+newBuffer :: IO ViewsBuffer
+newBuffer = do
+    buffer <- newMVar M.empty
+    signal <- newEmptyMVar
+    return (buffer, signal)
 
--- | Updates the cache to increment by one the number of views and to update the
--- last view date.
-uploadView :: ViewsCache -> UploadId -> IO ()
-mvar `uploadView` uploadId = do
-    currentTime <- getCurrentTime
+-- | Updates the buffer to increment by one the number of views and to update 
+-- the last view date.
+uploadView :: UploadId -> Handler ()
+uploadView uploadId = do
+    app <- getYesod
+    let (buffer, signal) = viewsBuffer app
 
-    modifyMVar_ mvar $ \accum -> do
+    -- Updates the buffer atomically.
+    currentTime <- liftIO $ getCurrentTime
+    liftIO $ modifyMVar_ buffer $ \accum -> do
         let f _ (oldCount, _) = (oldCount + 1, currentTime)
         return $! M.insertWith f uploadId (1, currentTime) accum
 
--- | Returns the cache entry for the given upload. 'Nothing' if the database is
+    -- Signal to the daemon at least an entry has been added to the buffer.
+    _ <- liftIO $ signal `tryPutMVar` ()
+    return ()
+
+-- | Returns the buffer entry for the given upload. 'Nothing' if the database is
 -- up to date.
-getCacheEntry :: ViewsCache -> UploadId -> IO (Maybe (Word64, UTCTime))
-mvar `getCacheEntry` uploadId = do
-    accum <- readMVar mvar
+getBufferEntry :: UploadId -> Handler (Maybe (Word64, UTCTime))
+getBufferEntry uploadId = do
+    app <- getYesod
+    let (buffer, _) = viewsBuffer app
+    accum <- liftIO $ readMVar buffer
     return $ uploadId `M.lookup` accum
 
--- | Delay in microseconds at which the views cache is commited to the 
+-- | Delay in microseconds at which the views buffer is commited to the 
 -- database.
 viewsCommitDelay :: Int
 viewsCommitDelay = 5 * 10^(6 :: Int) -- Every five seconds.
@@ -73,14 +85,17 @@ viewsCommitDelay = 5 * 10^(6 :: Int) -- Every five seconds.
 -- the database every few seconds (saves a lot of disk accesses).
 viewsDaemon :: App -> IO ()
 viewsDaemon app = do
-    let cache = viewsCache app
+    let (buffer, signal) = viewsBuffer app
     forever $ do
-        -- Resets the cache.
-        oldCache <- cache `swapMVar` M.empty
+        -- Waits for at least a file view
+        takeMVar signal
 
-        -- Inserts the old cache in the database.
-        when (not $ M.null oldCache) $ timeIt $ runDBIO $ do
-            forM_ (M.assocs oldCache) $ \(uploadId, (views, lastView)) ->
+        -- Resets the buffer.
+        oldBuffer <- buffer `swapMVar` M.empty
+
+        -- Inserts the old buffer in the database.
+        when (not $ M.null oldBuffer) $ timeIt $ runDBIO $ do
+            forM_ (M.assocs oldBuffer) $ \(uploadId, (views, lastView)) ->
                 update uploadId [
                       UploadViews +=. views, UploadLastView =. lastView
                     ]
@@ -90,7 +105,7 @@ viewsDaemon app = do
     runDBIO :: YesodPersistBackend App (ResourceT IO) a -> IO a
     runDBIO f = runResourceT $ runPool (persistConfig app) f (connPool app)
 
--- | Forks the view cache daemon on a new thread and returns its 'ThreadId'.
+-- | Forks the view buffer daemon on a new thread and returns its) 'ThreadId'.
 forkViewsDaemon :: App -> IO ThreadId
 forkViewsDaemon = forkIO . viewsDaemon
 
@@ -119,7 +134,7 @@ getDownloadR hmac = do
 
     -- Updates the upload view count and the last view date.
     when (requestType == Original) $
-        liftIO $ viewsCache app `uploadView` uploadId
+        uploadView uploadId
 
     bs <- liftIO $ B.hGetContents h -- hGetContents closes the handle.
     allowGzip <- getGzipClientSupport
@@ -137,7 +152,7 @@ getDownloadR hmac = do
             s <- liftIO $ hFileSize h
             return (bs, word64 s)
 
-    setHeader "Cache-Control" "public, max-age=31536000"
+    setHeader "Buffer-Control" "public, max-age=31536000"
     setHeader "Expires" "Thu, 31 Dec 2037 23:55:55 GMT"
 
     let mime = requestMime requestType (uploadMime upload)
@@ -182,17 +197,19 @@ getDownloadR hmac = do
     requestMime PNG       _            = typePng
 
 -- | Returns the URL to the given file for its specified type.
-routeType :: Upload -> ObjectType -> Handler Text
-routeType upload objType = do
-    urlRdr <- getUrlRenderParams <*> pure (DownloadR (uploadHmac upload))
-    return $ case objType of
-        Original  -> urlRdr []
-        Miniature -> urlRdr [("type", "miniature")]
-        WebMAudio -> urlRdr [("type", "awebm")]
-        MP3       -> urlRdr [("type", "mp3")]
-        WebMVideo -> urlRdr [("type", "vwebm")]
-        MKV       -> urlRdr [("type", "mkv")]
-        PNG       -> urlRdr [("type", "png")]
+routeType :: (Route App -> [(Text, Text)] -> Text) -> Upload -> ObjectType
+          -> Text
+routeType urlRdr upload objType =
+    urlRdr' $ case objType of
+        Original  -> []
+        Miniature -> [("type", "miniature")]
+        WebMAudio -> [("type", "awebm")]
+        MP3       -> [("type", "mp3")]
+        WebMVideo -> [("type", "vwebm")]
+        MKV       -> [("type", "mkv")]
+        PNG       -> [("type", "png")]
+  where
+    urlRdr' = urlRdr (DownloadR (uploadHmac upload))
 
 -- | Splits a string on commas and removes spaces.
 splitCommas :: String -> [String]

@@ -25,6 +25,7 @@ File
     sha1 Text
     type FileType
     size Word64
+    compressionQueue Bool -- True if the file hasn't been compressed.
     compressed Word64 Maybe -- The compressed size if the file is compressed.
     uploaded UTCTime
     -- Each file is identified by its hash:
@@ -49,7 +50,7 @@ ImageAttrs
     fileId FileId
     width  Word32
     height Word32
-    inBrowser Bool -- True if the image can be displayed in a browser.
+    inBrowser Bool -- True if the image can be directly displayed in a browser.
     UniqueImageAttrs fileId
     deriving Show
 
@@ -65,6 +66,7 @@ ExifTag
 MediaAttrs
     fileId FileId
     duration Word64 -- Duration in centisecond
+    html5Encoded Bool -- True if the media has been re-encoded to be displayed.
     UniqueMediaAttrs fileId
     deriving Show
 

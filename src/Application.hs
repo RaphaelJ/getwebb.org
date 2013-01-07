@@ -67,9 +67,9 @@ makeFoundation conf = do
     -- Initialises the concurrent channels and variables used by utility threads.
     cQueue <- C.newQueue
     mQueue <- M.newQueue
-    vCache <- D.newCache
+    vBuffer <- D.newBuffer
 
-    return $ App conf s p manager dbconf key cQueue mQueue vCache
+    return $ App conf s p manager dbconf key cQueue mQueue vBuffer
 
 -- | Try to read the key file or initialize it with a random key.
 getEncryptionKey :: IO L.ByteString

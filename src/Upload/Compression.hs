@@ -19,6 +19,7 @@ import System.Directory
 import System.IO
 
 import Control.Monad.Trans.Resource (ResourceT, runResourceT, register)
+import Database.Persist.Query.Internal (selectKeysList)
 import Database.Persist.Store (runPool)
 import Data.Conduit (($$), ($=))
 import Data.Conduit.Binary (sourceFile, sinkHandle)
@@ -44,6 +45,11 @@ putFile = writeChan . compressionQueue
 compressionDaemon :: App -> IO ()
 compressionDaemon app = do
     let queue = compressionQueue app
+
+    -- Reload the previous state of the queue
+    fs <- runDBIO $ selectKeysList [FileCompressionQueue ==. True] [Asc FileId]
+    forM_ fs (queue `writeChan`)
+
     forever $ do
         -- Waits until an FileId has been inserted in the queue.
         fileId <- readChan queue
@@ -73,7 +79,10 @@ compressionDaemon app = do
                 then runDBIO $ do
                     -- Replaces the file during the transaction to ensures data
                     -- consistence.
-                    update fileId [FileCompressed =. Just tmpSize]
+                    update fileId [
+                          FileCompressionQueue =. False
+                        , FileCompressed =. Just tmpSize
+                        ]
                     liftIO $! removeFile path
                     liftIO $! renameFile tmpPath path
                 else removeFile tmpPath

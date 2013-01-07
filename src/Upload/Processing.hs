@@ -77,12 +77,12 @@ processFile adminKey f = do
         liftIO $ putStrLn "Hash file:"
         hash <- liftIO $ timeIt $ hashFile tmpPath
         let hashText = T.pack hash
-            ext = T.pack $ takeExtension $ T.unpack $ fileName f
+            ext = T.toLower $ T.pack $ takeExtension $ T.unpack $ fileName f
 
         let file = File {
               fileSha1 = hashText, fileType = UnknownType
-            , fileSize = size, fileCompressed = Nothing
-            , fileUploaded = currentTime
+            , fileSize = size, fileCompressionQueue = True
+            , fileCompressed = Nothing, fileUploaded = currentTime
             }
 
         let path = getPath (hashDir (uploadDir app) hash) Original

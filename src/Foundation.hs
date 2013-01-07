@@ -42,7 +42,7 @@ data App = App {
     , encryptKey :: B.ByteString
     , compressionQueue :: Chan FileId
     , mediasQueue :: Chan FileId
-    , viewsCache :: MVar (M.Map UploadId (Word64, UTCTime))
+    , viewsBuffer :: (MVar (M.Map UploadId (Word64, UTCTime)), MVar ())
     }
 
 -- Set up i18n messages. See the message folder.

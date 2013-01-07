@@ -101,6 +101,12 @@ extensions = S.fromDistinctAscList [
 mediasDaemon :: App -> IO ()
 mediasDaemon app = do
     let queue = mediasQueue app
+
+    -- Reload the previous state of the queue
+    fs <- runDBIO $ selectList [MediaAttrsHtml5Encoded ==. False]
+                               [Asc MediaAttrsFileId]
+    forM_ fs ((queue `writeChan`) . mediaAttrsFileId . entityVal)
+
     forever $ do
         -- Waits until an FileId has been inserted in the queue.
         fileId <- readChan queue
@@ -114,15 +120,20 @@ mediasDaemon app = do
                 dir = hashDir (uploadDir app) hash
                 getPath' = getPath dir
                 path = getPath' Original
+                updateHtml5Encoded = liftIO $ runDBIO $
+                    updateWhere [MediaAttrsFileId ==. fileId]
+                                [MediaAttrsHtml5Encoded =. True]
 
             case fileType file of
                 Audio -> do
                     _ <- encodeFile argsWebMAudio path (getPath' WebMAudio)
                     _ <- encodeFile argsMP3       path (getPath' MP3)
+                    updateHtml5Encoded
                     return ()
                 Video -> do
                     _ <- encodeFile argsWebM path (getPath' WebMVideo)
                     _ <- encodeFile argsH264 path (getPath' MKV)
+                    updateHtml5Encoded
                     return ()
                 _     ->
                     error "Invalid file type."
@@ -162,6 +173,7 @@ processMedia path ext fileId = do
                         update fileId [FileType =. mediaType]
 
                         _ <- insert $ MediaAttrs fileId (toCentisec duration)
+                                                 False
 
                         when (isJust mAudioAttrs) $ do
                             _ <- insert $! fromJust mAudioAttrs

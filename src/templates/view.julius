@@ -1,0 +1,23 @@
+// Displays the codes for the given type
+function showCode(name)
+{
+    var links = name == "links"
+      , html = name == "html"
+      , bbcode = name == "bbcode"
+      , markdown = name == "markdown";
+
+    $("#button_links").toggleClass("active", links);
+    $("#button_html").toggleClass("active", html);
+    $("#button_bbcode").toggleClass("active", bbcode);
+    $("#button_markdown").toggleClass("active", markdown);
+
+    $("#codes_links").toggle(links);
+    $("#codes_html").toggle(html);
+    $("#codes_bbcode").toggle(bbcode);
+    $("#codes_markdown").toggle(markdown);
+}
+
+function refreshPage()
+{
+    document.location.href = document.location.href;
+}

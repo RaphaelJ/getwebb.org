@@ -57,11 +57,11 @@
     }
 
     #left_pane {
-        width: 669px;
+        width: 640px;
+        padding: 15px;
 
         .icon {
             float: left;
-            margin: 10px;
             width: 125px;
             height: 125px;
             box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
@@ -71,50 +71,111 @@
             transition-duration: 0.1s;
         }
 
-        .icon:hover {
-            padding: 3px;
-            margin: 7px;
+        h1 {
+            margin: 3px 0 3px 140px;
+        }
+
+        .audio_player {
+            margin: 10px 0 10px 140px;
+        }
+
+        .information {
+            table {
+                margin-left: 10px;
+                text-align: left;
+
+                color: rgba(0, 0, 0, 0.7);
+
+                th {
+                    padding: 0 15px 0 0;
+                }
+            }
+
+            .lastfm_link {
+                line-height: 27px;
+
+                img {
+                    vertical-align: middle;
+                }
+            }
+
+            a.lastfm_link {
+                text-decoration: none;
+            }
+
+            a.lastfm_link:hover {
+                text-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
+            }
         }
     }
 
     #right_pane {
-        width: 260px;
-        padding: 10px;
+        width: 280px;
         background-color: #E6E6E6;
-        border-left: 1px solid rgba(0, 0, 0, 0.1);
-        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 
-        .big_button {
-            display: block;
-            margin: 0;
+        box-shadow: -1px 1px 3px rgba(0, 0, 0, 0.3);
+
+        h3 {
+            margin: 10px 0 5px 0;
         }
 
         .key, .value {
             font-size: 0.9em;
-            text-shadow: 0 1px 0 rgb(255, 255, 255);
         }
 
         .key {
-            color: #777777;
+            color: rgba(0, 0, 0, 0.5);
         }
 
         .value {
-            color: #535353;
+            color: rgba(0, 0, 0, 0.7);
         }
 
-        .size {
-            display: block;
-            margin: 2px 7px;
+        .download {
+            margin: 10px;
 
-            text-align: right;
+            .big_button {
+                display: block;
+                margin: 0;
+            }
+
+            .size {
+                display: block;
+                margin: 2px 7px;
+
+                text-align: right;
+            }
         }
 
-        h3 {
-            text-shadow: 0 1px 0 rgb(255, 255, 255);
+        .embded_links {
+            margin: 20px 10px 10px 10px;
+
+            h4 {
+                margin: 4px 0 2px 0;
+            }
+
+            input[type=text] {
+                width: 100%;
+                border: 1px solid rgba(0, 0, 0, 0.2);
+                background-color: white;
+
+                font-size: 0.9em;
+                color: #484848;
+            }
+
+            input[type=text]:focus {
+                border: 1px solid rgba(0, 0, 0, 0.5);
+            }
+
+        }
+
+        .stats {
+            margin: 20px 10px 10px 10px;
         }
 
         .ad {
-            margin: 10px auto;
+            margin: 20px auto 10px auto;
+            background: red;
             width: 250px;
             height: 250px;
         }

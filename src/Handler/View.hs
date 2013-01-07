@@ -5,16 +5,20 @@ module Handler.View (getViewR)
 import Import
 
 import Control.Monad
+import Data.Char (toLower)
 import Data.List (head, tail, last, init)
 import qualified Data.Set as S
 import qualified Data.Text as T
+import Data.Time.Clock (getCurrentTime, diffUTCTime)
 import System.FilePath (takeExtension)
 
 import Text.Hamlet (shamlet)
 
 import Handler.Download (ObjectType (..), routeType)
 import Handler.Utils (
-      PrettyNumber (..), PrettyFileSize (..), wrappedText, splitHmacs, joinHmacs
+      PrettyNumber (..), PrettyFileSize (..), PrettyDuration (..)
+    , PrettyDiffTime (..)
+    , wrappedText, splitHmacs, joinHmacs
     )
 
 -- | Used to retrieve the attributes about each file type from the database.
@@ -68,9 +72,15 @@ getViewR hmacsJoined = do
                     then lift notFound
                     else lift $ redirect $ ViewR $ joinHmacs existing
 
+    currentTime <- liftIO $ getCurrentTime
+    rdr <- getUrlRenderParams
     let name = uploadName upload
         wrappedName = wrappedText name 35
-    iconUrl <- getFileIcon upload extras
+        iconUrl = getIcon rdr upload extras
+        image = getImage rdr upload extras
+        miniature = getMiniature rdr upload extras
+        audio = getAudio rdr upload extras
+        uploadDiffTime = currentTime `diffUTCTime` (uploadUploaded upload)
 
     defaultLayout $ do
         setTitle [shamlet|#{wrappedName} | getwebb | Free file sharing|]
@@ -94,29 +104,55 @@ getViewR hmacsJoined = do
             next     = tail hmacs ++ [head hmacs]
         in Just (joinHmacs previous, joinHmacs next)
 
-    -- Returns the route to the file icon corresponding to the type of the file.
-    getFileIcon upload (ImageExtras _ _) = routeType upload Miniature
-    getFileIcon upload (AudioExtras _ (Just attrs))
-        | audioAttrsMiniature attrs      = routeType upload Miniature
-    getFileIcon _      (AudioExtras _ _) = renderStatic img_types_audio_png
-    getFileIcon _      (VideoExtras _)   = renderStatic img_types_video_png
-    getFileIcon _      (ArchiveExtras _) = renderStatic img_types_archive_png
-    getFileIcon upload  _                = -- Selects from extension.
-        renderStatic $ case takeExtension $ T.unpack $ uploadName upload of
-            ext | ext == ".pdf"                   -> img_types_pdf_png
-                | ext `S.member` extsArchives     -> img_types_archive_png
-                | ext `S.member` extsAudio        -> img_types_audio_png
-                | ext `S.member` extsCode         -> img_types_code_png
-                | ext `S.member` extsExecutable   -> img_types_executable_png
-                | ext `S.member` extsImage        -> img_types_image_png
-                | ext `S.member` extsPresentation -> img_types_presentation_png
-                | ext `S.member` extsSpreadsheet  -> img_types_spreadsheet_png
-                | ext `S.member` extsText         -> img_types_text_png
-                | ext `S.member` extsVector       -> img_types_vector_png
-                | ext `S.member` extsVideo        -> img_types_video_png
-                | otherwise                       -> img_types_unknown_png
+    -- Returns the URL to the file icon corresponding to the type of the file.
+    getIcon rdr upload (ImageExtras _ _) = routeType rdr upload Miniature
+    getIcon rdr upload (AudioExtras _ (Just attrs))
+        | audioAttrsMiniature attrs      = routeType rdr upload Miniature
+    getIcon rdr _      (AudioExtras _ _) =
+        renderStatic rdr img_types_audio_png
+    getIcon rdr _      (VideoExtras _)   =
+        renderStatic rdr img_types_video_png
+    getIcon rdr _      (ArchiveExtras _) =
+        renderStatic rdr img_types_archive_png
+    getIcon rdr upload  _                = -- Selects from extension.
+        let ext = map toLower $ takeExtension $ T.unpack $ uploadName upload
+        in renderStatic rdr $ case () of
+            _ | ext == ".pdf"                   -> img_types_pdf_png
+              | ext `S.member` extsArchives     -> img_types_archive_png
+              | ext `S.member` extsAudio        -> img_types_audio_png
+              | ext `S.member` extsCode         -> img_types_code_png
+              | ext `S.member` extsExecutable   -> img_types_executable_png
+              | ext `S.member` extsImage        -> img_types_image_png
+              | ext `S.member` extsPresentation -> img_types_presentation_png
+              | ext `S.member` extsSpreadsheet  -> img_types_spreadsheet_png
+              | ext `S.member` extsText         -> img_types_text_png
+              | ext `S.member` extsVector       -> img_types_vector_png
+              | ext `S.member` extsVideo        -> img_types_video_png
+              | otherwise                       -> img_types_unknown_png
 
-    renderStatic ressource = getUrlRender <*> pure (StaticR ressource)
+    -- Returns the URL to the displayable image if the file had one.
+    getImage rdr upload (ImageExtras attrs _)
+        | imageAttrsInBrowser attrs = Just $ routeType rdr upload Original
+        | otherwise                 = Just $ routeType rdr upload PNG
+    getImage _   _      _           = Nothing
+
+    -- Returns the URL to the miniature if the file had one.
+    getMiniature rdr upload (ImageExtras _ _) =
+        Just $ routeType rdr upload Miniature
+    getMiniature rdr upload (AudioExtras _ (Just attrs))
+        | audioAttrsMiniature attrs           =
+            Just $ routeType rdr upload Miniature
+    getMiniature _   _      _                 = Nothing
+
+    -- Returns the URL to every HTML5 audio files which can be displayed in the
+    -- browser with thier mime-types.
+    getAudio rdr upload (AudioExtras _ _) = [
+          (routeType rdr upload WebMAudio, "audio/webm" :: Text)
+        , (routeType rdr upload MP3      , "audio/mpeg")
+        ]
+    getAudio _   _      _                 = []
+
+    renderStatic rdr ressource = rdr (StaticR ressource) []
 
     extsArchives = S.fromAscList [".7z", ".bz", ".deb", ".gz", ".pkg", ".rar"
         , ".rpm", ".tar", ".xz", ".zip"]
@@ -132,7 +168,7 @@ getViewR hmacsJoined = do
         , ".psd", ".tga", ".tif", ".tiff", ".xcf"]
     extsPresentation = S.fromAscList [".pps", ".ppt", ".pptx"]
     extsSpreadsheet = S.fromAscList [".accdb", ".db", ".dbf", ".mdb", ".mdb"
-        , ".pdb", ".sql", ".xlr", ".xls", ".xlsx"]
+        , ".ods", ".pdb", ".sql", ".xlr", ".xls", ".xlsx"]
     extsText = S.fromAscList [".csv", ".doc", ".docx", ".log", ".msg", ".odt"
         , ".rtf", ".tex", ".wps"]
     extsVector = S.fromAscList [".ai", ".eps", ".ps", ".svg", ".ttf"]

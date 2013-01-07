@@ -1,7 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Handler.Utils (
-      WrappedText (wtText, wtMaxLength), PrettyNumber (..), PrettyFileSize (..)
-    , wrappedText, splitHmacs, joinHmacs
+      WrappedText (wtText, wtMaxLength), wrappedText
+    , PrettyNumber (..), PrettyFileSize (..), PrettyDuration (..)
+    , PrettyDiffTime (..)
+    , splitHmacs, joinHmacs
     ) where
 
 import Import
@@ -9,6 +11,7 @@ import Prelude (tail)
 
 import Data.Char (intToDigit)
 import qualified Data.Text as T
+import Data.Time.Clock (NominalDiffTime)
 import Data.Word
 import Text.Printf (printf)
 
@@ -72,6 +75,57 @@ instance Show PrettyFileSize where
         (pow1, pow2, pow3, pow4) = (1024, pow1 * 1024, pow2 * 1024, pow3 * 1024)
 
 instance ToMarkup PrettyFileSize where
+    toMarkup = toMarkup . show
+
+-- | A new type to represent a media duration which will be displayed in a human
+-- readable way. The duration is encoded in centisecond
+newtype PrettyDuration = PrettyDuration Word64
+
+instance Show PrettyDuration where
+    show (PrettyDuration duration)
+        | h > 0     = printf "%d h %d min %d.%d s" h m s c
+        | m > 0     = printf "%d min %d.%d s"        m s c
+        | otherwise = printf "%d.%d s"                 s c
+      where
+        (second, minute, hour) = (100, second * 60, minute * 60)
+        h = duration `quot` hour
+        m = (duration `mod` hour)   `quot` minute
+        s = (duration `mod` minute) `quot` second
+        c = duration `mod` second
+
+instance ToMarkup PrettyDuration where
+    toMarkup = toMarkup . show
+
+-- | A new type to represent a eslaped time an human readable way.
+newtype PrettyDiffTime = PrettyDiffTime NominalDiffTime
+
+instance Show PrettyDiffTime where
+    show (PrettyDiffTime secs)
+        | y > 1     = printf "%d years" y
+        | y == 1    = "one year"
+        | m > 1     = printf "%d months" m
+        | m == 1    = "one month"
+        | d > 1     = printf "%d days" d
+        | d == 1    = "one day"
+        | h > 1     = printf "%d hours" h
+        | h == 1    = "one hour"
+        | mins > 1  = printf "%d minutes" mins
+        | mins == 1 = "one minute"
+        | s > 1     = printf "%d seconds" s
+        | s == 1    = "one second"
+        | otherwise = printf "%.2f second" (realToFrac secs :: Double)
+      where
+        (minute, hour, day, month, year)
+            = (60, minute * 60, hour * 24, day * 30, month * 12)
+        y, m, d, h, mins, s :: Int
+        y = floor $ secs / year
+        m = floor $ secs / month
+        d = floor $ secs / day
+        h = floor $ secs / hour
+        mins = floor $ secs / minute
+        s = floor $ secs
+
+instance ToMarkup PrettyDiffTime where
     toMarkup = toMarkup . show
 
 -- | Returns a list of hmacs from a list of url string of hmacs separated by

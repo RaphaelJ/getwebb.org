@@ -15,24 +15,199 @@ $maybe (previous, next) <- links
 <div #page>
     <div #left_pane>
         <a .icon_link href=@{DownloadR hmac}>
-            <img .icon alt="File icon" src=#{iconUrl}>
+            <img .icon alt="File icon" src="#{iconUrl}" />
+
         <h1>#{wrappedName}
+        $if not (null audio)
+            <div .audio_player>
+                $with AudioExtras medExtras _ <- extras
+                    $if mediaAttrsHtml5Encoded medExtras
+                        <audio controls>
+                            $forall (audioUrl, audioMime) <- audio
+                                <source src=#{audioUrl} type=#{audioMime}>
+                    $else
+                        The media is being re-encoded.<br />
+                        <a onclick="refreshPage()" href="#">Refresh the page
+                        to get the media player.
+
+        <div .clear_float>
+
+        $case extras
+            $of AudioExtras medExtras mAudExtras
+                <div .information>
+                    <h3>Media information
+                    <table>
+                        <tbody>
+                            <tr>
+                                <th>
+                                    Duration
+                                <td>
+                                    #{PrettyDuration $ mediaAttrsDuration medExtras}
+
+                            $maybe audExtras <- mAudExtras
+                                $maybe artist <- audioAttrsArtist audExtras
+                                    <tr>
+                                        <th>
+                                            Artist
+                                        <td>
+                                            #{artist}
+                                $maybe album <- audioAttrsAlbum audExtras
+                                    <tr>
+                                        <th>
+                                            Album
+                                        <td>
+                                            #{album}
+                                $maybe title <- audioAttrsTitle audExtras
+                                    <tr>
+                                        <th>
+                                            Title
+                                        <td>
+                                            #{title}
+                                $maybe track <- audioAttrsTrack audExtras
+                                    <tr>
+                                        <th>
+                                            Track number
+                                        <td>
+                                            #{track}
+                                $maybe genre <- audioAttrsGenre audExtras
+                                    <tr>
+                                        <th>
+                                            Genre
+                                        <td>
+                                            #{genre}
+                                $maybe year <- audioAttrsYear audExtras
+                                    <tr>
+                                        <th>
+                                            Year
+                                        <td>
+                                            #{year}
+                                $maybe comment <- audioAttrsComment audExtras
+                                    <tr>
+                                        <th>
+                                            Comment
+                                        <td>
+                                            #{comment}
+
+                    $maybe audExtras <- mAudExtras
+                        $maybe lastFmUrl <- audioAttrsLastFmUrl audExtras
+                            <a .lastfm_link href=#{lastFmUrl}>
+                                Learn more about this track on
+                                <img alt="last.fm" src=@{StaticR img_lastfm_png} />.
+
+            $of VideoExtras medExtras
+                <div .information>
+                    <h3>Media information
+                    <table>
+                        <tbody>
+                            <tr>
+                                <th>
+                                    Duration
+                                <td>
+                                    #{PrettyDuration $ mediaAttrsDuration medExtras}
+            $of _
 
     <div #right_pane>
-        <a .big_button href=@{DownloadR hmac} download=#{uploadName upload}>
-            Download
-        <span .size>
-            <span .key>File size : 
-            <span .value>#{PrettyFileSize (fileSize file)}
+        <div .download>
+            <a .big_button href=@{DownloadR hmac} download=#{uploadName upload}
+                           tabindex=1>
+                Download
+            <span .size>
+                <span .key>File size : 
+                <span .value>#{PrettyFileSize (fileSize file)}
+
+        <div .embded_links>
+            <button #button_links .toggle_button_left .active
+                    onclick="showCode('links');">
+                Links
+            <button #button_html .toggle_button_central
+                    onclick="showCode('html');">
+                HTML
+            <button #button_bbcode .toggle_button_central
+                    onclick="showCode('bbcode');">
+                BBCode
+            <button #button_markdown .toggle_button_right
+                    onclick="showCode('markdown');">
+                MarkDown
+            <div .clear_float>
+
+            <div #codes_links>
+                <h4>Link
+                <input type=text value=@{ViewR hmac} onclick="this.select()" />
+                <h4>Direct link
+                <input type=text value=@{DownloadR hmac}
+                       onclick="this.select()" />
+
+            <div #codes_html style="display: none">
+                <h4>Link
+                <input type=text value="<a href='@{ViewR hmac}'>#{wrappedName}</a>"
+                       onclick="this.select()" />
+                <h4>Direct link
+                <input type=text
+                       value="<a href='@{DownloadR hmac}'>#{wrappedName}</a>"
+                       onclick="this.select()" />
+
+                $maybe imageUrl <- image
+                    <h4>Image with link
+                    <input type=text
+                           value="<a href='@{ViewR hmac}'><img alt='#{wrappedName}' src='#{imageUrl}' /></a>"
+                           onclick="this.select()" />
+
+                $maybe miniatureUrl <- miniature
+                    <h4>Miniature with link
+                    <input type=text
+                           value="<a href='@{ViewR hmac}'><img alt='#{wrappedName}' src='#{miniatureUrl}' /></a>"
+                           onclick="this.select()" />
+
+            <div #codes_bbcode style="display: none">
+                <h4>Link
+                <input type=text value="[url=@{ViewR hmac}]#{wrappedName}[/url]"
+                       onclick="this.select()" />
+                <h4>Direct link
+                <input type=text
+                       value="[url=@{DownloadR hmac}]#{wrappedName}[/url]"
+                       onclick="this.select()" />
+
+                $maybe imageUrl <- image
+                    <h4>Image with link
+                    <input type=text
+                           value="[url=@{ViewR hmac}][img]#{imageUrl}[/img][/url]"
+                           onclick="this.select()" />
+
+                $maybe miniatureUrl <- miniature
+                    <h4>Miniature with link
+                    <input type=text
+                           value="[url=@{ViewR hmac}][img]#{miniatureUrl}[/img][/url]"
+                           onclick="this.select()" />
+
+            <div #codes_markdown style="display: none">
+                <h4>Link
+                <input type=text value="[#{wrappedName}](@{ViewR hmac})"
+                       onclick="this.select()" />
+                <h4>Direct link
+                <input type=text value="[#{wrappedName}](@{DownloadR hmac})"
+                       onclick="this.select()" />
+
+                $maybe imageUrl <- image
+                    <h4>Image with link
+                    <input type=text
+                           value="[@{ViewR hmac}](![#{wrappedName}](#{imageUrl}))"
+                           onclick="this.select()" />
+
+                $maybe miniatureUrl <- miniature
+                    <h4>Miniature with link
+                    <input type=text
+                           value="[@{ViewR hmac}](![#{wrappedName}](#{miniatureUrl}))"
+                           onclick="this.select()" />
 
         <div .stats>
             <h3>Statistics
-            <span .key>Totalled
-            <span .value>#{PrettyNumber (int $ uploadViews upload)} download(s)
-            <span .key>in
-            <span .value>12 months
-            <span .key>for a total bandwith of
-            <span .value>13 GiB
+            $with views <- uploadViews upload
+                <span .key>Totalled
+                <span .value>#{PrettyNumber (int views)} download(s)
+                <span .key>in
+                <span .value>#{PrettyDiffTime uploadDiffTime}
+                <span .key>for a total bandwith of
+                <span .value>#{PrettyFileSize ((*) (fileSize file) views)}.
 
         <div .ad>
             <script type="text/javascript">

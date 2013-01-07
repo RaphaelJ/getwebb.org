@@ -37,7 +37,7 @@ processArchive path ext fileId = do
                         forM_ entries $ \e ->
                             let ePath = T.pack $! Z.eRelativePath e
                                 size = word64 $! Z.eUncompressedSize e
-                            in insert $! ArchiveFile fileId ePath size
+                            in insertUnique $! ArchiveFile fileId ePath size
 
                     app <- getYesod
                     liftIO $ app `C.putFile` fileId

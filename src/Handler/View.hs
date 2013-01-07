@@ -14,7 +14,7 @@ import System.FilePath (takeExtension)
 
 import Text.Hamlet (shamlet)
 
-import Handler.Download (ObjectType (..), routeType)
+import Handler.Download (ObjectType (..), routeType, getBufferEntry)
 import Handler.Utils (
       PrettyNumber (..), PrettyFileSize (..), PrettyDuration (..)
     , PrettyDiffTime (..)
@@ -36,11 +36,11 @@ getViewR hmacsJoined = do
 
     let hmac = head hmacs
 
-    (upload, file, extras) <- runDB $ do
+    (uploadId, upload, file, extras) <- runDB $ do
         mUpload <- getBy $ UniqueHmac hmac
 
         case mUpload of
-            Just (Entity _ upload) -> do
+            Just (Entity uploadId upload) -> do
                 let fileId = uploadFileId upload
                 Just file <- get fileId
 
@@ -63,7 +63,7 @@ getViewR hmacsJoined = do
                         return $ ArchiveExtras (map entityVal files)
                     _ -> return None
 
-                return (upload, file, extras)
+                return (uploadId, upload, file, extras)
             Nothing -> do
                 -- The file has been removed, redirects to the first existing
                 -- file.
@@ -74,6 +74,7 @@ getViewR hmacsJoined = do
 
     currentTime <- liftIO $ getCurrentTime
     rdr <- getUrlRenderParams
+    views <- getUploadViews uploadId upload
     let name = uploadName upload
         wrappedName = wrappedText name 35
         iconUrl = getIcon rdr upload extras
@@ -103,6 +104,14 @@ getViewR hmacsJoined = do
         let previous = last hmacs : init hmacs
             next     = tail hmacs ++ [head hmacs]
         in Just (joinHmacs previous, joinHmacs next)
+
+    -- Returns the number of views of the upload with the not commited views.
+    getUploadViews uploadId upload = do
+        let commitedViews = uploadViews upload
+        mBuffer <- getBufferEntry uploadId
+        return $! case mBuffer of
+            Just (bufferViews, _) -> commitedViews + bufferViews
+            Nothing               -> commitedViews
 
     -- Returns the URL to the file icon corresponding to the type of the file.
     getIcon rdr upload (ImageExtras _ _) = routeType rdr upload Miniature

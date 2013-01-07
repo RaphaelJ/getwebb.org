@@ -201,13 +201,17 @@ $maybe (previous, next) <- links
 
         <div .stats>
             <h3>Statistics
-            $with views <- uploadViews upload
-                <span .key>Totalled
-                <span .value>#{PrettyNumber (int views)} download(s)
-                <span .key>in
-                <span .value>#{PrettyDiffTime uploadDiffTime}
-                <span .key>for a total bandwith of
-                <span .value>#{PrettyFileSize ((*) (fileSize file) views)}.
+            <span .key>Totalled
+            <span .value>
+                #{PrettyNumber (int views)} 
+                $if views > 1
+                    downloads
+                $else 
+                    download
+            <span .key>in
+            <span .value>#{PrettyDiffTime uploadDiffTime}
+            <span .key>for a total bandwith of
+            <span .value>#{PrettyFileSize ((*) (fileSize file) views)}.
 
         <div .ad>
             <script type="text/javascript">

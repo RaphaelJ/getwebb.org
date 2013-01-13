@@ -1,3 +1,4 @@
+$newline never
 $doctype 5
 <!--[if lt IE 9]>
 <script src="//html5shim.googlecode.com/svn/trunk/html5.js"></script>
@@ -15,20 +16,20 @@ $doctype 5
         <link href=/static/img/favicon.png
               rel=icon type=image/png>
 
-        <link href=http://fonts.googleapis.com/css?family=Chau+Philomene+One
+        <link href=http://fonts.googleapis.com/css?family=Chau+Philomene+One|Ubuntu
               rel=stylesheet type=text/css>
     <body>
         ^{pageBody pc}
 
-    <footer>
-        Icons by P.J. Onori, O. Frolov, J. Wieser, M. Zlatar, A. Ramadan &amp;
-        A. Whitcroft
-        &nbsp;-&nbsp;
-        <a href="@{HomeR}">
-            API
-        &nbsp;-&nbsp;
-        <a href="https://github.com/RaphaelJ/getwebb.org">
-            Sources
-        &nbsp;-&nbsp;
-        <a href="mailto:#{extraAuthorMail $ appExtra $ settings master}">
-            Report a file
+        <footer>
+            Icons by P.J. Onori, O. Frolov, J. Wieser, M. Zlatar, A. Ramadan,
+            D. Ullrich &amp; A. Whitcroft
+            &nbsp;-&nbsp;
+            <a href="@{HomeR}">
+                API
+            &nbsp;-&nbsp;
+            <a href="https://github.com/RaphaelJ/getwebb.org">
+                Sources
+            &nbsp;-&nbsp;
+            <a href="mailto:#{extraAuthorMail $ appExtra $ settings master}">
+                Report a file

@@ -6,10 +6,10 @@ module Handler.Utils (
     , splitHmacs, joinHmacs
     ) where
 
-import Import
-import Prelude (tail)
+import Prelude
 
 import Data.Char (intToDigit)
+import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime)
 import Data.Word
@@ -53,7 +53,7 @@ instance Show PrettyNumber where
         go len i acc =
             let (d, m) = i `divMod` 10
                 c = intToDigit m
-            in if len == 3 then go 0         d (c : ',' : acc)
+            in if len == 3 then go 1         d (c : ',' : acc)
                            else go (len + 1) d (c : acc)
 
 instance ToMarkup PrettyNumber where

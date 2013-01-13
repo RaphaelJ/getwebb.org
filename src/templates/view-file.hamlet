@@ -1,0 +1,107 @@
+<div #page>
+    <div #left_pane>
+        <a .icon_link href=@{DownloadR hmac}>
+            <img .icon alt="File icon" src="#{icon}" />
+
+        <h1 title=#{uploadName upload}>
+            #{wrappedName}
+
+        $if fileType file == Audio
+            <div .audio_player>
+                $with AudioExtras medExtras _ <- extras
+                    $if mediaAttrsHtml5Encoded medExtras
+                        <audio controls>
+                            $forall (audioUrl, audioMime) <- audioSources
+                                <source src=#{audioUrl} type=#{audioMime}>
+                    $else
+                        The media is being re-encoded.<br />
+                        <a onclick="document.location.href = document.location.href"
+                           href="#">
+                            Refresh the page
+                        to get the media player.
+
+        <div .clear_float>
+
+        $case extras
+            $of AudioExtras medExtras mAudExtras
+                <div .information>
+                    <h3>Media information
+                    <table>
+                        <tbody>
+                            <tr>
+                                <th>
+                                    Duration
+                                <td>
+                                    #{PrettyDuration $ mediaAttrsDuration medExtras}
+
+                            $maybe audExtras <- mAudExtras
+                                $maybe artist <- audioAttrsArtist audExtras
+                                    <tr>
+                                        <th>
+                                            Artist
+                                        <td>
+                                            #{artist}
+                                $maybe album <- audioAttrsAlbum audExtras
+                                    <tr>
+                                        <th>
+                                            Album
+                                        <td>
+                                            #{album}
+                                $maybe title <- audioAttrsTitle audExtras
+                                    <tr>
+                                        <th>
+                                            Title
+                                        <td>
+                                            #{title}
+                                $maybe track <- audioAttrsTrack audExtras
+                                    <tr>
+                                        <th>
+                                            Track number
+                                        <td>
+                                            #{track}
+                                $maybe genre <- audioAttrsGenre audExtras
+                                    <tr>
+                                        <th>
+                                            Genre
+                                        <td>
+                                            #{genre}
+                                $maybe year <- audioAttrsYear audExtras
+                                    <tr>
+                                        <th>
+                                            Year
+                                        <td>
+                                            #{year}
+                                $maybe comment <- audioAttrsComment audExtras
+                                    <tr>
+                                        <th>
+                                            Comment
+                                        <td>
+                                            #{comment}
+
+                    $maybe audExtras <- mAudExtras
+                        $maybe lastFmUrl <- audioAttrsLastFmUrl audExtras
+                            <a .lastfm_link href=#{lastFmUrl}>
+                                Learn more about this track on
+                                <img alt="last.fm" src=@{StaticR img_lastfm_png} />.
+
+            $of VideoExtras medExtras
+                <div .information>
+                    <h3>Media information
+                    <table>
+                        <tbody>
+                            <tr>
+                                <th>
+                                    Duration
+                                <td>
+                                    #{PrettyDuration $ mediaAttrsDuration medExtras}
+
+            $of ArchiveExtras _
+                <div .information>
+                    <h3>Archive content
+                    <div .archive_content>
+                        ^{fromJust archive}
+            $of _
+
+    ^{right_pane}
+
+    <div .clear_float>

@@ -1,0 +1,61 @@
+#right_pane {
+    width: 299px;
+
+    h3 {
+        margin: 10px 0 5px 0;
+    }
+
+    .key, .value {
+        font-size: 0.9em;
+    }
+
+    .download {
+        margin: 10px 10px 0 10px;
+
+        .big_button {
+            display: block;
+            margin: 0;
+        }
+    }
+
+    .size {
+        float: right;
+        margin: 3px 7px 3px 0;
+    }
+
+    .share {
+        margin: 10px;
+    }
+
+    .embded_links {
+        margin: 20px 10px 10px 10px;
+
+        h4 {
+            margin: 4px 0 2px 0;
+        }
+
+        input[type=text] {
+            width: 100%;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            background-color: white;
+
+            font-size: 0.9em;
+            color: #484848;
+        }
+
+        input[type=text]:focus {
+            border: 1px solid rgba(0, 0, 0, 0.5);
+        }
+
+    }
+
+    .stats {
+        margin: 20px 10px 10px 10px;
+    }
+
+    .ad {
+        margin: 20px auto 10px auto;
+        width: 250px;
+        height: 250px;
+    }
+}

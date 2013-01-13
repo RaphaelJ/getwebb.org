@@ -1,5 +1,4 @@
-<div #main role="main">
-    $maybe msg <- mmsg
-        <h1>#{msg}
+$maybe msg <- mmsg
+    <h1>#{msg}
 
-    ^{widget}
+^{widget}

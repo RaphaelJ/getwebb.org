@@ -1,0 +1,128 @@
+<div #right_pane>
+    <div .download>
+        <a .big_button href=@{DownloadR hmac} download=#{uploadName upload}
+                       tabindex=1>
+            Download
+
+    <div .size>
+        <span .key>File size :
+        <span .value>#{PrettyFileSize (fileSize file)}
+
+    <div .share>
+        <a .facebook_button
+            href="https://www.facebook.com/dialog/feed?app_id=#{facebookAppId}&link=@{ViewR hmac}&picture=#{icon}&name=#{wrappedName}&redirect_uri=#{currentUrl}">
+            Share
+        <a .twitter_button
+            href="https://twitter.com/intent/tweet?text=#{wrappedName}&url=@{ViewR hmac}&via=GetwebbFiles&original_referer=#{currentUrl}">
+            Tweet
+
+    <div .clear_float>
+
+    <div .embded_links>
+        <button #button_links .toggle_button_left .active
+                onclick="showCode('links');">
+            Links
+        <button #button_html .toggle_button_central
+                onclick="showCode('html');">
+            HTML
+        <button #button_bbcode .toggle_button_central
+                onclick="showCode('bbcode');">
+            BBCode
+        <button #button_markdown .toggle_button_right
+                onclick="showCode('markdown');">
+            MarkDown
+        <div .clear_float>
+
+        <div #codes_links>
+            <h4>Link
+            <input type=text value=@{ViewR hmac} onclick="this.select()" />
+            <h4>Direct link
+            <input type=text value=@{DownloadR hmac}
+                    onclick="this.select()" />
+
+        <div #codes_html style="display: none">
+            <h4>Link
+            <input type=text value="<a href='@{ViewR hmac}'>#{wrappedName}</a>"
+                    onclick="this.select()" />
+            <h4>Direct link
+            <input type=text
+                    value="<a href='@{DownloadR hmac}'>#{wrappedName}</a>"
+                    onclick="this.select()" />
+
+            $maybe imageUrl <- image
+                <h4>Image with link
+                <input type=text
+                        value="<a href='@{ViewR hmac}'><img alt='#{wrappedName}' src='#{imageUrl}' /></a>"
+                        onclick="this.select()" />
+
+            $maybe miniatureUrl <- miniature
+                <h4>Miniature with link
+                <input type=text
+                        value="<a href='@{ViewR hmac}'><img alt='#{wrappedName}' src='#{miniatureUrl}' /></a>"
+                        onclick="this.select()" />
+
+        <div #codes_bbcode style="display: none">
+            <h4>Link
+            <input type=text value="[url=@{ViewR hmac}]#{wrappedName}[/url]"
+                    onclick="this.select()" />
+            <h4>Direct link
+            <input type=text
+                    value="[url=@{DownloadR hmac}]#{wrappedName}[/url]"
+                    onclick="this.select()" />
+
+            $maybe imageUrl <- image
+                <h4>Image with link
+                <input type=text
+                        value="[url=@{ViewR hmac}][img]#{imageUrl}[/img][/url]"
+                        onclick="this.select()" />
+
+            $maybe miniatureUrl <- miniature
+                <h4>Miniature with link
+                <input type=text
+                        value="[url=@{ViewR hmac}][img]#{miniatureUrl}[/img][/url]"
+                        onclick="this.select()" />
+
+        <div #codes_markdown style="display: none">
+            <h4>Link
+            <input type=text value="[#{wrappedName}](@{ViewR hmac})"
+                    onclick="this.select()" />
+            <h4>Direct link
+            <input type=text value="[#{wrappedName}](@{DownloadR hmac})"
+                    onclick="this.select()" />
+
+            $maybe imageUrl <- image
+                <h4>Image with link
+                <input type=text
+                        value="[@{ViewR hmac}](![#{wrappedName}](#{imageUrl}))"
+                        onclick="this.select()" />
+
+            $maybe miniatureUrl <- miniature
+                <h4>Miniature with link
+                <input type=text
+                        value="[@{ViewR hmac}](![#{wrappedName}](#{miniatureUrl}))"
+                        onclick="this.select()" />
+
+    <div .stats>
+        <h3>Statistics
+        $with (views, _, bw) <- stats
+            <span .key>Totalled
+            <span .value>
+                $if views > 1
+                    #{PrettyNumber (int views)} views
+                $elseif views == 1
+                    one view
+                $else
+                    no view
+            <span .key>in
+            <span .value>#{PrettyDiffTime uploadDiffTime}
+            <span .key>for a total bandwith of
+            <span .value>#{PrettyFileSize bw}.
+
+    <div .ad>
+        <script type="text/javascript">
+            google_ad_client = "ca-pub-8544036589375641";
+            google_ad_slot = "5853507369";
+            google_ad_width = 250;
+            google_ad_height = 250;
+        <script type="text/javascript" 
+            href="http://pagead2.googlesyndication.com/pagead/show_ads.js">

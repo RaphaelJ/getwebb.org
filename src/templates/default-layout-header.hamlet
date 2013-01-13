@@ -11,4 +11,4 @@
                 <a href=@{HomeR}>New upload
             <li>
                 <a href=@{HomeR}>Upload history
-                    <span .count>#{countHistory}
+                    <span .count>#{PrettyNumber countHistory}

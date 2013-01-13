@@ -2,7 +2,6 @@
 -- | This module handles the processing of an uploaded file.
 module Upload.Processing (
       UploadError (..), process, processFile, moveToTmp, hashFile, moveToUpload
-    , computeHmac, toBase62
     ) where
 
 import Import
@@ -16,11 +15,8 @@ import System.IO
 import Control.Monad.Trans.Either
 import Database.Persist.GenericSql (Single (..), rawSql)
 import Database.Persist.Store (PersistValue (..))
-import Data.Array.Unboxed (UArray, listArray, (!))
 import qualified Data.ByteString.Lazy as B
-import qualified Data.ByteString.Lazy.Char8 as C
-import Data.Digest.Pure.SHA (sha1, hmacSha1, showDigest, integerDigest)
-import Data.Digits (digits)
+import Data.Digest.Pure.SHA (sha1, showDigest)
 import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime, addUTCTime)
 import Network.Wai (remoteHost)
@@ -31,6 +27,7 @@ import Upload.Image (processImage)
 import Upload.Media (processMedia)
 import Upload.Path (
       ObjectType (..), getFileSize, hashDir, uploadDir, newTmpFile, getPath
+    , computeHmac
     )
 
 import System.TimeIt (timeIt)
@@ -112,15 +109,15 @@ processFile adminKey f = do
                     -- retrieves the FileId.
                     liftIO $ removeFile tmpPath
                     liftIO $ putStrLn "Existing file"
-                    Just existingFile <- lift $ getBy (UniqueSHA1 hashText)
+                    Just existingFile <- lift $ getBy (UniqueFileSHA1 hashText)
                     return $! (entityKey existingFile, False)
 
             let upload = Upload {
                   uploadHmac = "",  uploadFileId = fileId
-                , uploadName = fileName f, uploadMime = fileContentType f
-                , uploadUploaded = currentTime, uploadHostname = clientHost
-                , uploadAdminKey = adminKey, uploadViews = 0
-                , uploadLastView = currentTime
+                , uploadName = fileName f, uploadUploaded = currentTime
+                , uploadHostname = clientHost, uploadAdminKey = adminKey
+                , uploadViews = 0, uploadLastView = currentTime
+                , uploadBandwidth = 0
                 }
 
             uploadId <- lift $ insert upload
@@ -204,19 +201,3 @@ moveToUpload :: FilePath -> FilePath -> IO ()
 moveToUpload path destPath = do
     createDirectoryIfMissing True (takeDirectory destPath)
     renameFile path destPath
-
--- | Returns the first height base 62 encoded digits of the upload hmac.
-computeHmac :: App -> UploadId -> Text
-computeHmac app uploadId =
-    let key = encryptKey app
-        PersistInt64 idInt = unKey uploadId
-        hmac = integerDigest $ hmacSha1 key $ C.pack $ show idInt
-    in T.pack $ take 8 $ toBase62 $ hmac
-
--- | Encodes an integer in base 62 (using letters and numbers).
-toBase62 :: Integer -> String
-toBase62 i =
-    map (digitToChar !) $ digits 62 i
-  where
-    digitToChar :: UArray Integer Char
-    digitToChar = listArray (0, 61) $ ['a'..'z'] ++ ['A'..'Z'] ++ ['0'..'9'] 

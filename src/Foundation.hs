@@ -28,6 +28,7 @@ import Text.Hamlet (shamlet, hamletFile)
 import qualified Web.ClientSession as S
 
 import Model
+import Handler.Utils (PrettyNumber (..))
 
 -- | The site argument for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -42,7 +43,7 @@ data App = App {
     , encryptKey :: B.ByteString
     , compressionQueue :: Chan FileId
     , mediasQueue :: Chan FileId
-    , viewsBuffer :: (MVar (M.Map UploadId (Word64, UTCTime)), MVar ())
+    , viewsBuffer :: (MVar (M.Map UploadId (Word64, Maybe UTCTime, Word64)), MVar ())
     }
 
 -- Set up i18n messages. See the message folder.
@@ -109,7 +110,7 @@ instance Yesod App where
                     in ("405 Method Not Allowed", Just msg)
 
         let repHtml = do
-                setTitle [shamlet|#{title} | getwebb | Free file sharing|]
+                setTitle [shamlet|#{title} - getwebb|]
                 $(widgetFile "error")
             repJson = case mMsg of
                 Just msg -> object [(title, renderMarkup msg)]

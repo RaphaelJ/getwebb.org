@@ -45,8 +45,8 @@ import Debug.Trace
 import System.TimeIt
 
 import Upload.FFmpeg (
-      MediaInfo (..), MediaDuration (..), argsWebM, argsH264, argsWebMAudio
-    , argsMP3, encode, getInfo
+      MediaInfo (..), MediaDuration (..), argsWebMAudio, argsMP3
+    , {-argsWebM, argsH264,-} encode, getInfo
     )
 import qualified Upload.Compression as C
 import Upload.Image (miniature)
@@ -131,8 +131,8 @@ mediasDaemon app = do
                     updateHtml5Encoded
                     return ()
                 Video -> do
-                    _ <- encodeFile argsWebM path (getPath' WebMVideo)
-                    _ <- encodeFile argsH264 path (getPath' MKV)
+                    -- _ <- encodeFile argsWebM path (getPath' WebMVideo)
+                    -- _ <- encodeFile argsH264 path (getPath' MKV)
                     updateHtml5Encoded
                     return ()
                 _     ->

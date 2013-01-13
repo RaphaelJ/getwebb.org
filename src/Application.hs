@@ -14,6 +14,7 @@ import Database.Persist.GenericSql (runMigration)
 import qualified Database.Persist.Store
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Lazy as L
+import Network.Wai.Middleware.Autohead (autohead)
 import Network.Wai.Middleware.RequestLogger (logStdout, logStdoutDev)
 import Network.HTTP.Conduit (newManager, def)
 import System.Directory (doesFileExist)
@@ -47,7 +48,7 @@ makeApplication conf = do
     _ <- M.forkMediasDaemon foundation
     _ <- D.forkViewsDaemon foundation
 
-    app <- toWaiAppPlain foundation
+    app <- autohead <$> toWaiAppPlain foundation
     return $ logWare app
   where
     logWare = if development then logStdoutDev

@@ -1,1 +1,29 @@
-<a .big_button href=@{DownloadR hmac}>Download
+$with headersHeight <- if' (isJust links) 67 37
+
+    <div #full_screen style="top: #{headersHeight}px">
+        <div #position_relative>
+            <div #title>
+                <h1 title=#{uploadName upload}>#{wrappedName}
+
+                $with ImageExtras attrs tags <- extras
+                    <div #size>
+                        #{int $ imageAttrsWidth attrs} x
+                        #{int $ imageAttrsHeight attrs}
+
+                    $if not (null tags)
+                        <div #tags>
+                            <h3>
+                                Picture information
+
+                            <table>
+                                <tbody>
+                                    $forall ExifTag _ title val <- tags
+                                        <tr>
+                                            <th>#{title}
+                                            <td>#{val}
+
+            <div #left_pane>
+                <a href=@{DownloadR hmac} title="View image in full resolution">
+                    <img #image src=#{fromJust $ image} alt=#{uploadName upload}/>
+
+            ^{right_pane}

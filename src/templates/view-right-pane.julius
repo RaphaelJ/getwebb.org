@@ -16,8 +16,3 @@ function showCode(name)
     $("#codes_bbcode").toggle(bbcode);
     $("#codes_markdown").toggle(markdown);
 }
-
-function refreshPage()
-{
-    document.location.href = document.location.href;
-}

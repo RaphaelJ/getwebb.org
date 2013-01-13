@@ -49,7 +49,7 @@ $("#upload_form").submit(function ()
                 preview.append(preview_img);
                 preview_img.append($("<div>", { class: "border" }));
 
-                var preview_img_tag = $("<img>", { 
+                var preview_img_tag = $("<img>", {
                     alt: file.name,
                     src: '@{StaticR img_homepage_preview_waiting_png}'
                 });
@@ -81,20 +81,32 @@ $("#upload_form").submit(function ()
             progress.append(progress_complete);
             file_status.append(progress);
 
-            info.changeStatus = function (title, complete_div) {
-                return function (status, percent) 
+            info.changeStatus = function (filename, title, complete_div) {
+                return function (status, percent, url)
                 {
                     title.attr("class", status);
-                    complete_div.animate({
-                        width : percent + "%"
-                    }, "fast");
+                    complete_div.width(percent + "%");
+
+                    // Transforms the title into a link to the file when
+                    // downloaded
+                    if (url != null) {
+                        var link = $("<a>", {
+                            href: url,
+                            target: "_blank",
+                            title: "Open the file in a new window."
+                        });
+                        link.html(filename);
+
+                        title.empty();
+                        title.append(link);
+                    }
                 }
-            } (file_title, progress_complete);
+            } (file.name, file_title, progress_complete);
 
             $("#uploads").append(info.div);
             $("#uploads").append($("<div>", { class : "clear_float" }));
 
-            info.changeStatus("waiting", 0);
+            info.changeStatus("waiting", 0, null);
 
             total += file.size;
             files_info.push(info);
@@ -134,7 +146,7 @@ function uploadFiles(loaded, total, files_info, uploaded, errors)
     var old_global_time = new Date().getTime();
 
     updateGlobalProgress(old_global_percent, 0, 0);
-    info.changeStatus("uploading", 0);
+    info.changeStatus("uploading", 0, null);
 
     var xhr = new XMLHttpRequest();
 
@@ -143,7 +155,7 @@ function uploadFiles(loaded, total, files_info, uploaded, errors)
 
         // Doesn't update if no change.
         if (percent != old_percent) {
-            info.changeStatus("uploading", percent);
+            info.changeStatus("uploading", percent, null);
 
             old_percent = percent;
         }
@@ -169,14 +181,14 @@ function uploadFiles(loaded, total, files_info, uploaded, errors)
         if (e.target.status == 200) {
             res = jQuery.parseJSON(e.target.responseText)[0];
             if (typeof(res) == "string") { // error, skips the file
-                info.changeStatus("error", 100);
+                info.changeStatus("error", 100, null);
                 errors.push({ filename: info.file.name, error: res });
             } else {
-                info.changeStatus("uploaded", 100);
+                info.changeStatus("uploaded", 100, res.url);
                 uploaded.push(res.id);
             }
         } else {
-            info.changeStatus("error", 100);
+            info.changeStatus("error", 100, null);
             errors.push({
                 filename: info.file.name,
                 error: e.target.responseText
@@ -190,7 +202,7 @@ function uploadFiles(loaded, total, files_info, uploaded, errors)
     }, false);
 
     xhr.addEventListener("error", function (e) {
-        info.changeStatus("error", 100);
+        info.changeStatus("error", 100, null);
         errors.push({ filename: info.file.name, error: "Connection error" });
         continueUpload(
             loaded + info.file.size, total, files_info, uploaded, errors
@@ -249,9 +261,9 @@ function restoreUploadForm()
     document.title = originalTitle;
 
     $("#upload_global_progress").hide();
-    $("#upload_status").html("");
-    $("#upload_speed").html("");
-    $("#uploads").html("");
+    $("#upload_status").empty();
+    $("#upload_speed").empty();
+    $("#uploads").empty();
 }
 
 // Returns the list of the files which are to large to be uploaded.
@@ -281,9 +293,7 @@ function showError(message)
 function updateGlobalProgress(percent, step_bytes, step_elapsed)
 {
     var strPercent = percent.toString() + "%"
-    $("#upload_global_progress_complete").animate({
-        width : strPercent
-    }, "fast");
+    $("#upload_global_progress_complete").width(strPercent);
 
     if (percent < 100) {
         $("#upload_status").html("Uploading ...");
@@ -294,7 +304,7 @@ function updateGlobalProgress(percent, step_bytes, step_elapsed)
             var speed = step_bytes * 1000 / step_elapsed;
             $("#upload_speed").html(prettySpeed(speed));
         } else
-            $("#upload_speed").html("");
+            $("#upload_speed").empty();
     } else {
         $("#upload_status").html("Waiting on server response ...");
         document.title = "Waiting ... | " + originalTitle;

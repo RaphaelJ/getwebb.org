@@ -15,6 +15,7 @@ data FileType = Image | Audio | Video | Archive | UnknownType
 derivePersistField "FileType"
 
 type AdminKey = Int64
+type Hmac = Text
 
 share [mkPersist sqlOnlySettings, mkMigrate "migrateAll"] [persistUpperCase|
 LastAdminKey
@@ -29,20 +30,20 @@ File
     compressed Word64 Maybe -- The compressed size if the file is compressed.
     uploaded UTCTime
     -- Each file is identified by its hash:
-    UniqueSHA1 sha1
+    UniqueFileSHA1 sha1
     deriving Show
 
 Upload
-    hmac Text -- An unique identifier of the upload generated from its ID.
+    hmac Hmac -- An unique identifier of the upload generated from its ID.
     fileId FileId
     name Text
-    mime Text
     uploaded UTCTime
     hostname Text
     adminKey AdminKey
     views Word64 default=0
     lastView UTCTime
-    UniqueHmac hmac
+    bandwidth Word64 default=0
+    UniqueUploadHmac hmac
     deriving Show
 
 -- Saves the attributes of an image.
@@ -87,9 +88,11 @@ AudioAttrs
 
 -- Saves the contained files of an archive.
 ArchiveFile
+    hmac Hmac -- An unique identifier of the file generated from its ID.
     fileId FileId
     path Text
-    size Word64 -- Uncompressed size
+    size Word64 Maybe -- Uncompressed size if not a directory
     UniqueArchiveFile fileId path
+    UniqueArchiveFileHmac hmac
     deriving Show
 |]

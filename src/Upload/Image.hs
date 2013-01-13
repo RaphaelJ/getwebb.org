@@ -3,13 +3,15 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 -- | Recognises images and create miniature to them.
 module Upload.Image (
-      extensions, displayable, miniatureSize, processImage, miniature, exifTags
+      extensions, displayableExtensions, miniatureSize, processImage, miniature
+    , displayable, exifTags
     ) where
 
 import Import
 
 import qualified Control.Exception as E
 import Control.Monad
+import Data.Ratio
 import qualified Data.Set as S
 import qualified Data.Text as T
 import Data.Word
@@ -34,12 +36,16 @@ extensions = S.fromDistinctAscList [
     ]
 
 -- | Files extensions which can be displayed in a browser.
-displayable :: S.Set Text
-displayable = S.fromDistinctAscList [".gif", ".jpeg", ".jpg", ".png"]
+displayableExtensions :: S.Set Text
+displayableExtensions = S.fromDistinctAscList [".gif", ".jpeg", ".jpg", ".png"]
 
 -- | The size of miniatures in pixels (both in width and height).
 miniatureSize :: Int
 miniatureSize = 125
+
+-- | The maximum size of an image to be displayed in the viewer.
+maxImageSize :: I.Size
+maxImageSize = I.Size 1920 1200
 
 -- | Try to open the image and to generate a miniature.
 processImage :: FilePath -> Text -> FileId -> Handler Bool
@@ -61,14 +67,14 @@ processImage path ext fileId = do
                         let miniImg = miniature img
                         I.save miniImg (getPath dir Miniature)
 
-                    -- If the image isn't displayable in a browser, creates
-                    -- an additional .PNG.
-                    inBrowser <- if ext `S.member` displayable
-                        then return True
-                        else do
+                    -- If the image isn't displayable in a browser, creates an
+                    -- additional .PNG.
+                    inBrowser <- case displayable ext img of
+                        Just img' -> do
                             liftIO $ putStrLn "Displayable: "
-                            liftIO $ timeIt $ I.save img (getPath dir PNG)
+                            liftIO $ timeIt $ I.save img' (getPath dir PNG)
                             return False
+                        Nothing -> return True
 
                     -- Update the database row so the file type is Image and
                     -- adds possible EXIF tags.
@@ -123,6 +129,20 @@ miniature img =
 
     I.Size w h = I.getSize img
     !miniSize = I.Size miniatureSize miniatureSize
+
+-- | Returns an image which can be displayed in the browser depending on the
+-- extension and the image size. Returns 'Nothing' if the original image is 
+-- displayable in a browser.
+displayable :: Text -> I.RGBImage -> Maybe I.RGBImage
+displayable _   img | w > maxW || h > maxH =
+    Just $ I.resize I.NearestNeighbor img size'
+  where
+    I.Size w h = I.getSize img
+    I.Size maxW maxH = maxImageSize
+    maxRatio = max (w % maxW) (h % maxH)
+    size' = I.Size (round $ (w % 1) / maxRatio) (round $ (h % 1) / maxRatio)
+displayable ext img | not (ext `S.member` displayableExtensions) = Just img
+displayable _   _   = Nothing
 
 -- | Reads EXIF tags from the image file. Returns an empty list if the image
 -- doesn't support EXIF tags.

@@ -60,7 +60,7 @@ processImage path ext fileId = do
                 Right img -> do
                     -- Creates the miniature and save it as "miniature.png".
                     let dir = takeDirectory path
-                        I.Size w h = I.getSize img
+                        size@(I.Size w h) = I.getSize img
                     liftIO $ putStrLn "Miniature: "
                     liftIO $ timeIt $ do
                         let miniImg = miniature img
@@ -68,12 +68,7 @@ processImage path ext fileId = do
 
                     -- If the image isn't displayable in a browser, creates an
                     -- additional .PNG.
-                    inBrowser <- case displayable ext img of
-                        Just img' -> do
-                            liftIO $ putStrLn "Displayable: "
-                            liftIO $ timeIt $ I.save img' (getPath dir (Display PNG))
-                            return False
-                        Nothing -> return True
+                    displayable <- genDisplayable dir size img
 
                     -- Update the database row so the file type is Image and
                     -- adds possible EXIF tags.
@@ -87,7 +82,7 @@ processImage path ext fileId = do
                               imageAttrsFileId = fileId
                             , imageAttrsWidth = word32 w
                             , imageAttrsHeight = word32 h
-                            , imageAttrsDisplayable = Nothing -- FIXME
+                            , imageAttrsDisplayable = displayable
                             }
 
                         forM_ tags $ \(title, value) ->
@@ -97,6 +92,25 @@ processImage path ext fileId = do
                     liftIO $ app `C.putFile` fileId
                     return True
                 Left (_ :: E.SomeException) -> return False
+  where
+    genDisplayable size img | not (ext `S.member` displayableExtensions) =
+            let img' = displayable ext img
+            in I.save img' (getPath dir (Display PNG))
+    genDisplayable size img = 
+
+
+-- Returns an image which can be displayed in the browser depending on the
+-- extension and the image size.
+displayable :: Text -> I.RGBImage -> Maybe I.RGBImage
+displayable _   img | w > maxW || h > maxH =
+    I.resize I.NearestNeighbor img size'
+where
+    I.Size w h = I.getSize img
+    I.Size maxW maxH = maxImageSize
+    maxRatio = max (w % maxW) (h % maxH)
+    size' = I.Size (round $ (w % 1) / maxRatio) (round $ (h % 1) / maxRatio)
+displayable ext img | not (ext `S.member` displayableExtensions) = Just img
+displayable _   _   = Nothing
 
 -- | Generates a miniature from the input image.
 miniature :: I.RGBImage -> I.RGBImage
@@ -128,20 +142,6 @@ miniature img =
 
     I.Size w h = I.getSize img
     !miniSize = I.Size miniatureSize miniatureSize
-
--- | Returns an image which can be displayed in the browser depending on the
--- extension and the image size. Returns 'Nothing' if the original image is 
--- displayable in a browser.
-displayable :: Text -> I.RGBImage -> Maybe I.RGBImage
-displayable _   img | w > maxW || h > maxH =
-    Just $ I.resize I.NearestNeighbor img size'
-  where
-    I.Size w h = I.getSize img
-    I.Size maxW maxH = maxImageSize
-    maxRatio = max (w % maxW) (h % maxH)
-    size' = I.Size (round $ (w % 1) / maxRatio) (round $ (h % 1) / maxRatio)
-displayable ext img | not (ext `S.member` displayableExtensions) = Just img
-displayable _   _   = Nothing
 
 -- | Reads EXIF tags from the image file. Returns an empty list if the image
 -- doesn't support EXIF tags.

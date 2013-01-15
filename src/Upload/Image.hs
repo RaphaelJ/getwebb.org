@@ -14,7 +14,6 @@ import Control.Monad
 import Data.Ratio
 import qualified Data.Set as S
 import qualified Data.Text as T
-import Data.Word
 import System.FilePath (takeDirectory)
 
 import qualified Vision.Image as I
@@ -24,7 +23,7 @@ import Graphics.Exif.Internals (tagFromName, tagTitle)
 import System.TimeIt (timeIt)
 
 import qualified Upload.Compression as C
-import Upload.Path (ObjectType (..), getPath)
+import Upload.Path (getPath)
 
 -- | Files extensions which are supported by the DevIL image library.
 extensions :: S.Set Text
@@ -72,7 +71,7 @@ processImage path ext fileId = do
                     inBrowser <- case displayable ext img of
                         Just img' -> do
                             liftIO $ putStrLn "Displayable: "
-                            liftIO $ timeIt $ I.save img' (getPath dir PNG)
+                            liftIO $ timeIt $ I.save img' (getPath dir (Display PNG))
                             return False
                         Nothing -> return True
 
@@ -88,7 +87,7 @@ processImage path ext fileId = do
                               imageAttrsFileId = fileId
                             , imageAttrsWidth = word32 w
                             , imageAttrsHeight = word32 h
-                            , imageAttrsInBrowser = inBrowser
+                            , imageAttrsDisplayable = Nothing -- FIXME
                             }
 
                         forM_ tags $ \(title, value) ->
@@ -157,9 +156,3 @@ exifTags path = do
     case eTags of
         Right tags -> return tags
         Left (_ :: E.SomeException) -> return []
-
-int :: Integral a => a -> Int
-int = fromIntegral
-
-word32 :: Integral a => a -> Word32
-word32 = fromIntegral

@@ -8,6 +8,9 @@ $("#options_toggle").click(function ()
     $("#options").slideToggle(100);
 });
 
+// Maximum size of images in bytes for the thumbnail.
+var maxPreviewSize = 5 * 1024 * 1024; // 5 Mio
+
 // Hides the upload form, start the upload and shows the uploads progress.
 $("#upload_form").submit(function () 
 {
@@ -44,7 +47,10 @@ $("#upload_form").submit(function ()
             // Displays a thumbnail for images.
             var preview = $("<div>", { class: "preview" });
             info.div.append(preview);
-            if (typeof FileReader !== "undefined" && isImage(file.type)) {
+            if (
+                typeof FileReader !== "undefined" && file.size < maxPreviewSize
+                && isImage(file.type)
+            ) {
                 var preview_img = $("<div>", { class: "img" });
                 preview.append(preview_img);
                 preview_img.append($("<div>", { class: "border" }));

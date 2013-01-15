@@ -16,7 +16,7 @@ import System.FilePath (takeExtension)
 
 import Text.Hamlet (shamlet)
 
-import Handler.Download (ObjectType (..), routeType, getBufferEntry)
+import Handler.Download (routeType, getBufferEntry)
 import Handler.Utils (
       PrettyNumber (..), PrettyFileSize (..), PrettyDuration (..)
     , PrettyDiffTime (..)
@@ -155,10 +155,11 @@ getViewR hmacsJoined = do
     renderStatic rdr ressource = rdr (StaticR ressource) []
 
     -- Returns the URL to the displayable image if the file had one.
-    getImage rdr upload (ImageExtras attrs _)
-        | imageAttrsInBrowser attrs = Just $ routeType rdr upload Original
-        | otherwise                 = Just $ routeType rdr upload PNG
-    getImage _   _      _           = Nothing
+    getImage rdr upload (ImageExtras attrs _) =
+        case imageAttrsDisplayable attrs of
+            Just t  -> Just $ routeType rdr upload (Display t)
+            Nothing -> Just $ routeType rdr upload Original
+    getImage _   _      _                     = Nothing
 
     -- Returns the URL to the miniature if the file had one.
     getMiniature rdr upload (ImageExtras _ _) =

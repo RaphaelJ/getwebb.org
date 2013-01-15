@@ -57,7 +57,7 @@ processFile adminKey f = do
     let yesterday = (-3600 * 24) `addUTCTime` currentTime
 
     runEitherT $ do
-        -- Checks the user limits before moving the file to fail as soon as 
+        -- Checks the user limits before moving the file to fail as soon as
         -- possible.
         allowed <- lift $ runDB $ checksIpLimits extras clientHost yesterday 0
         when (not allowed) $

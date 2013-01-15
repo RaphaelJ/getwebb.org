@@ -20,6 +20,8 @@ import Network.HTTP.Conduit (newManager, def)
 import System.Directory (doesFileExist)
 import Web.ClientSession (randomKey)
 
+import qualified JobsDaemon as D
+
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
 import Handler.Home
@@ -65,12 +67,15 @@ makeFoundation conf = do
     Database.Persist.Store.runPool dbconf (runMigration migrateAll) p
     key <- getEncryptionKey
 
-    -- Initialises the concurrent channels and variables used by utility threads.
-    cQueue <- C.newQueue
-    mQueue <- M.newQueue
-    vBuffer <- D.newBuffer
+    -- Initialises the concurrent queues and restores their states.
+    jobsQueue <- J.newQueue
+    viewsBuffer <- D.newBuffer
 
-    return $ App conf s p manager dbconf key cQueue mQueue vBuffer
+    let app = App conf s p manager dbconf key jobsQueue viewsBuffer
+    C.restoreQueue app
+    M.restoreQueue app
+
+    return app
 
 -- | Try to read the key file or initialize it with a random key.
 getEncryptionKey :: IO L.ByteString
@@ -88,6 +93,6 @@ getApplicationDev :: IO (Int, Application)
 getApplicationDev =
     defaultDevelApp loader makeApplication
   where
-    loader = loadConfig (configSettings Development)
-        { csParseExtra = parseExtra
+    loader = loadConfig (configSettings Development) {
+          csParseExtra = parseExtra
         }

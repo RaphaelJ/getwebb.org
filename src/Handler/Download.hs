@@ -2,15 +2,16 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Handler.Download (
     -- * Views daemon buffer management
-      ViewsBuffer, newBuffer, incrementViewCount, addBandwidth, getBufferEntry
+      ViewsBuffer, viewsCommitDelay, newBuffer, incrementViewCount, addBandwidth
+    , getBufferEntry
     -- * Starting the daemon
-    , viewsCommitDelay, viewsDaemon, forkViewsDaemon
+    , viewsDaemon, forkViewsDaemon
     -- * Page handler
     , getDownloadR
     -- * Transmission utilities
     , lazyBSToSource
     -- * URL utilities
-    , ObjectType (..), routeType
+    , routeType
     )where
 
 import Import
@@ -28,19 +29,18 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
-import Data.Word
 import System.IO (IOMode (..), openBinaryFile, hFileSize, hClose)
 
 import Blaze.ByteString.Builder (Builder, fromByteString)
 import qualified Codec.Archive.Zip as Z
 import Codec.Compression.GZip (decompress)
-import Control.Monad.Trans.Resource (ResourceT, runResourceT)
+import Control.Monad.Trans.Resource (ResourceT)
 import Data.Conduit (Source, Flush (Chunk), addCleanup, yield)
-import Database.Persist.Store (runPool)
 import Network.Mime (defaultMimeLookup)
 import Network.Wai (requestHeaders)
 
-import Upload.Path (ObjectType (..), hashDir, uploadDir, getPath)
+import JobsDaemon (runDBIO)
+import Upload.Path (hashDir, uploadDir, getPath)
 
 import System.TimeIt
 
@@ -97,7 +97,7 @@ getBufferEntry uploadId = do
     accum <- liftIO $ readMVar buffer
     return $ uploadId `M.lookup` accum
 
--- | Delay in microseconds at which the views buffer is commited to the 
+-- | Delay in microseconds at which the views buffer is commited to the
 -- database.
 viewsCommitDelay :: Int
 viewsCommitDelay = 5 * 10^(6 :: Int) -- Every five seconds.
@@ -115,7 +115,7 @@ viewsDaemon app = do
         oldBuffer <- buffer `swapMVar` M.empty
 
         -- Inserts the old buffer in the database.
-        timeIt $ runDBIO $ do
+        timeIt $ runDBIO app $ do
             forM_ (M.assocs oldBuffer) $ \(uploadId, (views, mLastView, bw)) ->
                 case mLastView of
                     Just lastView -> update uploadId [
@@ -127,9 +127,6 @@ viewsDaemon app = do
                         ]
 
         threadDelay viewsCommitDelay
-  where
-    runDBIO :: YesodPersistBackend App (ResourceT IO) a -> IO a
-    runDBIO f = runResourceT $ runPool (persistConfig app) f (connPool app)
 
 -- | Forks the view buffer daemon on a new thread and returns its) 'ThreadId'.
 forkViewsDaemon :: App -> IO ThreadId
@@ -138,18 +135,15 @@ forkViewsDaemon = forkIO . viewsDaemon
 -- | Streams the content of a file over HTTP.
 getDownloadR :: Text -> Handler ()
 getDownloadR hmac = do
-    mArchive <- lookupGetParam "archive"
-    case mArchive of
-        Nothing       -> streamFile
-        Just fileHmac -> streamArchiveFile fileHmac
+    query <- parseQuery
+    case query of
+        Just (Display _)               -> streamDisplayable
+        Just (CompressedFile fileHmac) -> streamArchiveFile fileHmac
+        Just requestType               -> streamFile requestType
+        Nothing                        -> notFound
   where
     -- Streams the file to the client.
-    streamFile = do
-        mRequestType <- parseType <$> lookupGetParam "type"
-        when (isNothing mRequestType)
-            notFound
-        let Just requestType = mRequestType
-
+    streamFile requestType = do
         (file, uploadId, upload, h) <- runDB $ do
             Entity uploadId upload <- getBy404 $ UniqueUploadHmac hmac
 
@@ -175,11 +169,40 @@ getDownloadR hmac = do
             (Original, Nothing) -> do
                 return (bs, fileSize file)
             (_, _) -> do
-                s <- liftIO $ hFileSize h
-                return (bs, word64 s)
+                size <- liftIO $ hFileSize h
+                return (bs, word64 size)
 
         let mime = requestMime requestType (uploadName upload)
         streamByteString uploadId h bs' mime size
+
+    -- Streams a displayable image to the client.
+    streamDisplayable = do
+        (uploadId, upload, h, displayType) <- runDB $ do
+            Entity uploadId upload <- getBy404 $ UniqueUploadHmac hmac
+
+            let fileId = uploadFileId upload 
+            Just file              <- get fileId
+            when (fileType file /= Image) $
+                lift notFound
+
+            Just (Entity _ attrs)  <- getBy $ UniqueImageAttrs fileId
+
+            let mDisplayType = imageAttrsDisplayable attrs
+            when (isNothing mDisplayType) $
+                lift notFound
+
+            let Just displayType = mDisplayType
+
+            -- Opens the file inside the transaction to ensure data consistency.
+            h <- lift $ safeOpenFile file (Display displayType)
+
+            return (uploadId, upload, h, displayType)
+
+        bs <- liftIO $ L.hGetContents h
+        size <- liftIO $ word64 <$> hFileSize h
+
+        let mime = requestMime (Display displayType) (uploadName upload)
+        streamByteString uploadId h bs mime size
 
     -- Decompresses and streams a file inside an archive to the client.
     streamArchiveFile fileHmac = do
@@ -225,6 +248,13 @@ getDownloadR hmac = do
 
         sendResponse (mime, ContentSource source)
 
+    -- Returns the type of the requested item or Nothing of the type is invalid.
+    parseQuery = do
+        mArchive <- lookupGetParam "archive"
+        case mArchive of
+            Just fileHmac -> return $! Just (CompressedFile fileHmac)
+            Nothing       -> parseType <$> lookupGetParam "type"
+
     -- Parses the file type from the URL parameter.
     parseType Nothing            = Just Original
     parseType (Just "")          = Just Original
@@ -233,7 +263,7 @@ getDownloadR hmac = do
     parseType (Just "mp3")       = Just MP3
     parseType (Just "vwebm")     = Just WebMVideo
     parseType (Just "mkv")       = Just MKV
-    parseType (Just "png")       = Just PNG
+    parseType (Just "display")   = Just (Display undefined)
     parseType _                  = Nothing
 
     -- Tries to open the file. 404 Not found if doesn't exists.
@@ -265,7 +295,9 @@ getDownloadR hmac = do
     requestMime MP3            _        = "audio/mpeg"
     requestMime WebMVideo      _        = "video/webm"
     requestMime MKV            _        = "video/x-matroska"
-    requestMime PNG            _        = typePng
+    requestMime (Display PNG)  _        = typePng
+    requestMime (Display JPG)  _        = typeJpeg
+    requestMime (Display GIF)  _        = typeGif
     requestMime _              _        = undefined
 
 -- Creates a sources which commits the amount of transferred to the first
@@ -295,7 +327,7 @@ routeType urlRdr upload obj =
         MP3                 -> [("type", "mp3")]
         WebMVideo           -> [("type", "vwebm")]
         MKV                 -> [("type", "mkv")]
-        PNG                 -> [("type", "png")]
+        Display _           -> [("type", "display")]
         CompressedFile hmac -> [("archive", hmac)]
   where
     urlRdr' = urlRdr (DownloadR (uploadHmac upload))
@@ -306,6 +338,3 @@ splitCommas [] = []
 splitCommas xs =
     let (ys, zs) = break (== ',') xs
     in ys : splitCommas (dropWhile (== ' ') $ drop 1 zs)
-
-word64 :: Integral a => a -> Word64
-word64 = fromIntegral

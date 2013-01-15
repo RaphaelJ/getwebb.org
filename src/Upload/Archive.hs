@@ -15,7 +15,6 @@ import Data.List (foldl', sortBy)
 import qualified Data.Map as M
 import qualified Data.Set as S
 import qualified Data.Text as T
-import Data.Word
 import System.FilePath (splitDirectories, hasTrailingPathSeparator)
 
 import qualified Codec.Archive.Zip as Z
@@ -24,6 +23,8 @@ import Text.Hamlet (shamlet)
 import Handler.Utils (PrettyFileSize (..), wrappedText)
 import qualified Upload.Compression as C
 import Upload.Path (computeHmac)
+
+import System.TimeIt
 
 -- | Represents a hierarchy of files within an archive.
 data ArchiveTree = NodeDirectory (M.Map FilePath ArchiveTree)
@@ -39,7 +40,8 @@ processArchive path ext fileId = do
     if not (ext `S.member` extensions)
         then return False
         else do
-            eEntries <- liftIO $! E.try (readArchiveFiles >>= E.evaluate)
+            liftIO $ putStrLn "Reads the archive: "
+            eEntries <- liftIO $ timeIt $ E.try (readArchiveFiles >>= E.evaluate)
 
             case eEntries of
                 Right entries -> do
@@ -136,6 +138,3 @@ treeToHtml rdrUrl ~(NodeDirectory tree) = [shamlet|
     cmpNodes (_, NodeDirectory {}) (_, NodeFile {}) = LT
     cmpNodes (_, NodeFile {}) (_, NodeDirectory {}) = GT
     cmpNodes (name1, _) (name2, _) = name1 `compare` name2
-
-word64 :: Integral a => a -> Word64
-word64 = fromIntegral

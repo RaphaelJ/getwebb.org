@@ -17,6 +17,21 @@ derivePersistField "FileType"
 type AdminKey = Int64
 type Hmac = Text
 
+-- | Used to give the type of a secondary image which can be displayed in the
+-- browser.
+data DisplayType = PNG | JPG | GIF
+    deriving (Show, Read, Eq)
+derivePersistField "DisplayType"
+
+-- | Used to represents the different items which can be downloaded.
+data ObjectType = Original
+                | Miniature | Display DisplayType
+                | WebMAudio | MP3
+                | WebMVideo | MKV
+                | CompressedFile Hmac
+    deriving (Show, Read, Eq)
+derivePersistField "ObjectType"
+
 share [mkPersist sqlOnlySettings, mkMigrate "migrateAll"] [persistUpperCase|
 LastAdminKey
     value AdminKey
@@ -51,7 +66,8 @@ ImageAttrs
     fileId FileId
     width  Word32
     height Word32
-    inBrowser Bool -- True if the image can be directly displayed in a browser.
+    displayable DisplayType Maybe -- If Just, displays this object instead of
+                                  -- the original image in the browser.
     UniqueImageAttrs fileId
     deriving Show
 
@@ -67,7 +83,9 @@ ExifTag
 MediaAttrs
     fileId FileId
     duration Word64 -- Duration in centisecond
-    html5Encoded Bool -- True if the media has been re-encoded to be displayed.
+    transcodeQueue Bool -- True if the file hasn't been transcoded.
+    transcoded Bool -- True if the media has been re-encoded to be displayed
+                    -- in the browser (HTML5 audio/video).
     UniqueMediaAttrs fileId
     deriving Show
 

@@ -9,7 +9,7 @@
         $if fileType file == Audio
             <div .audio_player>
                 $with AudioExtras medExtras _ <- extras
-                    $if mediaAttrsHtml5Encoded medExtras
+                    $if mediaAttrsTranscoded medExtras
                         <audio controls>
                             $forall (audioUrl, audioMime) <- audioSources
                                 <source src=#{audioUrl} type=#{audioMime}>

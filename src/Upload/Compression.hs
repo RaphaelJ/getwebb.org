@@ -4,102 +4,97 @@
 -- file.
 module Upload.Compression (
     -- * Daemon processing queue management
-      CompressionQueue, newQueue, putFile
-    -- * Starting the daemon
-    , compressionDaemon, forkCompressionDaemon
+      putFile, restoreQueue
+    -- * Compression
+    , compressFile
     ) where
 
 import Import
 
-import Control.Concurrent (ThreadId, Chan, forkIO, newChan, writeChan, readChan)
 import Control.Monad
 import Data.Maybe
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Text as T
-import Data.Word
 import System.Directory
-import System.IO
+import System.IO (IOMode (..), openFile, hFileSize, hClose)
 
 import Codec.Compression.GZip (
       compressWith, defaultCompressParams, compressLevel, bestCompression
     )
-import Control.Monad.Trans.Resource (ResourceT, runResourceT)
 import Database.Persist.Query.Internal (selectKeysList)
-import Database.Persist.Store (runPool)
 
-import Upload.Path (ObjectType (..), hashDir, uploadDir, newTmpFile, getPath)
+import JobsDaemon (putJob, runDBIO)
+import Upload.Path (hashDir, uploadDir, newTmpFile, getPath)
 
 import System.TimeIt (timeIt)
 import Text.Printf
 
-type CompressionQueue = Chan FileId
-
--- | Initialises a new compression queue to be inserted in the foundation type.
-newQueue :: IO CompressionQueue
-newQueue = newChan
-
--- | Adds a file to the compression queue.
+-- | Adds a file to a background compression queue.
 putFile :: App -> FileId -> IO ()
-putFile = writeChan . compressionQueue
+putFile app = putJob app . compressFile app
 
--- | Waits files to compress on the concurrent queue and process them. Never
--- returns.
-compressionDaemon :: App -> IO ()
-compressionDaemon app = do
-    let queue = compressionQueue app
+-- | Reload the previous state of the compression queue from the database and
+-- put them on the background queue.
+restoreQueue :: App -> IO ()
+restoreQueue app = do
+    fs <- runDBIO app $ selectKeysList [FileCompressionQueue ==. True] 
+                                       [Asc FileId]
+    forM_ fs (app `putFile`)
 
-    -- Reload the previous state of the queue
-    fs <- runDBIO $ selectKeysList [FileCompressionQueue ==. True] [Asc FileId]
-    forM_ fs (queue `writeChan`)
+-- | Tries to compress a file. Replaces the original file and updates the
+-- database if the compressed file is smaller.
+compressFile :: App -> FileId -> IO ()
+compressFile app fileId = do
+    -- Retrieves the file from the database to ensures it still exists.
+    mFileInfo <- runDBIO app $ do
+        mFile <- get fileId
 
-    forever $ do
-        -- Waits until an FileId has been inserted in the queue.
-        fileId <- readChan queue
+        case mFile of
+            Just file -> do
+                let hash = T.unpack $! fileSha1 file
+                    path = getPath (hashDir (uploadDir app) hash) Original
+                h <- liftIO $ openFile path ReadMode
+                return $! Just (path, h, fileSize file)
+            Nothing -> return Nothing -- File removed
 
-        mFile <- runDBIO $! get fileId
-        when (isJust mFile) $ do
-            -- Process the file if it still exists.
-            let file = fromJust mFile
-                hash = T.unpack $! fileSha1 file
-                path = getPath (hashDir (uploadDir app) hash) Original
+    when (isJust mFileInfo) $ do
+        let Just (path, h, size) = mFileInfo
 
-            -- Compress the file in a new temporary file.
-            (tmpPath, tmpH) <- newTmpFile app "compression_"
+        -- Compress the file in a new temporary file.
+        (tmpPath, tmpH) <- newTmpFile app "compression_"
 
-            putStrLn "Compression:"
-            timeIt $ L.readFile path >>= L.hPut tmpH . compressWith params
+        putStrLn "Compression:"
+        timeIt $ L.hGetContents h >>= L.hPut tmpH . compressWith params
+        hClose h
 
-            -- Computes the size of the new compressed file.
-            tmpSize <- word64 <$> hFileSize tmpH
+        -- Computes the size of the new compressed file.
+        tmpSize <- word64 <$> hFileSize tmpH
+        hClose tmpH
 
-            hClose tmpH
+        _ <- liftIO $! printf "New size: %d - old: %d - gain: %d\n" tmpSize size (size - tmpSize)
 
-            _ <- liftIO $! printf "New size: %d - old: %d - gain: %d\n" tmpSize (fileSize file) (fileSize file - tmpSize)
+        -- Replaces the file if the compressed one is smaller.
+        -- Replaces and removes the file during the transaction to ensures data
+        -- consistence.
+        runDBIO app $ if tmpSize < size
+            then do
+                -- Checks if the file still exists.
+                exists <- get fileId
+                case exists of
+                    Just _ -> do
 
-            -- Replaces the file if the compressed one is smaller.
-            if tmpSize < fileSize file
-                then runDBIO $ do
-                    -- Replaces the file during the transaction to ensures data
-                    -- consistence.
-                    update fileId [
-                          FileCompressionQueue =. False
-                        , FileCompressed =. Just tmpSize
-                        ]
-                    liftIO $! removeFile path
-                    liftIO $! renameFile tmpPath path
-                else do
-                    runDBIO $ update fileId [FileCompressionQueue =. False]
-                    removeFile tmpPath
+                        update fileId [
+                            FileCompressionQueue =. False
+                            , FileCompressed =. Just tmpSize
+                            ]
+                        liftIO $ removeFile path
+                        liftIO $ renameFile tmpPath path
+                    Nothing -> do
+                        -- The original file has been removed.
+                        liftIO $ removeFile tmpPath
+            else do
+                update fileId [FileCompressionQueue =. False]
+                liftIO $ removeFile tmpPath
   where
-    runDBIO :: YesodPersistBackend App (ResourceT IO) a -> IO a
-    runDBIO f = runResourceT $ runPool (persistConfig app) f (connPool app)
-
     -- Compression parameters.
     params = defaultCompressParams { compressLevel = bestCompression }
-
--- | Forks the compression daemon on a new thread and returns its 'ThreadId'.
-forkCompressionDaemon :: App -> IO ThreadId
-forkCompressionDaemon = forkIO . compressionDaemon
-
-word64 :: Integral a => a -> Word64
-word64 = fromIntegral

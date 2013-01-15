@@ -1,9 +1,8 @@
 -- | Defines a few utilities to process files during the processing of an
 -- upload.
 module Upload.Path (
-      ObjectType (..)
-    , getFileSize, hashDir, uploadDir, tmpDir, newTmpFile
-    , getPath, computeHmac, toBase62
+      getFileSize, hashDir, uploadDir, tmpDir, newTmpFile, getPath, computeHmac
+    , toBase62
     ) where
 
 import Import
@@ -13,20 +12,11 @@ import qualified Data.ByteString.Lazy.Char8 as C
 import Data.Digest.Pure.SHA (hmacSha1, integerDigest)
 import Data.Digits (digits)
 import qualified Data.Text as T
-import Data.Word
 import System.IO
 import System.FilePath
 
 import Yesod.Default.Config
 import Database.Persist.Store (PersistValue (..))
-
--- | Used to represents the different items which can be downloaded.
-data ObjectType = Original
-                | Miniature | PNG
-                | WebMAudio | MP3
-                | WebMVideo | MKV
-                | CompressedFile Hmac
-    deriving (Show, Read, Eq)
 
 -- | Returns the size in bytes of the given file.
 getFileSize :: FilePath -> IO Word64
@@ -57,7 +47,9 @@ newTmpFile app prefix = openTempFile (tmpDir app) prefix
 getPath :: FilePath -> ObjectType -> FilePath
 getPath dir Original           = dir </> "original"
 getPath dir Miniature          = dir </> "miniature" <.> "png"
-getPath dir PNG                = dir </> "original" <.> "png"
+getPath dir (Display PNG)      = dir </> "original" <.> "png"
+getPath dir (Display JPG)      = dir </> "original" <.> "jpg"
+getPath dir (Display GIF)      = dir </> "original" <.> "gif"
 getPath dir WebMAudio          = dir </> "original" <.> "webm"
 getPath dir MP3                = dir </> "original" <.> "mp3"
 getPath dir WebMVideo          = dir </> "original" <.> "webm"

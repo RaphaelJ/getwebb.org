@@ -41,8 +41,7 @@ data App = App {
     , httpManager :: Manager
     , persistConfig :: Settings.PersistConfig
     , encryptKey :: B.ByteString
-    , compressionQueue :: Chan FileId
-    , mediasQueue :: Chan FileId
+    , jobsQueue :: Chan (IO ())
     , viewsBuffer :: (MVar (M.Map UploadId (Word64, Maybe UTCTime, Word64)), MVar ())
     }
 

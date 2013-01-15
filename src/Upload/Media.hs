@@ -2,17 +2,16 @@
 -- | Recognises medias (audio and video), collects information and create
 -- HTML 5 audio/videos in a separate thread.
 module Upload.Media (
-    -- * Daemon processing queue management
-      MediasQueue, newQueue, putFile
-    -- * Starting the daemon
-    , mediasDaemon, forkMediasDaemon
+    -- * Transcoding processing queue management
+      putFile, restoreQueue
+    -- * Transcoding
+    , transcodeFile
     -- * Processing uploads
     , processMedia
     ) where
 
 import Import
 
-import Control.Concurrent (ThreadId, Chan, forkIO, newChan, writeChan, readChan)
 import qualified Control.Exception as E
 import Control.Monad
 import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
@@ -41,29 +40,24 @@ import qualified Vision.Image as I
 
 import Upload.Path (newTmpFile)
 
-import Debug.Trace
-import System.TimeIt
+import JobsDaemon (putJob, runDBIO)
 
 import Upload.FFmpeg (
       MediaInfo (..), MediaDuration (..), argsWebMAudio, argsMP3
-    , {-argsWebM, argsH264,-} encode, getInfo
+    , argsWebM, argsH264, encode, getInfo
     )
 import qualified Upload.Compression as C
 import Upload.Image (miniature)
 import Upload.Path (ObjectType (..), hashDir, uploadDir, getPath)
 
-type MediasQueue = Chan FileId
+import Debug.Trace
+import System.TimeIt
+
+encodeVideos :: Bool
+encodeVideos = False
 
 lastfmKey :: L.APIKey
 lastfmKey = L.APIKey "d1731c5c052d5cde7c82d56388b5d64e"
-
--- | Initialises a new encoding queue to be inserted in the foundation type.
-newQueue :: IO MediasQueue
-newQueue = newChan
-
--- | Adds a file to the encoding queue.
-putFile :: App -> FileId -> IO ()
-putFile = writeChan . mediasQueue
 
 -- | Files extensions which are supported by ffmpeg.
 extensions :: S.Set Text
@@ -96,65 +90,62 @@ extensions = S.fromDistinctAscList [
     , ".yop", ".yuv4mpegpipe"
     ]
 
+-- | Adds a file to a background transcoding and compression queue.
+putFile :: App -> FileId -> IO ()
+putFile app fileId = do
+    putJob app $ do
+        transcodeFile app fileId
+        app `C.putFile` fileId
+
+-- | Reload the previous state of the transcoding queue from the database and
+-- put them on the background queue.
+restoreQueue :: App -> IO ()
+restoreQueue app = do
+    fs <- runDBIO app $ selectList [MediaAttrsTranscodeQueue ==. True]
+                                   [Asc MediaAttrsFileId]
+    forM_ fs ((app `putFile`) . mediaAttrsFileId . entityVal)
+
 -- | Waits files to encode on the concurrent queue and process them. Never
 -- returns.
-mediasDaemon :: App -> IO ()
-mediasDaemon app = do
-    let queue = mediasQueue app
+transcodeFile :: App -> FileId -> IO ()
+transcodeFile app fileId = do
+    mFile <- runDBIO app $ get fileId
 
-    -- Reload the previous state of the queue
-    fs <- runDBIO $ selectList [MediaAttrsHtml5Encoded ==. False]
-                               [Asc MediaAttrsFileId]
-    forM_ fs ((queue `writeChan`) . mediaAttrsFileId . entityVal)
+    when (isJust mFile) $ do
+        -- Process the file if it still exists.
+        let file = fromJust mFile
+            hash = T.unpack $ fileSha1 file
+            dir = hashDir (uploadDir app) hash
+            getPath' = getPath dir
+            path = getPath' Original
 
-    forever $ do
-        -- Waits until an FileId has been inserted in the queue.
-        fileId <- readChan queue
-
-        mFile <- runDBIO $ get fileId
-
-        when (isJust mFile) $ runResourceT $ do
-            -- Process the file if it still exists.
-            let file = fromJust mFile
-                hash = T.unpack $ fileSha1 file
-                dir = hashDir (uploadDir app) hash
-                getPath' = getPath dir
-                path = getPath' Original
-                updateHtml5Encoded = liftIO $ runDBIO $
-                    updateWhere [MediaAttrsFileId ==. fileId]
-                                [MediaAttrsHtml5Encoded =. True]
-
-            case fileType file of
-                Audio -> do
-                    _ <- encodeFile argsWebMAudio path (getPath' WebMAudio)
-                    _ <- encodeFile argsMP3       path (getPath' MP3)
-                    updateHtml5Encoded
-                    return ()
-                Video -> do
-                    -- _ <- encodeFile argsWebM path (getPath' WebMVideo)
-                    -- _ <- encodeFile argsH264 path (getPath' MKV)
-                    updateHtml5Encoded
-                    return ()
-                _     ->
-                    error "Invalid file type."
-
-            liftIO $ app `C.putFile` fileId
+        case fileType file of
+            Audio -> do
+                _ <- encodeFile argsWebMAudio path (getPath' WebMAudio)
+                _ <- encodeFile argsMP3       path (getPath' MP3)
+                updateHtml5Encoded
+                return ()
+            Video -> do
+                _ <- encodeFile argsWebM path (getPath' WebMVideo)
+                _ <- encodeFile argsH264 path (getPath' MKV)
+                updateHtml5Encoded
+                return ()
+            _     ->
+                return ()
   where
-    runDBIO :: YesodPersistBackend App (ResourceT IO) a -> IO a
-    runDBIO f = runResourceT $ runPool (persistConfig app) f (connPool app)
-
     encodeFile args inPath outPath = do
-        code <- liftIO $ encode args inPath (sinkFile outPath)
+        code <- encode args inPath (sinkFile outPath)
 
         -- Removes the ouput file if the encoding failed.
         case code of
-            ExitFailure _ -> liftIO $ removeFile outPath
+            ExitFailure _ -> removeFile outPath
             _ -> return ()
 
--- | Forks the medias encoding daemon on a new thread and returns its
--- 'ThreadId'.
-forkMediasDaemon :: App -> IO ThreadId
-forkMediasDaemon = forkIO . mediasDaemon
+    updateHtml5Encoded = runDBIO app $
+        updateWhere [MediaAttrsFileId ==. fileId]
+                    [ MediaAttrsTranscodeQueue =. False
+                    , MediaAttrsTranscodeHtml5 =. True
+                    ]
 
 -- | Try to open the file as a media. Enqueue the file for re-encoding.
 processMedia :: FilePath -> Text -> FileId -> Handler Bool
@@ -167,21 +158,29 @@ processMedia path ext fileId = do
 
             case mInfo of
                 Just (MediaInfo mediaType duration) -> do
+                    let durationCenti = toCentisec duration
+                        attrs = case mediaType of
+                            Audio -> MediaAttrs fileId durationCenti True False
+                            Video -> MediaAttrs fileId durationCenti
+                                                encodeVideos False
+
                     mAudioAttrs <- mp3Tags
 
                     runDB $ do
                         update fileId [FileType =. mediaType]
 
-                        _ <- insert $ MediaAttrs fileId (toCentisec duration)
-                                                 False
+                        _ <- insert attrs
 
                         when (isJust mAudioAttrs) $ do
                             _ <- insert $! fromJust mAudioAttrs
                             return ()
 
-                    -- Adds the media to the media re-encoding queue.
+                    -- Adds the media to the media transcoding queue and then
+                    -- to the compression queue.
                     app <- getYesod
-                    liftIO $ app `putFile` fileId
+                    case mediaAttrsTranscodeQueue attrs of
+                        True  -> liftIO $ app `putFile` fileId
+                        False -> liftIO $ app `C.putFile` fileId
 
                     return True
                 Nothing -> do
@@ -321,8 +320,3 @@ processMedia path ext fileId = do
             return imgUrl
 
     miniaturePath = getPath (takeDirectory path) Miniature
-
-int :: Integral a => a -> Int
-int = fromIntegral
-word64 :: Integral a => a -> Word64
-word64 = fromIntegral

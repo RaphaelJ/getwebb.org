@@ -30,6 +30,13 @@ infixr 5 <>
 (<>) = mappend
 #endif
 
+-- | Executes the inner action when the item is 'Just'
+whenJust :: Monad m => Maybe a -> (a -> m ()) -> m ()
+whenJust m f =
+    case m of
+        Just a  -> f a
+        Nothing -> return ()
+
 int :: Integral a => a -> Int
 int = fromIntegral
 word32 :: Integral a => a -> Word32

@@ -219,7 +219,7 @@ getExtra = fmap (appExtra . settings) getYesod
 -- https://github.com/yesodweb/yesod/wiki/Sending-email
 
 -- | Reads the session value to get the admin key of the visitor. Returns
--- 'Norhing' if the user doesn\'t have a key.
+-- 'Nothing' if the user doesn\'t have a key.
 -- The admin key is a random key given to each user to control their own 
 -- uploads.
 tryAdminKey :: GHandler sub App (Maybe AdminKey)
@@ -237,18 +237,19 @@ getAdminKey = do
     case mKey of
         Just k ->
             return k
-        Nothing -> runDB $ do
-            -- The user hasn't admin key. Takes the next free admin key.
-            mLastK <- selectFirst [] []
-            k <- case mLastK of
-                Just (Entity keyId (LastAdminKey lastK)) -> do
-                    -- Increments the last admin key to get a new value.
-                    update keyId [LastAdminKeyValue +=. 1]
-                    return $ lastK + 1
-                Nothing -> do
-                    -- Inserts the first admin key in the database.
-                    _ <- insert (LastAdminKey 0)
-                    return 0
+        Nothing -> do
+            k <- runDB $ do
+                -- The user hasn't admin key. Takes the next free admin key.
+                mLastK <- selectFirst [] []
+                case mLastK of
+                    Just (Entity keyId (LastAdminKey lastK)) -> do
+                        -- Increments the last admin key to get a new value.
+                        update keyId [LastAdminKeyValue +=. 1]
+                        return $ lastK + 1
+                    Nothing -> do
+                        -- Inserts the first admin key in the database.
+                        _ <- insert (LastAdminKey 0)
+                        return 0
 
-            lift $ setSession "admin_key" (pack $ show k)
+            setSession "admin_key" (pack $ show k)
             return k

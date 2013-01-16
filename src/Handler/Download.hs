@@ -279,8 +279,7 @@ getDownloadR hmac = do
 
     -- Returns true if the browser supports the gzip encoding.
     getGzipClientSupport = do
-        request <- waiRequest
-        let headers = requestHeaders request
+        headers <- requestHeaders <$> waiRequest
         case "accept-encoding" `lookup` headers of
             Just values ->
                 let encodings = splitCommas $ C.unpack values

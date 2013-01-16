@@ -1,10 +1,14 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
--- | Recognises images and create miniature to them.
+-- | Recognises images and create miniature for them.
 module Upload.Image (
-      extensions, displayableExtensions, miniatureSize, processImage, miniature
-    , displayable, exifTags
+    -- * Constants
+      extensions, miniatureSize, maxImageSize
+    -- * Upload processing
+    , processImage
+    -- * Images processing
+    , miniature, displayable, exifTags
     ) where
 
 import Import
@@ -22,6 +26,7 @@ import Graphics.Exif (fromFile, allTags)
 import Graphics.Exif.Internals (tagFromName, tagTitle)
 import System.TimeIt (timeIt)
 
+import JobsDaemon (putJob, runDBIO)
 import qualified Upload.Compression as C
 import Upload.Path (getPath)
 
@@ -34,17 +39,14 @@ extensions = S.fromDistinctAscList [
     , ".tga", ".tif", ".tiff"
     ]
 
--- | Files extensions which can be displayed in a browser.
-displayableExtensions :: S.Set Text
-displayableExtensions = S.fromDistinctAscList [".gif", ".jpeg", ".jpg", ".png"]
-
 -- | The size of miniatures in pixels (both in width and height).
 miniatureSize :: Int
 miniatureSize = 125
 
 -- | The maximum size of an image to be displayed in the viewer.
 maxImageSize :: I.Size
-maxImageSize = I.Size 1920 1200
+maxW, maxH :: Int
+maxImageSize@(I.Size maxW maxH) = I.Size 2048 1200
 
 -- | Try to open the image and to generate a miniature.
 processImage :: FilePath -> Text -> FileId -> Handler Bool
@@ -68,7 +70,7 @@ processImage path ext fileId = do
 
                     -- If the image isn't displayable in a browser, creates an
                     -- additional .PNG.
-                    displayable <- genDisplayable dir size img
+                    displayableType <- genDisplayable dir size img
 
                     -- Update the database row so the file type is Image and
                     -- adds possible EXIF tags.
@@ -82,7 +84,7 @@ processImage path ext fileId = do
                               imageAttrsFileId = fileId
                             , imageAttrsWidth = word32 w
                             , imageAttrsHeight = word32 h
-                            , imageAttrsDisplayable = displayable
+                            , imageAttrsDisplayable = displayableType
                             }
 
                         forM_ tags $ \(title, value) ->
@@ -93,24 +95,46 @@ processImage path ext fileId = do
                     return True
                 Left (_ :: E.SomeException) -> return False
   where
-    genDisplayable size img | not (ext `S.member` displayableExtensions) =
-            let img' = displayable ext img
-            in I.save img' (getPath dir (Display PNG))
-    genDisplayable size img = 
+    -- Generates displayable image if 
+    genDisplayable dir size img
+        | ext == ".png"                   = genDisplayableAsync dir size PNG
+        | ext == ".jpg" || ext == ".jpeg" = genDisplayableAsync dir size JPG
+        | ext == ".gif"                   = genDisplayableAsync dir size GIF
+        | otherwise                       = do
+            let img' = displayable img
+            liftIO $ I.save img' (getPath dir (Display PNG))
+            return $! Just PNG
 
+    -- Generates the displayable image in background if the image is larger
+    -- than maxImageSize.
+    genDisplayableAsync dir (I.Size w h) destType = do
+        app <- getYesod
+        when (w > maxW || h > maxH ) $
+            liftIO $ putJob app $ do
+                eImg <- liftIO $ E.try (I.load path)
+                case eImg of
+                    Right img -> do
+                        let img' = displayable img
+                        timeIt $ I.save img' (getPath dir (Display destType))
 
--- Returns an image which can be displayed in the browser depending on the
--- extension and the image size.
-displayable :: Text -> I.RGBImage -> Maybe I.RGBImage
-displayable _   img | w > maxW || h > maxH =
+                        runDBIO app $
+                            updateWhere [ImageAttrsFileId ==. fileId]
+                                        [ImageAttrsDisplayable =. Just destType]
+
+                    Left (_ :: E.SomeException) -> return ()
+
+        return Nothing
+
+-- | Returns an image which has been scaled down if its size is larger than
+-- 'maxImageSize'
+displayable :: I.RGBImage -> I.RGBImage
+displayable img | w > maxW || h > maxH =
     I.resize I.NearestNeighbor img size'
-where
+  where
     I.Size w h = I.getSize img
-    I.Size maxW maxH = maxImageSize
     maxRatio = max (w % maxW) (h % maxH)
     size' = I.Size (round $ (w % 1) / maxRatio) (round $ (h % 1) / maxRatio)
-displayable ext img | not (ext `S.member` displayableExtensions) = Just img
-displayable _   _   = Nothing
+displayable img                        = img
 
 -- | Generates a miniature from the input image.
 miniature :: I.RGBImage -> I.RGBImage

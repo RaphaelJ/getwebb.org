@@ -67,7 +67,7 @@ data Extra = Extra {
       extraAuthor :: Text, extraAuthorMail :: Text, extraUploadDir :: FilePath
     , extraMaxFileSize :: Word64, extraMaxRequestSize :: Word64
     , extraMaxDailyUploads :: Int, extraMaxDailySize :: Word64
-    , extraTimeout :: Int, extraFacebook :: Text
+    , extraTimeout :: Int, extraJobsThreads :: Int, extraFacebook :: Text
     } deriving Show
 
 parseExtra :: DefaultEnv -> Object -> Parser Extra
@@ -80,4 +80,5 @@ parseExtra _ o = Extra
     <*> o .: "maxDailyUploads"
     <*> o .: "maxDailySize"
     <*> o .: "timeout"
+    <*> o .: "jobsThreads"
     <*> o .: "facebook"

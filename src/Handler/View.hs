@@ -9,11 +9,14 @@ import Control.Monad
 import Data.Char (toLower)
 import Data.List (head, tail, last, init)
 import Data.Maybe
+import qualified Data.ByteString as B
 import qualified Data.Set as S
 import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime, diffUTCTime)
 import System.FilePath (takeExtension)
 
+import Network.HTTP.Types.Header (hUserAgent)
+import Network.Wai (requestHeaders)
 import Text.Hamlet (shamlet)
 
 import Handler.Download (routeType, getBufferEntry)
@@ -39,6 +42,14 @@ getViewR hmacsJoined = do
         notFound
 
     let hmac = head hmacs
+
+    -- Redirects immediately to the download handler if the client is wget.
+    mUserAgent <- ((hUserAgent `lookup`). requestHeaders) <$> waiRequest
+    case mUserAgent of
+        Just userAgent | "Wget/" `B.isPrefixOf` userAgent ->
+            redirect (DownloadR hmac)
+        _ -> 
+            return ()
 
     (uploadId, upload, file, extras) <- runDB $ do
         mUpload <- getBy $ UniqueUploadHmac hmac
@@ -209,6 +220,7 @@ getViewR hmacsJoined = do
     if' :: Bool -> Int -> Int -> Int
     if' True  a _ = a
     if' False _ b = b
+
 
 int :: Integral a => a -> Int
 int = fromIntegral

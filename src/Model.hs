@@ -52,6 +52,7 @@ Upload
     hmac Hmac -- An unique identifier of the upload generated from its ID.
     fileId FileId
     name Text
+    description Text Maybe
     uploaded UTCTime
     hostname Text
     adminKey AdminKey
@@ -83,7 +84,7 @@ ExifTag
 MediaAttrs
     fileId FileId
     duration Word64 -- Duration in centisecond
-    transcodeQueue Bool -- True if the file hasn't been transcoded.
+    transcodeQueue Bool -- True if the file is planned to be transcoded.
     transcoded Bool -- True if the media has been re-encoded to be displayed
                     -- in the browser (HTML5 audio/video).
     UniqueMediaAttrs fileId

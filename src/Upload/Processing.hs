@@ -26,8 +26,7 @@ import qualified Upload.Compression as C
 import Upload.Image (processImage)
 import Upload.Media (processMedia)
 import Upload.Path (
-      ObjectType (..), getFileSize, hashDir, uploadDir, newTmpFile, getPath
-    , computeHmac
+      getFileSize, hashDir, uploadDir, newTmpFile, getPath, computeHmac
     )
 
 import System.TimeIt (timeIt)
@@ -114,10 +113,10 @@ processFile adminKey f = do
 
             let upload = Upload {
                   uploadHmac = "",  uploadFileId = fileId
-                , uploadName = fileName f, uploadUploaded = currentTime
-                , uploadHostname = clientHost, uploadAdminKey = adminKey
-                , uploadViews = 0, uploadLastView = currentTime
-                , uploadBandwidth = 0
+                , uploadName = fileName f, uploadDescription = Nothing
+                , uploadUploaded = currentTime, uploadHostname = clientHost
+                , uploadAdminKey = adminKey, uploadViews = 0
+                , uploadLastView = currentTime, uploadBandwidth = 0
                 }
 
             uploadId <- lift $ insert upload

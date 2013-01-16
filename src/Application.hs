@@ -6,21 +6,23 @@ module Application
     ) where
 
 import Import
-import Settings
+import Control.Monad
+import qualified Data.ByteString as S
+import qualified Data.ByteString.Lazy as L
+
 import Yesod.Default.Config
 import Yesod.Default.Main
 import Yesod.Default.Handlers
 import Database.Persist.GenericSql (runMigration)
 import qualified Database.Persist.Store
-import qualified Data.ByteString as S
-import qualified Data.ByteString.Lazy as L
 import Network.Wai.Middleware.Autohead (autohead)
 import Network.Wai.Middleware.RequestLogger (logStdout, logStdoutDev)
 import Network.HTTP.Conduit (newManager, def)
 import System.Directory (doesFileExist)
 import Web.ClientSession (randomKey)
 
-import qualified JobsDaemon as D
+import qualified JobsDaemon as J
+import Settings
 
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
@@ -46,9 +48,9 @@ makeApplication :: AppConfig DefaultEnv Extra -> IO Application
 makeApplication conf = do
     foundation <- makeFoundation conf
 
-    _ <- C.forkCompressionDaemon foundation
-    _ <- M.forkMediasDaemon foundation
-    _ <- D.forkViewsDaemon foundation
+    -- Starts the background processes.
+    let extras = appExtra conf
+    replicateM_ (extraJobsThreads extras) (J.forkJobsDaemon foundation)
 
     app <- autohead <$> toWaiAppPlain foundation
     return $ logWare app
@@ -68,12 +70,12 @@ makeFoundation conf = do
     key <- getEncryptionKey
 
     -- Initialises the concurrent queues and restores their states.
-    jobsQueue <- J.newQueue
-    viewsBuffer <- D.newBuffer
+    jQueue <- J.newQueue
+    vBuffer <- D.newBuffer
 
-    let app = App conf s p manager dbconf key jobsQueue viewsBuffer
-    C.restoreQueue app
+    let app = App conf s p manager dbconf key jQueue vBuffer
     M.restoreQueue app
+    C.restoreQueue app -- Compression must be the last
 
     return app
 

@@ -261,6 +261,8 @@ processMedia path ext fileId = do
 
     miniaturePath = getPath (takeDirectory path) Miniature
 
+-- -----------------------------------------------------------------------------
+
 -- | Waits files to encode on the concurrent queue and process them. Never
 -- returns.
 transcodeFile :: App -> FileId -> IO ()

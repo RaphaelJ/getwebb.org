@@ -95,7 +95,8 @@ processImage path ext fileId = do
                     return True
                 Left (_ :: E.SomeException) -> return False
   where
-    -- Generates displayable image if 
+    -- Generates displayable image immediately if the file format is not
+    -- displayable in the browser or in background if the image is too large.
     genDisplayable dir size img
         | ext == ".png"                   = genDisplayableAsync dir size PNG
         | ext == ".jpg" || ext == ".jpeg" = genDisplayableAsync dir size JPG

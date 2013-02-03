@@ -41,6 +41,7 @@ library
                      Upload.Media
                      Upload.Path
                      Upload.Processing
+                     Upload.Remove
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT

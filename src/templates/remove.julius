@@ -1,0 +1,14 @@
+// Removes an upload asynchronously.
+function removeUpload(uploadHmac)
+{
+    $.ajax({
+        type: "DELETE",
+        url: "@{ViewR uploadHmac}",
+        complete: function (status, xhr) {
+            if (xhr.status == 200)
+            else if (xhr.status == 403)
+            else if (xhr.status == 404)
+            else 
+        }
+    });
+}

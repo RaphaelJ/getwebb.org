@@ -1,0 +1,12 @@
+<footer>
+    Icons by P.J. Onori, O. Frolov, J. Wieser, M. Zlatar, A. Ramadan, D. Ullrich
+    &amp; A. Whitcroft
+    &nbsp;-&nbsp;
+    <a href="@{HomeR}">
+        API
+    &nbsp;-&nbsp;
+    <a href="https://github.com/RaphaelJ/getwebb.org">
+        Sources
+    &nbsp;-&nbsp;
+    <a href="mailto:#{extraAuthorMail $ appExtra $ settings master}">
+        Report a file

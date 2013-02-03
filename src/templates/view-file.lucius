@@ -24,6 +24,13 @@
 
         .audio_player {
             margin: 10px 0 10px 140px;
+
+            .transcoding {
+                padding-left: 35px;
+                background-image: url("@{StaticR img_transcoding_waiting_png}");
+                background-position: left center;
+                background-repeat: no-repeat;
+            }
         }
 
         .information {

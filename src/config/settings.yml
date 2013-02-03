@@ -9,7 +9,7 @@ Default: &defaults
   maxRequestSize: 10485760 # 10 MiB
   maxDailyUploads: 500 # 500 uploads per ip per day
   maxDailySize: 3221225472 # 3 Gio per ip per day
-  timeout: 30 # Web server timeout in seconds
+  timeout: 120 # Web server timeout in seconds
   jobsThreads: 1 # Number of threads which executes background tasks
   facebook: "124047527761820" # Facebook App ID
   #analytics: UA-YOURCODE

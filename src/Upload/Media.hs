@@ -7,7 +7,7 @@ module Upload.Media (
     -- * Transcoding
     , transcodeFile
     -- * Background transcoding queue management
-    , putFile, restoreQueue
+    , putFile
     ) where
 
 import Import
@@ -21,8 +21,9 @@ import System.Directory
 import System.Exit (ExitCode (..))
 import System.FilePath ((<.>), takeDirectory, takeFileName)
 import System.IO (hClose)
+import Text.Printf
 
-import Control.Monad.Trans.Resource (runResourceT, register)
+import Control.Monad.Trans.Resource (register)
 import qualified Data.Aeson as J
 import Data.Conduit (($$+-))
 import Data.Conduit.Binary (sinkFile, sinkHandle)
@@ -37,7 +38,7 @@ import qualified Vision.Image as I
 
 import Upload.Path (newTmpFile)
 
-import JobsDaemon (putJob, runDBIO)
+import JobsDaemon (registerJob, runDBIO)
 
 import Upload.FFmpeg (
       MediaInfo (..), MediaDuration (..), argsWebMAudio, argsMP3
@@ -45,10 +46,9 @@ import Upload.FFmpeg (
     )
 import qualified Upload.Compression as C
 import Upload.Image (miniature)
-import Upload.Path (hashDir, uploadDir, getPath)
+import Upload.Path (hashDir, getPath)
 
 import Debug.Trace
-import System.TimeIt
 
 encodeVideos :: Bool
 encodeVideos = False
@@ -100,9 +100,8 @@ processMedia path ext fileId = do
                 Just (MediaInfo mediaType duration) -> do
                     let durationCenti = toCentisec duration
                         attrs = case mediaType of
-                            Audio  -> MediaAttrs fileId durationCenti True False
-                            ~Video -> MediaAttrs fileId durationCenti
-                                                encodeVideos False
+                            Audio  -> MediaAttrs fileId durationCenti False
+                            ~Video -> MediaAttrs fileId durationCenti False
 
                     mAudioAttrs <- mp3Tags
 
@@ -118,9 +117,12 @@ processMedia path ext fileId = do
                     -- Adds the media to the media transcoding queue and then
                     -- to the compression queue.
                     app <- getYesod
-                    when (mediaAttrsTranscodeQueue attrs) $
-                        liftIO $ app `putFile` fileId
-                    liftIO $ app `C.putFile` fileId
+                    _ <- if mediaType == Audio || encodeVideos
+                        then do -- Doesn't always transcode videos
+                            jobId <- liftIO $ putFile app fileId
+                            liftIO $ C.putFile app fileId [jobId]
+                        else 
+                            liftIO $ C.putFile app fileId []
 
                     return True
                 Nothing -> do
@@ -158,10 +160,10 @@ processMedia path ext fileId = do
             liftIO $ print [mTrack, mYear]
 
             -- Ensures that at least one tag has been found.
-            _ <- MaybeT $! return $! msum [
+            _ <- MaybeT $! return $ msum [
                   mAlbum, mArtist, mComment, mGenre, mTitle
                 ]
-            _ <- MaybeT $! return $! mTrack `mplus` mYear
+            _ <- MaybeT $! return $ mTrack `mplus` mYear
 
             -- Tries to find information about the album from Last.fm.
             case (mArtist, mTitle) of
@@ -202,24 +204,23 @@ processMedia path ext fileId = do
             Just (url, Just coverUrl) -> do
                 app <- getYesod
 
-                -- Download the cover image in a temporary file
+                -- Downloads the cover image in a temporary file
                 (tmp, hTmp) <- liftIO $ newTmpFile app "cover_"
-                liftIO $ putStrLn "Lastfm:"
+
                 request <- liftIO $ parseUrl $ T.unpack coverUrl
-                liftIO $ timeIt $ runResourceT $ do
+                lift $ do
                     _ <- register $ hClose hTmp
                     imgResponse <- http request (httpManager app)
                     responseBody imgResponse $$+- sinkHandle hTmp
 
                 -- Generates the cover image miniature.
                 eImg <- liftIO $ E.try (I.load tmp)
+                liftIO $ removeFile tmp
                 case eImg of
                     Right img -> do
                         liftIO $ I.save (miniature img) miniaturePath
-                        liftIO $ removeFile tmp
                         return $! Just (url, True)
-                    Left (_ :: E.SomeException) -> do
-                        liftIO $ removeFile tmp
+                    Left (_ :: E.SomeException) -> 
                         return $! Just (url, False)
 
     -- Parses the last.fm JSON response and return the possible URL and the
@@ -263,57 +264,45 @@ processMedia path ext fileId = do
 
 -- -----------------------------------------------------------------------------
 
--- | Waits files to encode on the concurrent queue and process them. Never
--- returns.
+-- | Transcodes a file and updated the corresponding database entry.
 transcodeFile :: App -> FileId -> IO ()
 transcodeFile app fileId = do
-    mFile <- runDBIO app $ get fileId
+    Just file <- runDBIO app $ get fileId
 
-    whenJust mFile $ \file -> do
-        -- Process the file if it still exists.
-        let hash = T.unpack $ fileSha1 file
-            dir = hashDir (uploadDir app) hash
-            getPath' = getPath dir
-            path = getPath' Original
+    let hash = T.unpack $ fileHash file
+        dir = hashDir app hash
+        getPath' = getPath dir
+        path = getPath' Original
 
-        case fileType file of
-            Audio -> do
-                _ <- encodeFile argsWebMAudio path (getPath' WebMAudio)
-                _ <- encodeFile argsMP3       path (getPath' MP3)
-                updateHtml5Encoded
-                return ()
-            Video -> do
-                _ <- encodeFile argsWebM path (getPath' WebMVideo)
-                _ <- encodeFile argsH264 path (getPath' MKV)
-                updateHtml5Encoded
-                return ()
-            _     ->
-                return ()
+    case fileType file of
+        Audio -> do
+            _ <- encodeFile argsWebMAudio path (getPath' WebMAudio)
+            _ <- encodeFile argsMP3       path (getPath' MP3)
+            updateHtml5Encoded
+            return ()
+        Video -> do
+            _ <- encodeFile argsWebM path (getPath' WebMVideo)
+            _ <- encodeFile argsH264 path (getPath' MKV)
+            updateHtml5Encoded
+            return ()
+        _     ->
+            error "Invalid file type."
   where
     encodeFile args inPath outPath = do
         code <- encode args inPath (sinkFile outPath)
 
-        -- Removes the ouput file if the encoding failed.
+        -- Removes the output file if the encoding failed.
         case code of
-            ExitFailure _ -> removeFile outPath
-            _ -> return ()
+            e@(ExitFailure _) -> do
+                removeFile outPath
+                error (printf "FFmpeg failed with \"%s\"" (show e))
+            _             -> return ()
 
     updateHtml5Encoded = runDBIO app $
         updateWhere [MediaAttrsFileId ==. fileId]
-                    [ MediaAttrsTranscodeQueue =. False
-                    , MediaAttrsTranscoded     =. True
-                    ]
+                    [MediaAttrsTranscoded =. True]
 
 -- | Adds a file to a background transcoding queue.
-putFile :: App -> FileId -> IO ()
-putFile app fileId = do
-    putJob app $
-        transcodeFile app fileId
-
--- | Reload the previous state of the transcoding queue from the database and
--- put its items on the background queue.
-restoreQueue :: App -> IO ()
-restoreQueue app = do
-    fs <- runDBIO app $ selectList [MediaAttrsTranscodeQueue ==. True]
-                                   [Asc MediaAttrsFileId]
-    forM_ fs ((app `putFile`) . mediaAttrsFileId . entityVal)
+putFile :: App -> FileId -> IO JobId
+putFile app fileId =
+    registerJob app fileId Transcode [] (transcodeFile app fileId)

@@ -9,15 +9,19 @@ module Upload.Image (
     , processImage
     -- * Images processing
     , miniature, displayable, exifTags
+    -- * Jobs
+    , jobResize, jobExifTags
     ) where
 
 import Import
 
 import qualified Control.Exception as E
 import Control.Monad
+import Data.Maybe
 import Data.Ratio
 import qualified Data.Set as S
 import qualified Data.Text as T
+import System.Directory (removeFile)
 import System.FilePath (takeDirectory)
 
 import qualified Vision.Image as I
@@ -26,9 +30,9 @@ import Graphics.Exif (fromFile, allTags)
 import Graphics.Exif.Internals (tagFromName, tagTitle)
 import System.TimeIt (timeIt)
 
-import JobsDaemon (putJob, runDBIO)
+import JobsDaemon (registerJob, runDBIO)
 import qualified Upload.Compression as C
-import Upload.Path (getPath)
+import Upload.Path (hashDir, getPath, getFileSize)
 
 -- | Files extensions which are supported by the DevIL image library.
 extensions :: S.Set Text
@@ -54,13 +58,15 @@ processImage path ext fileId = do
     if not (ext `S.member` extensions)
         then return False
         else do
-            -- Try to open the file as an image.
+            app <- getYesod
+
+            -- Tries to open the file as an image.
             liftIO $ putStrLn "Load original image:"
             eImg <- liftIO $ timeIt $ E.try (I.load path)
 
             case eImg of
                 Right img -> do
-                    -- Creates the miniature and save it as "miniature.png".
+                    -- Creates the miniature and saves it.
                     let dir = takeDirectory path
                         size@(I.Size w h) = I.getSize img
                     liftIO $ putStrLn "Miniature: "
@@ -68,63 +74,59 @@ processImage path ext fileId = do
                         let miniImg = miniature img
                         I.save miniImg (getPath dir Miniature)
 
-                    -- If the image isn't displayable in a browser, creates an
-                    -- additional .PNG.
-                    displayableType <- genDisplayable dir size img
+                    (displayType, displayJobId) <- genDisplayable dir size img
 
-                    -- Update the database row so the file type is Image and
-                    -- adds possible EXIF tags.
-                    liftIO $ putStrLn "Tags: "
-                    tags <- liftIO $ timeIt $ exifTags path
+                    -- Starts a background job to seek the EXIF tags of the
+                    -- image.
+                    let exifJob = jobExifTags app fileId
+                    exifJobId <- liftIO $
+                        registerJob app fileId ExifTags [] exifJob
 
-                    runDB $ do
+                    _ <- runDB $ do
                         update fileId [FileType =. Image]
 
-                        _ <- insert $ ImageAttrs {
+                        insert $ ImageAttrs {
                               imageAttrsFileId = fileId
                             , imageAttrsWidth = word32 w
                             , imageAttrsHeight = word32 h
-                            , imageAttrsDisplayable = displayableType
+                            , imageAttrsDisplayable = displayType
                             }
 
-                        forM_ tags $ \(title, value) ->
-                            insertUnique $ ExifTag fileId title value
+                    -- Compresses the file after the EXIF tags and the
+                    -- displayable image processes have been executed.
+                    let compressDeps = exifJobId : maybeToList displayJobId
+                    _ <- liftIO $ C.putFile app fileId compressDeps
 
-                    app <- getYesod
-                    liftIO $ app `C.putFile` fileId
                     return True
                 Left (_ :: E.SomeException) -> return False
   where
     -- Generates displayable image immediately if the file format is not
-    -- displayable in the browser or in background if the image is too large.
+    -- displayable in the browser or in background if the image is only too 
+    -- large.
+    -- Returns the displayable type of the (possibly) generated image and the
+    -- 'JobId' of the registered resizing background job (if launched).
     genDisplayable dir size img
-        | ext == ".png"                   = genDisplayableAsync dir size PNG
-        | ext == ".jpg" || ext == ".jpeg" = genDisplayableAsync dir size JPG
-        | ext == ".gif"                   = genDisplayableAsync dir size GIF
+        | ext == ".png"                   = genDisplayableAsync size PNG
+        | ext == ".jpg" || ext == ".jpeg" = genDisplayableAsync size JPG
+        | ext == ".gif"                   = genDisplayableAsync size GIF
         | otherwise                       = do
             let img' = displayable img
             liftIO $ I.save img' (getPath dir (Display PNG))
-            return $! Just PNG
+            return (Just PNG, Nothing)
 
     -- Generates the displayable image in background if the image is larger
     -- than maxImageSize.
-    genDisplayableAsync dir (I.Size w h) destType = do
+    genDisplayableAsync (I.Size w h) destType = do
         app <- getYesod
-        when (w > maxW || h > maxH ) $
-            liftIO $ putJob app $ do
-                eImg <- liftIO $ E.try (I.load path)
-                case eImg of
-                    Right img -> do
-                        let img' = displayable img
-                        timeIt $ I.save img' (getPath dir (Display destType))
+        if w > maxW || h > maxH 
+            then liftIO $ do
+                let job = jobResize destType app fileId
+                jobId <- registerJob app fileId (Resize destType) [] job
+                return (Nothing, Just jobId)
+            else
+                return (Nothing, Nothing)
 
-                        runDBIO app $
-                            updateWhere [ImageAttrsFileId ==. fileId]
-                                        [ImageAttrsDisplayable =. Just destType]
-
-                    Left (_ :: E.SomeException) -> return ()
-
-        return Nothing
+-- -----------------------------------------------------------------------------
 
 -- | Returns an image which has been scaled down if its size is larger than
 -- 'maxImageSize'
@@ -181,3 +183,42 @@ exifTags path = do
     case eTags of
         Right tags -> return tags
         Left (_ :: E.SomeException) -> return []
+
+-- -----------------------------------------------------------------------------
+
+-- | Generates a resized image in background. Doesn't save the displayable
+-- file if this one is larger than the original file.
+jobResize :: DisplayType -> App -> FileId -> IO ()
+jobResize destType app fileId = do
+    Just file <- runDBIO app $ get fileId
+
+    let hash = T.unpack $! fileHash file
+        dir = hashDir app hash
+        path = getPath dir Original
+        destPath = getPath dir (Display destType)
+
+    img <- I.load path
+
+    I.save (displayable img) destPath
+    newSize <- getFileSize destPath
+
+    if newSize < fileSize file
+        then runDBIO app $
+                updateWhere [ImageAttrsFileId ==. fileId]
+                            [ImageAttrsDisplayable =. Just destType]
+        else removeFile destPath
+
+-- | Reads and saves the EXIF tags of an image in the database.
+jobExifTags :: App -> FileId -> IO ()
+jobExifTags app fileId = do
+    Just file <- runDBIO app $ get fileId
+
+    let hash = T.unpack $! fileHash file
+        path = getPath (hashDir app hash) Original
+
+    tags <- exifTags path
+
+    when (not $ null tags) $ do
+        runDBIO app $
+            forM_ tags $ \(title, value) ->
+                insertUnique $ ExifTag fileId title value

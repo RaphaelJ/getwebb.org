@@ -3,8 +3,8 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Recognises zip archives and adds their content to the database.
 module Upload.Archive (
-      ArchiveTree (..), extensions, processArchive, archiveTree, treeToHtml)
-    where
+      ArchiveTree (..), extensions, processArchive, archiveTree, treeToHtml
+    ) where
 
 import Import
 
@@ -69,7 +69,7 @@ processArchive path ext fileId = do
                                               [ArchiveFileHmac =. hmac]
                                 Nothing -> return ()
 
-                    liftIO $ app `C.putFile` fileId
+                    _ <- liftIO $ C.putFile app fileId []
                     return True
                 Left (_ :: E.SomeException) -> return False
   where

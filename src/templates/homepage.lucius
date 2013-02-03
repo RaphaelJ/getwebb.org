@@ -185,6 +185,18 @@
         }
     }
 
+    .progress {
+        width: 100px;
+        height: 5px;
+        background-color: #F2F2E2;
+
+        box-shadow: 0 0 2px black;
+    }
+    .progress .complete {
+        background-color: #65A625;
+        height: 100%;
+    }
+
     #upload_global_progress {
         position: fixed;
         bottom: 0;

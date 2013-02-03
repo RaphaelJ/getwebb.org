@@ -4,7 +4,6 @@ module Model where
 import Prelude
 import Yesod
 
-import Data.Int
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Data.Word
@@ -14,7 +13,6 @@ data FileType = Image | Audio | Video | Archive | UnknownType
     deriving (Show, Read, Eq)
 derivePersistField "FileType"
 
-type AdminKey = Int64
 type Hmac = Text
 
 -- | Used to give the type of a secondary image which can be displayed in the
@@ -32,20 +30,28 @@ data ObjectType = Original
     deriving (Show, Read, Eq)
 derivePersistField "ObjectType"
 
+-- | Used to tags background jobs.
+data JobType = Compression
+             | Transcode
+             | Resize DisplayType
+             | ExifTags
+    deriving (Show, Read, Eq)
+derivePersistField "JobType"
+
 share [mkPersist sqlOnlySettings, mkMigrate "migrateAll"] [persistUpperCase|
-LastAdminKey
-    value AdminKey
+AdminKey
+    count Int
     deriving Show
 
 File
-    sha1 Text
+    hash Text -- SHA1 hash of the file
     type FileType
     size Word64
-    compressionQueue Bool -- True if the file hasn't been compressed.
     compressed Word64 Maybe -- The compressed size if the file is compressed.
     uploaded UTCTime
+    count Int -- Number of uploads which point to this file
     -- Each file is identified by its hash:
-    UniqueFileSHA1 sha1
+    UniqueFileHash hash
     deriving Show
 
 Upload
@@ -55,7 +61,7 @@ Upload
     description Text Maybe
     uploaded UTCTime
     hostname Text
-    adminKey AdminKey
+    adminKey AdminKeyId
     views Word64 default=0
     lastView UTCTime
     bandwidth Word64 default=0
@@ -83,8 +89,7 @@ ExifTag
 -- Saves the attributes of a media.
 MediaAttrs
     fileId FileId
-    duration Word64 -- Duration in centisecond
-    transcodeQueue Bool -- True if the file is planned to be transcoded.
+    duration Word64 -- Duration in centisecond.
     transcoded Bool -- True if the media has been re-encoded to be displayed
                     -- in the browser (HTML5 audio/video).
     UniqueMediaAttrs fileId
@@ -110,8 +115,24 @@ ArchiveFile
     hmac Hmac -- An unique identifier of the file generated from its ID.
     fileId FileId
     path Text
-    size Word64 Maybe -- Uncompressed size if not a directory
+    size Word64 Maybe -- Uncompressed size if not a directory.
     UniqueArchiveFile fileId path
     UniqueArchiveFileHmac hmac
     deriving Show
+
+-- Saves the status of the background jobs queue.
+Job
+    fileId FileId
+    type JobType
+    completed Bool
+    cpuTime Double Maybe -- CPU time in seconds used by the job to complete.
+    exception Text Maybe -- The exception text if the process has failed.
+    UniqueJob fileId type
+
+-- Each background job execution can depend on the termination of one or more
+-- other jobs.
+JobDependency
+    jobId JobId
+    dependency JobId
+    UniqueJobDependency jobId dependency
 |]

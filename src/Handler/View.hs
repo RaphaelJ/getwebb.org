@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternGuards #-}
-module Handler.View (getViewR)
+module Handler.View (getViewR, deleteViewR)
     where
 
 import Import
@@ -27,6 +27,7 @@ import Handler.Utils (
     )
 
 import Upload.Archive (archiveTree, treeToHtml)
+import Upload.Remove (removeUpload)
 
 -- | Used to retrieve the attributes about each file type from the database.
 data Extras = ImageExtras ImageAttrs [ExifTag]
@@ -37,7 +38,7 @@ data Extras = ImageExtras ImageAttrs [ExifTag]
 
 -- | Shows information about a file.
 getViewR :: Text -> Handler RepHtml
-getViewR hmacsJoined = do
+getViewR hmacs' = do
     when (null hmacs)
         notFound
 
@@ -90,6 +91,7 @@ getViewR hmacsJoined = do
     rdr <- getUrlRenderParams
     currentUrl <- (flip rdr [] . fromJust) <$> getCurrentRoute
     currentTime <- liftIO $ getCurrentTime
+    isAdmin <- getIsAdmin upload
     stats <- getUploadStats uploadId upload
     facebookAppId <- extraFacebook <$> getExtra
     let name = uploadName upload
@@ -108,9 +110,18 @@ getViewR hmacsJoined = do
                 Image -> $(widgetFile "view-image")
                 _     -> $(widgetFile "view-file")
 
+        $(widgetFile "remove")
         $(widgetFile "view")
   where
-    hmacs = splitHmacs hmacsJoined
+    hmacs = splitHmacs hmacs'
+
+    -- Returns True if the client is the administrator of the 
+    getIsAdmin upload = do
+        mKey <- tryAdminKey
+
+        return $ case mKey of
+            Just key | key == uploadAdminKey upload -> True
+            _                                       -> False
 
     -- Removes the non existing hmacs from the head of the list.
     dropRemoved []         = return []
@@ -194,26 +205,29 @@ getViewR hmacsJoined = do
         in Just $ treeToHtml rdr' (archiveTree files)
     getArchive _   _      _                     = Nothing
 
-    extsArchives = S.fromDistinctAscList [".7z", ".bz", ".deb", ".gz", ".pkg", ".rar"
-        , ".rpm", ".tar", ".xz", ".zip"]
-    extsAudio = S.fromDistinctAscList [".flac", ".m3u", ".m4a", ".mid", ".mp3", ".ogg"
-        , ".wav", ".wma"]
-    extsCode = S.fromDistinctAscList [".asp", ".aspx", ".c", ".cfm", ".cpp", ".css"
-        , ".cxx", ".dtd", ".fla", ".h", ".hs", ".htm", ".html", ".java", ".js"
-        , ".jsp", ".lua", ".m", ".php", ".pl", ".py", ".xhtml", ".xml", ".xs"]
-    extsExecutable = S.fromDistinctAscList [".a", ".apk", ".app", ".bat", ".bin", ".cab"
-        , ".cgi", ".class", ".com", ".cue", ".dll", ".exe", ".iso", ".jar"
-        , ".msi", ".nes", ".o", ".pif", ".rom", ".run", ".sh", ".so", ".wsf"]
-    extsImage = S.fromDistinctAscList [".bmp", ".gif", ".ico", ".jpeg", ".jpg", ".png"
-        , ".psd", ".tga", ".tif", ".tiff", ".xcf"]
+    extsArchives = S.fromDistinctAscList [".7z", ".bz", ".deb", ".gz", ".pkg"
+        , ".rar", ".rpm", ".tar", ".xz", ".zip"]
+    extsAudio = S.fromDistinctAscList [".flac", ".m3u", ".m4a", ".mid", ".mp3"
+        , ".ogg", ".wav", ".wma"]
+    extsCode = S.fromDistinctAscList [".asp", ".aspx", ".c", ".cfm", ".cpp"
+        , ".css", ".cxx", ".dtd", ".fla", ".h", ".hs", ".htm", ".html", ".java"
+        , ".js", ".jsp", ".lua", ".m", ".php", ".pl", ".py", ".xhtml", ".xml"
+        , ".xs"]
+    extsExecutable = S.fromDistinctAscList [".a", ".apk", ".app", ".bat", ".bin"
+        , ".cab", ".cgi", ".class", ".com", ".cue", ".dll", ".exe", ".iso"
+        , ".jar", ".msi", ".nes", ".o", ".pif", ".rom", ".run", ".sh", ".so"
+        , ".wsf"]
+    extsImage = S.fromDistinctAscList [".bmp", ".gif", ".ico", ".jpeg", ".jpg"
+        , ".png", ".psd", ".tga", ".tif", ".tiff", ".xcf"]
     extsPresentation = S.fromDistinctAscList [".pps", ".ppt", ".pptx"]
-    extsSpreadsheet = S.fromDistinctAscList [".accdb", ".db", ".dbf", ".mdb", ".mdb"
-        , ".ods", ".pdb", ".sql", ".xlr", ".xls", ".xlsx"]
-    extsText = S.fromDistinctAscList [".csv", ".doc", ".docx", ".log", ".msg", ".odt"
-        , ".rtf", ".tex", ".wps"]
+    extsSpreadsheet = S.fromDistinctAscList [".accdb", ".db", ".dbf", ".mdb"
+        , ".mdb", ".ods", ".pdb", ".sql", ".xlr", ".xls", ".xlsx"]
+    extsText = S.fromDistinctAscList [".csv", ".doc", ".docx", ".log", ".msg"
+        , ".odt", ".rtf", ".tex", ".wps"]
     extsVector = S.fromDistinctAscList [".ai", ".eps", ".ps", ".svg", ".ttf"]
-    extsVideo = S.fromDistinctAscList [".3g2", ".3gp", ".asf", ".asx", ".avi", ".flv"
-        , ".mov", ".mp4", ".mpg", ".ogv", ".swf", ".vob", ".webm", ".wmv"]
+    extsVideo = S.fromDistinctAscList [".3g2", ".3gp", ".asf", ".asx", ".avi"
+        , ".flv", ".mov", ".mp4", ".mpg", ".ogv", ".swf", ".vob", ".webm"
+        , ".wmv"]
 
     -- This is used in hamlet templates because they only supports functions
     -- in expressions, not operators.
@@ -221,6 +235,20 @@ getViewR hmacsJoined = do
     if' True  a _ = a
     if' False _ b = b
 
+deleteViewR :: Text -> Handler ()
+deleteViewR hmac = do
+    mKey <- tryAdminKey
+
+    case mKey of
+        Just key -> runDB $ do
+            entity@(Entity _ upload) <- getBy404 $ UniqueUploadHmac hmac
+
+            if uploadAdminKey upload == key
+                then removeUpload entity
+                else lift $ permissionDenied
+                        "Your admin key doesn't match the upload's admin key."
+
+        Nothing  -> permissionDenied "Your admin key cookie is empty."
 
 int :: Integral a => a -> Int
 int = fromIntegral

@@ -10,7 +10,7 @@ module Handler.Download (
     -- * URL utilities
     , routeType
     -- * Views daemon buffer management
-    , ViewsBuffer, ViewsBuffer, viewsCommitDelay, newBuffer
+    , ViewsBuffer, ViewsBufferEntry, viewsCommitDelay, newBuffer
     , incrementViewCount, addBandwidth, getBufferEntry
     -- * Starting the daemon
     , viewsDaemon, forkViewsDaemon
@@ -42,7 +42,7 @@ import Network.Mime (defaultMimeLookup)
 import Network.Wai (requestHeaders)
 
 import JobsDaemon (runDBIO)
-import Upload.Path (hashDir, uploadDir, getPath)
+import Upload.Path (hashDir, getPath)
 
 import System.TimeIt
 
@@ -62,7 +62,6 @@ getDownloadR hmac = do
     streamFile requestType = do
         (file, uploadId, upload, h) <- runDB $ do
             Entity uploadId upload <- getBy404 $ UniqueUploadHmac hmac
-
             Just file <- get $ uploadFileId upload
 
             -- Opens the file inside the transaction to ensure data consistency.
@@ -185,7 +184,7 @@ getDownloadR hmac = do
     -- Tries to open the file. 404 Not found if doesn't exists.
     safeOpenFile file requestType = do
         app <- getYesod
-        let dir = hashDir (uploadDir app) (T.unpack $ fileSha1 file)
+        let dir = hashDir app (T.unpack $ fileHash file)
             path = getPath dir requestType
 
         eH <- liftIO $ E.try (openBinaryFile path ReadMode)

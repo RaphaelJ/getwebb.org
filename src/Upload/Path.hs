@@ -1,7 +1,7 @@
 -- | Defines a few utilities to process files during the processing of an
 -- upload.
 module Upload.Path (
-      getFileSize, hashDir, uploadDir, tmpDir, newTmpFile, getPath, computeHmac
+      getFileSize, uploadDir, hashDir, tmpDir, newTmpFile, getPath, computeHmac
     , toBase62
     ) where
 
@@ -22,18 +22,19 @@ import Database.Persist.Store (PersistValue (..))
 getFileSize :: FilePath -> IO Word64
 getFileSize path = fromIntegral <$> withFile path ReadMode hFileSize
 
--- | Splits the hash of the file in four parts and constucts a four level
--- directory path in the given directory.
-hashDir :: FilePath -> String -> FilePath
-hashDir dir hash =
-    let (p1, hash') = splitAt 2 hash
-        (p2, hash'') = splitAt 2 hash'
-        (p3, p4) = splitAt 2 hash''
-    in dir </> p1 </> p2 </> p3 </> p4
-
 -- | Returns the directory where the uploaded files will be stored.
 uploadDir :: App -> FilePath
 uploadDir app = extraUploadDir $ appExtra $ settings app
+
+-- | Splits the hash of the file in four parts and constucts a four level
+-- directory path in the given directory.
+hashDir :: App -> String -> FilePath
+hashDir app hash =
+    let dir = uploadDir app
+        (p1, hash') = splitAt 2 hash
+        (p2, hash'') = splitAt 2 hash'
+        (p3, p4) = splitAt 2 hash''
+    in dir </> p1 </> p2 </> p3 </> p4
 
 -- | Returns the directory where the temporary files will be created.
 tmpDir :: App -> FilePath

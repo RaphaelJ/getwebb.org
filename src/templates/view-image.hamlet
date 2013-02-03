@@ -7,8 +7,8 @@ $with headersHeight <- if' (isJust links) 67 37
 
                 $with ImageExtras attrs tags <- extras
                     <div #size>
-                        #{int $ imageAttrsWidth attrs} x
-                        #{int $ imageAttrsHeight attrs}
+                        #{PrettyNumber $ int $ imageAttrsWidth attrs} x
+                        #{PrettyNumber $ int $ imageAttrsHeight attrs}
 
                     $if not (null tags)
                         <div #tags>
@@ -24,6 +24,6 @@ $with headersHeight <- if' (isJust links) 67 37
 
             <div #left_pane>
                 <a href=@{DownloadR hmac} title="View image in full resolution">
-                    <img #image src=#{fromJust $ image} alt=#{uploadName upload}/>
+                    <img #image src=#{fromJust $ image} alt=#{uploadName upload}>
 
             ^{right_pane}

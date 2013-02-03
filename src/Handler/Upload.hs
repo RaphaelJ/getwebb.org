@@ -8,35 +8,44 @@ import Control.Monad.Writer
 import Data.Map (elems)
 import qualified Data.Text as T
 
-import Upload.Processing (process)
+import Network.HTTP.Types.Status (
+      created201, badRequest400, forbidden403, requestEntityTooLarge413
+    )
 
-data Options = Options {
-      optEmail :: Maybe Text
-    }
+import Upload.Processing (processFile)
+
+data Options = Options { optEmail :: Maybe Text }
     deriving (Show, Read)
 
 -- | Uploads files to the server. Returns a Json object which contains the
 -- id and the link of the upload or the errors.
 postUploadR :: Handler RepJson
 postUploadR = do
-    urlRender <- getUrlRender
+    urlRdr <- getUrlRender
     ((res, _), _) <- runFormPostNoToken uploadForm'
     case res of
-        FormSuccess (files, Options email) -> do
-            uploads <- process files
-            jsonToRepJson $! array $ map (uploadJson urlRender) uploads
-        FormFailure errs -> 
-            jsonToRepJson $ object [("invalid request", array errs)]
+        FormSuccess (file:_, Options email) -> do
+            eUpload <- processFile file
+            case eUpload of
+                Right upload ->
+                    sendResponseStatus created201 (uploadJson urlRdr upload)
+                Left err ->
+                    let status = case err of
+                            DailyIPLimitReached -> forbidden403
+                            FileTooLarge -> requestEntityTooLarge413
+                        response = jsonToRepJson $ array [show err]
+                    in sendResponseStatus status response
+        FormFailure errs ->
+            sendResponseStatus badRequest400 (jsonToRepJson $ array errs)
         FormMissing -> undefined
   where
-    -- Constructs a json object if uploaded successfully or the error.
-    uploadJson _         (Left err) = String $ T.pack $ show err
-    uploadJson urlRender (Right upload) =
+    -- Constructs a json object with the information of the file.
+    uploadJson urlRdr  upload =
         let hmac = uploadHmac upload
-        in object [
+        in jsonToRepJson $ object [
               "id"   .= hmac
             , "name" .= uploadName upload
-            , "url"  .= urlRender (ViewR hmac)
+            , "url"  .= urlRdr (ViewR hmac)
             ]
 
 -- | Creates a form for the upload and its options.
@@ -51,7 +60,7 @@ uploadForm prefix extra = do
     -- File widget.
     let filesId = prefix <> "files"
     let filesView = FieldView {
-          fvLabel = "Select some files to upload"
+          fvLabel = "Select some files to upload."
         , fvTooltip = Nothing, fvId = filesId
         , fvInput = [whamlet|
                 <input ##{filesId} name=#{filesId} type=file multiple tabindex=1
@@ -70,7 +79,7 @@ uploadForm prefix extra = do
             Just fs | not (null fs)
                 -> FormSuccess fs
             _
-                -> FormFailure ["Please send at least one file to upload"]
+                -> FormFailure ["Send at least one file to upload."]
 
     -- Options widget.
     let emailId = Just (prefix <> "email")

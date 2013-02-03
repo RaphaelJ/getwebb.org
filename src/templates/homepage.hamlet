@@ -15,7 +15,6 @@
 
             <p .options_button>
                 <button #options_toggle type=button tabindex=3>
-                        <!--"onclick="showOptions(this, 'options')"-->
                     Show more options
 
             <input .big_button #upload_button type=submit tabindex=2

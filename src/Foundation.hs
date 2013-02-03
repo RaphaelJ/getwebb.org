@@ -30,8 +30,24 @@ import qualified Web.ClientSession as S
 import Model
 import Handler.Utils (PrettyNumber (..))
 
+-- | Contains a queue of background jobs which can be processed right now.
+type JobsChan = Chan (JobId, IO ())
+-- | Maps each uncompleted parent job to a list of its dependent jobs.
+-- Each mapped job contains its id, its action and possibly the list of the
+-- remaining other dependencies of the job.
+-- When a job completes, the corresponding entry from the map is removed and
+-- each mapped job is :
+--      - added to the 'JobsChan' if the list of remaining dependencies of the
+--      job is empty ;
+--      - added to the first job of its remaining dependencies if the list is
+--      not empty.
+type JobsDepends = MVar (M.Map JobId [(JobId, IO (), [JobId])])
+-- | Contains the queue of jobs which can be processed and the graph of
+-- dependencies.
+type JobsQueue = (JobsChan, JobsDepends)
+
 -- | The site argument for your application. This can be a good place to
--- keep settings and values requiring initialization before your application
+-- keep settings and values requiring initialisation before your application
 -- starts running, such as database connections. Every handler will have
 -- access to the data present here.
 data App = App {
@@ -41,7 +57,7 @@ data App = App {
     , httpManager :: Manager
     , persistConfig :: Settings.PersistConfig
     , encryptKey :: B.ByteString
-    , jobsQueue :: Chan (IO ())
+    , jobsQueue :: JobsQueue
     , viewsBuffer :: (MVar (M.Map UploadId (Word64, Maybe UTCTime, Word64)), MVar ())
     }
 
@@ -127,18 +143,20 @@ instance Yesod App where
         master <- getYesod
         mmsg <- getMessage
 
-        mAdminKey <- tryAdminKey
-        countHistory <- case mAdminKey of 
-            Just adminKey -> runDB $ count [UploadAdminKey ==. adminKey]
+        mAdminKeyId <- tryAdminKey
+        countHistory <- case mAdminKeyId of
+            Just adminKeyId -> do
+                Just adminKey <- runDB $ get adminKeyId
+                return $! adminKeyCount adminKey
             Nothing -> return 0
 
         pc <- widgetToPageContent $ do
             $(widgetFile "normalize")
-            $(widgetFile "default-layout-style")
-            $(widgetFile "default-layout-header")
-            $(widgetFile "default-layout-body")
-            addScriptRemote "http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"
---             $(widgetFile "default-layout-footer")
+            $(widgetFile "default")
+            $(widgetFile "default-header")
+            $(widgetFile "default-body")
+            $(widgetFile "default-footer")
+            addScriptRemote "http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"
         hamletToRepHtml $(hamletFile "templates/default-layout.hamlet")
 
     -- This is done to provide an optimization for serving static files from
@@ -222,14 +240,14 @@ getExtra = fmap (appExtra . settings) getYesod
 -- 'Nothing' if the user doesn\'t have a key.
 -- The admin key is a random key given to each user to control their own 
 -- uploads.
-tryAdminKey :: GHandler sub App (Maybe AdminKey)
+tryAdminKey :: GHandler sub App (Maybe AdminKeyId)
 tryAdminKey = do
     mKey <- lookupSession "admin_key"
     return $ (read . unpack) `fmap` mKey
 
 -- | Reads the session value to get the admin key of the visitor. If the user
 -- doesn\'t have a key, creates a new key.
-getAdminKey :: GHandler sub App AdminKey
+getAdminKey :: GHandler sub App AdminKeyId
 getAdminKey = do
     mKey <- tryAdminKey
 
@@ -238,18 +256,7 @@ getAdminKey = do
         Just k ->
             return k
         Nothing -> do
-            k <- runDB $ do
-                -- The user hasn't admin key. Takes the next free admin key.
-                mLastK <- selectFirst [] []
-                case mLastK of
-                    Just (Entity keyId (LastAdminKey lastK)) -> do
-                        -- Increments the last admin key to get a new value.
-                        update keyId [LastAdminKeyValue +=. 1]
-                        return $ lastK + 1
-                    Nothing -> do
-                        -- Inserts the first admin key in the database.
-                        _ <- insert (LastAdminKey 0)
-                        return 0
+            k <- runDB $ insert (AdminKey 0)
 
             setSession "admin_key" (pack $ show k)
             return k

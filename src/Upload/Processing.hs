@@ -26,15 +26,18 @@ import qualified Upload.Compression as C
 import Upload.Image (processImage)
 import Upload.Media (processMedia)
 import Upload.Path (
-      getFileSize, hashDir, uploadDir, newTmpFile, getPath, computeHmac
+      getFileSize, hashDir, newTmpFile, getPath, computeHmac
     )
 
 import System.TimeIt (timeIt)
 
 -- | Contains the diferents kinds of error that may occur during the processing
 -- of an upload.
-data UploadError = IPDailyLimitReached | FileTooLarge
-    deriving (Show, Read)
+data UploadError = DailyIPLimitReached | FileTooLarge
+
+instance Show UploadError where
+    show DailyIPLimitReached = "Daily per IP limit reached."
+    show FileTooLarge        = "The file exceeds the maximum file size."
 
 -- | Process a list of files and return the list of the resulting database id
 -- or the triggered error for each file.
@@ -46,7 +49,7 @@ process fs = do
 -- | Process a file and returns its new ID from the database.
 -- Returns either the uploaded file or an error message to be returned to the 
 -- user.
-processFile :: AdminKey -> FileInfo
+processFile :: AdminKeyId -> FileInfo
             -> Handler (Either UploadError Upload)
 processFile adminKey f = do
     app <- getYesod
@@ -75,13 +78,7 @@ processFile adminKey f = do
         let hashText = T.pack hash
             ext = T.toLower $ T.pack $ takeExtension $ T.unpack $ fileName f
 
-        let file = File {
-              fileSha1 = hashText, fileType = UnknownType
-            , fileSize = size, fileCompressionQueue = True
-            , fileCompressed = Nothing, fileUploaded = currentTime
-            }
-
-        let path = getPath (hashDir (uploadDir app) hash) Original
+        let path = getPath (hashDir app hash) Original
 
         -- Checks if the file exists.
         -- eithFileId gets a Right value if its a new file which file needs
@@ -89,6 +86,12 @@ processFile adminKey f = do
         -- Inserts the file before knowing its type to lock and prevent others 
         -- uploads to insert the same file during the processing.
         (upload, new) <- EitherT $ runDB $ runEitherT $ do
+            let file = File {
+                      fileHash = hashText, fileType = UnknownType
+                    , fileSize = size, fileCompressed = Nothing
+                    , fileUploaded = currentTime, fileCount = 1
+                    }
+
             -- Checks again if the user hasn't reach the upload limit.
             allowed' <- lift $ checksIpLimits extras clientHost yesterday size
             when (not allowed') $ do
@@ -104,12 +107,14 @@ processFile adminKey f = do
                     liftIO $ putStrLn $ "New file " ++ path
                     return $! (insertedFileId, True)
                 Nothing -> do
-                    -- Existing file: remove the temporary file and
-                    -- retrieves the FileId.
+                    -- Existing file: remove the temporary file, retrieves the 
+                    -- FileId and increments the file's counter.
                     liftIO $ removeFile tmpPath
                     liftIO $ putStrLn "Existing file"
-                    Just existingFile <- lift $ getBy (UniqueFileSHA1 hashText)
-                    return $! (entityKey existingFile, False)
+                    Just existingFile <- lift $ getBy (UniqueFileHash hashText)
+                    let fileId = entityKey existingFile
+                    update fileId [FileCount +=. 1]
+                    return $! (fileId, False)
 
             let upload = Upload {
                   uploadHmac = "",  uploadFileId = fileId
@@ -124,6 +129,9 @@ processFile adminKey f = do
             -- Computes and update the hmac of the upload.
             let hmac = computeHmac app uploadId
             lift $ update uploadId [UploadHmac =. hmac]
+
+            -- Increments the user's upload count
+            lift $ update adminKey [AdminKeyCount +=. 1]
 
             return (upload { uploadHmac = hmac }, new)
 
@@ -167,7 +175,7 @@ processFile adminKey f = do
                 else b
 
     processUnknown app fileId = do
-        liftIO $ app `C.putFile` fileId
+        _ <- liftIO $ C.putFile app fileId []
         return True
 
     remoteTextHost = do

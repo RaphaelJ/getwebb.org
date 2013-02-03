@@ -6,93 +6,67 @@ module Upload.Compression (
     -- * Compression
       compressFile
     -- * Background compression queue management
-    , putFile, restoreQueue
+    , putFile
     ) where
 
 import Import
 
-import Control.Monad
-import Data.Maybe
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Text as T
-import System.Directory
+import System.Directory (renameFile, removeFile)
 import System.IO (IOMode (..), openFile, hFileSize, hClose)
 
 import Codec.Compression.GZip (
       compressWith, defaultCompressParams, compressLevel, bestCompression
     )
-import Database.Persist.Query (selectKeysList)
 
-import JobsDaemon (putJob, runDBIO)
-import Upload.Path (hashDir, uploadDir, newTmpFile, getPath)
-
-import System.TimeIt (timeIt)
-import Text.Printf
+import JobsDaemon (registerJob, runDBIO)
+import Upload.Path (hashDir, newTmpFile, getPath)
 
 -- | Tries to compress a file. Replaces the original file and updates the
 -- database if the compressed file is smaller.
 compressFile :: App -> FileId -> IO ()
 compressFile app fileId = do
-    -- Retrieves the file from the database to ensures it still exists.
-    mFileInfo <- runDBIO app $ do
-        mFile <- get fileId
+    Just file <- runDBIO app $ get fileId
 
-        case mFile of
-            Just file | isNothing (fileCompressed file) -> do
-                let hash = T.unpack $! fileSha1 file
-                    path = getPath (hashDir (uploadDir app) hash) Original
-                h <- liftIO $ openFile path ReadMode
-                return $! Just (path, h, fileSize file)
-            _ -> return Nothing -- File removed or already compressed
+    let hash = T.unpack $! fileHash file
+        path = getPath (hashDir app hash) Original
 
-    whenJust mFileInfo $ \(path, h, size) -> do
-        -- Compress the file in a new temporary file.
-        (tmpPath, tmpH) <- newTmpFile app "compression_"
+    h <- liftIO $ openFile path ReadMode
 
-        putStrLn "Compression:"
-        timeIt $ L.hGetContents h >>= L.hPut tmpH . compressWith params
-        hClose h
+    -- Compresses the file in a new temporary file.
+    (tmpPath, tmpH) <- newTmpFile app "compression_"
 
-        -- Computes the size of the new compressed file.
-        tmpSize <- word64 <$> hFileSize tmpH
-        hClose tmpH
+    L.hGetContents h >>= L.hPut tmpH . compressWith params
+    hClose h
 
-        _ <- liftIO $! printf "New size: %d - old: %d - gain: %d\n" tmpSize size (size - tmpSize)
+    -- Computes the size of the new compressed file.
+    tmpSize <- word64 <$> hFileSize tmpH
+    hClose tmpH
 
-        -- Replaces the file if the compressed one is smaller.
-        -- Replaces and removes the file during the transaction to ensures data
-        -- consistence.
-        runDBIO app $ if tmpSize < size
-            then do
+    -- Replaces the file if the compressed one is smaller.
+    -- Replaces and removes the file during the transaction to ensures data
+    -- consistence.
+    if tmpSize < fileSize file
+        then do
+            runDBIO app $ do
                 -- Checks if the file still exists.
                 exists <- get fileId
                 case exists of
                     Just _ -> do
-
-                        update fileId [
-                            FileCompressionQueue =. False
-                            , FileCompressed =. Just tmpSize
-                            ]
+                        update fileId [FileCompressed =. Just tmpSize]
                         liftIO $ removeFile path
                         liftIO $ renameFile tmpPath path
                     Nothing -> do
                         -- The original file has been removed.
                         liftIO $ removeFile tmpPath
-            else do
-                update fileId [FileCompressionQueue =. False]
-                liftIO $ removeFile tmpPath
+        else do
+            removeFile tmpPath
   where
     -- Compression parameters.
     params = defaultCompressParams { compressLevel = bestCompression }
 
 -- | Adds a file to a background compression queue.
-putFile :: App -> FileId -> IO ()
-putFile app = putJob app . compressFile app
-
--- | Reload the previous state of the compression queue from the database and
--- put its items on the background queue.
-restoreQueue :: App -> IO ()
-restoreQueue app = do
-    fs <- runDBIO app $ selectKeysList [FileCompressionQueue ==. True] 
-                                       [Asc FileId]
-    forM_ fs (app `putFile`)
+putFile :: App -> FileId -> [JobId] -> IO JobId
+putFile app fileId deps =
+    registerJob app fileId Compression deps (compressFile app fileId)

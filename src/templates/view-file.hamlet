@@ -14,11 +14,12 @@
                             $forall (audioUrl, audioMime) <- audioSources
                                 <source src=#{audioUrl} type=#{audioMime}>
                     $else
-                        The media is being re-encoded.<br />
-                        <a onclick="document.location.href = document.location.href"
-                           href="#">
-                            Refresh the page
-                        to get the media player.
+                        <div .transcoding>
+                            The media is being re-encoded.<br />
+                            <a onclick="document.location.href = document.location.href"
+                               href="#">
+                                Refresh the page
+                            to get the media player.
 
         <div .clear_float>
 

@@ -4,5 +4,5 @@
 
 /               HomeR           GET
 /u              UploadR         POST
-/v/#Text        ViewR           GET
+/v/#Text        ViewR           GET DELETE
 /d/#Text        DownloadR       GET

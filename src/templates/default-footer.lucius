@@ -1,13 +1,4 @@
 footer {
-    width: 950px;
-    margin: 5px auto;
-    padding-right: 5px;
-
     text-align: right;
-    color: #86867D;
     font-size: 12px;
-
-    a, a:visited {
-        color: #86867D;
-    }
 }

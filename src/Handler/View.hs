@@ -16,6 +16,7 @@ import Data.Time.Clock (getCurrentTime, diffUTCTime)
 import System.FilePath (takeExtension)
 
 import Network.HTTP.Types.Header (hUserAgent)
+import Network.HTTP.Types.Status (noContent204)
 import Network.Wai (requestHeaders)
 import Text.Hamlet (shamlet)
 
@@ -240,15 +241,23 @@ deleteViewR hmac = do
     mKey <- tryAdminKey
 
     case mKey of
-        Just key -> runDB $ do
-            entity@(Entity _ upload) <- getBy404 $ UniqueUploadHmac hmac
+        Just key -> do
+            validKey <- runDB $ do
+                entity@(Entity _ upload) <- getBy404 $ UniqueUploadHmac hmac
 
-            if uploadAdminKey upload == key
-                then removeUpload entity
-                else lift $ permissionDenied
+                if uploadAdminKey upload == key
+                    then do
+                        removeUpload entity
+                        return True
+                    else
+                        return False
+            if validKey
+                then sendResponseStatus noContent204 ()
+                else 
+                    permissionDenied
                         "Your admin key doesn't match the upload's admin key."
 
-        Nothing  -> permissionDenied "Your admin key cookie is empty."
+        Nothing -> permissionDenied "Your admin key cookie is empty."
 
 int :: Integral a => a -> Int
 int = fromIntegral

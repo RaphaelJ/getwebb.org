@@ -41,3 +41,4 @@ removeUpload (Entity uploadId upload) = do
         let hash = T.unpack $ fileHash file
             dir = hashDir app hash
         liftIO $ removeDirectoryRecursive dir
+        liftIO $ putStrLn "ok"

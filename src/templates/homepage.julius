@@ -12,7 +12,7 @@ $("#options_toggle").click(function ()
 var maxPreviewSize = 5 * 1024 * 1024; // 5 Mio
 
 // Hides the upload form, start the upload and shows the uploads progress.
-$("#upload_form").submit(function () 
+$("#upload_form").submit(function ()
 {
     var files = document.getElementById("files").files;
     if (files.length < 1) {
@@ -129,11 +129,11 @@ $("#upload_form").submit(function ()
 });
 
 // Returns true if the mime-type stands for a JPEG, PNG or GIF image.
-function isImage(mime) 
+function isImage(mime)
 {
     var lower = mime.toLowerCase();
 
-    return lower == "image/jpeg" || lower == "image/png" 
+    return lower == "image/jpeg" || lower == "image/png"
         || lower == "image/gif";
 }
 
@@ -184,21 +184,15 @@ function uploadFiles(loaded, total, files_info, uploaded, errors)
     }, false);
 
     xhr.addEventListener("load", function (e) {
-        if (e.target.status == 200) {
-            res = jQuery.parseJSON(e.target.responseText)[0];
-            if (typeof(res) == "string") { // error, skips the file
-                info.changeStatus("error", 100, null);
-                errors.push({ filename: info.file.name, error: res });
-            } else {
-                info.changeStatus("uploaded", 100, res.url);
-                uploaded.push(res.id);
-            }
+        var status = e.target.status,
+            res = jQuery.parseJSON(e.target.responseText);
+
+        if (status == 201) { // 201 created
+            info.changeStatus("uploaded", 100, res.url);
+            uploaded.push(res.id);
         } else {
             info.changeStatus("error", 100, null);
-            errors.push({
-                filename: info.file.name,
-                error: e.target.responseText
-            });
+            errors.push({ filename: info.file.name, error: res[0] });
         }
 
         continueUpload(
@@ -209,14 +203,16 @@ function uploadFiles(loaded, total, files_info, uploaded, errors)
 
     xhr.addEventListener("error", function (e) {
         info.changeStatus("error", 100, null);
-        errors.push({ filename: info.file.name, error: "Connection error" });
+        errors.push({ filename: info.file.name, error: "Connection error." });
         continueUpload(
             loaded + info.file.size, total, files_info, uploaded, errors
         );
     }, false);
 
     xhr.addEventListener("abort", function (e) {
-        continueUpload(loaded, total, new Array(), uploaded, errors);
+        info.changeStatus("error", 100, null);
+        errors.push({ filename: info.file.name, error: "Aborted." });
+        continueUpload(loaded, total, files_info, uploaded, errors);
     }, false);
 
     xhr.open("POST", "@{UploadR}");
@@ -230,7 +226,7 @@ function continueUpload(loaded, total, files_info, uploaded, errors)
 {
     if (files_info.length == 0) { // No more upload
         restoreUploadForm();
-        if (uploaded.length > 0) { 
+        if (uploaded.length > 0) {
             // At least one file has been successfully uploaded.
             // Redirects to the download page.
             if (errors.length > 0)
@@ -247,13 +243,13 @@ function continueUpload(loaded, total, files_info, uploaded, errors)
 }
 
 // Returns an error message which explains how some files failed to be uploaded.
-function errorsToStr(errors, new_page)
+function errorsToStr(errors, new_line)
 {
-    var str = "The following files failed to be uploaded :" + new_page;
+    var str = "The following files failed to be uploaded :" + new_line;
 
     for (i = 0; i < errors.length; i++) {
         var error = errors[i];
-        str += error.filename + " : " + error.error + new_page;
+        str += error.filename + " : " + error.error + new_line;
     }
 
     return str;

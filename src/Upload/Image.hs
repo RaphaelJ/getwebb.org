@@ -118,7 +118,7 @@ processImage path ext fileId = do
     -- than maxImageSize.
     genDisplayableAsync (I.Size w h) destType = do
         app <- getYesod
-        if w > maxW || h > maxH 
+        if w > maxW || h > maxH
             then liftIO $ do
                 let job = jobResize destType app fileId
                 jobId <- registerJob app fileId (Resize destType) [] job

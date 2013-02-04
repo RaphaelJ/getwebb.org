@@ -104,15 +104,18 @@ instance Yesod App where
                             If this was an uploaded file, it has been removed.
                         |]
                     in ("404 Not Found", Just msg)
-                PermissionDenied _ -> 
+                PermissionDenied err ->
                     let msg = [shamlet|
-                            You don't have the permission to access this page.
+                            You don't have the permission to access this
+                            ressource for the following reason :
+                            <pre>
+                                #{err}
                         |]
                     in ("403 Permission Denied", Just msg)
                 InvalidArgs _ -> ("Invalid Arguments", Nothing)
                 InternalError err ->
                     let msg = [shamlet|
-                            Our internal software failed for the following 
+                            Our internal software failed for the following
                             reason :
                             <pre>
                                 #{err}
@@ -245,7 +248,7 @@ tryAdminKey = do
     mKey <- lookupSession "admin_key"
     return $ (read . unpack) `fmap` mKey
 
--- | Reads the session value to get the admin key of the visitor. If the user
+-- | Reads the         session value to get the admin key of the visitor. If the user
 -- doesn\'t have a key, creates a new key.
 getAdminKey :: GHandler sub App AdminKeyId
 getAdminKey = do

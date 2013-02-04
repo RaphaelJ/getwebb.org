@@ -27,7 +27,7 @@
 
             .transcoding {
                 padding-left: 35px;
-                background-image: url("@{StaticR img_transcoding_waiting_png}");
+                /*background-image: url("@{StaticR img_transcoding_waiting_png}");*/
                 background-position: left center;
                 background-repeat: no-repeat;
             }

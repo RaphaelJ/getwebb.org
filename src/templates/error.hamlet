@@ -7,6 +7,5 @@
                 <p>#{msg}
 
             <p>
-                Click here to return to our <a href="@{HomeR}">home page</a> or
-                to the <a href="javascript: history.go(-1);">previous page</a>
-                you visited.
+                Return to our <a href="@{HomeR}">home page</a> or to the
+                <a href="javascript: history.go(-1);">last page</a> you visited.

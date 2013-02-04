@@ -6,26 +6,26 @@ import Import
 
 import Control.Monad.Writer
 import Data.Map (elems)
-import qualified Data.Text as T
 
 import Network.HTTP.Types.Status (
       created201, badRequest400, forbidden403, requestEntityTooLarge413
     )
 
-import Upload.Processing (processFile)
+import Upload.Processing (UploadError (..), processFile)
 
 data Options = Options { optEmail :: Maybe Text }
     deriving (Show, Read)
 
 -- | Uploads files to the server. Returns a Json object which contains the
 -- id and the link of the upload or the errors.
-postUploadR :: Handler RepJson
+postUploadR :: Handler ()
 postUploadR = do
     urlRdr <- getUrlRender
+    admiKey <- getAdminKey
     ((res, _), _) <- runFormPostNoToken uploadForm'
     case res of
-        FormSuccess (file:_, Options email) -> do
-            eUpload <- processFile file
+        FormSuccess ~(file:_, Options email) -> do
+            eUpload <- processFile admiKey file
             case eUpload of
                 Right upload ->
                     sendResponseStatus created201 (uploadJson urlRdr upload)
@@ -33,20 +33,22 @@ postUploadR = do
                     let status = case err of
                             DailyIPLimitReached -> forbidden403
                             FileTooLarge -> requestEntityTooLarge413
-                        response = jsonToRepJson $ array [show err]
+                        response = toRepJson $ array [show err]
                     in sendResponseStatus status response
         FormFailure errs ->
-            sendResponseStatus badRequest400 (jsonToRepJson $ array errs)
+            sendResponseStatus badRequest400 (toRepJson $ array errs)
         FormMissing -> undefined
   where
     -- Constructs a json object with the information of the file.
     uploadJson urlRdr  upload =
         let hmac = uploadHmac upload
-        in jsonToRepJson $ object [
+        in toRepJson $ object [
               "id"   .= hmac
             , "name" .= uploadName upload
             , "url"  .= urlRdr (ViewR hmac)
             ]
+
+    toRepJson = RepJson . toContent
 
 -- | Creates a form for the upload and its options.
 uploadForm :: Text -- ^ The prefix which will precede each field name and id.

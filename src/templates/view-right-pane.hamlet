@@ -6,9 +6,16 @@
 
     $if isAdmin
         <div .remove>
-            <a .big_button href=@{DownloadR hmac} download=#{uploadName upload}
-                           tabindex=1>
+            <a .big_button onclick="removeUpload('#{hmac}'); return false"
+                           href="#">
                 Remove
+
+        <script type="text/javascript">
+            // Listen to the delete key.
+            document.onkeydown = function(e) {
+                if (e.keyCode == 46)
+                    removeUpload('#{hmac}');
+            };
 
     <div .size>
         <span .key>File size :

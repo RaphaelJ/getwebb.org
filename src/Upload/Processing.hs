@@ -41,10 +41,8 @@ instance Show UploadError where
 
 -- | Process a list of files and return the list of the resulting database id
 -- or the triggered error for each file.
-process :: [FileInfo] -> Handler [Either UploadError Upload]
-process fs = do
-    admiKey <- getAdminKey
-    forM fs (processFile admiKey)
+process :: AdminKeyId -> [FileInfo] -> Handler [Either UploadError Upload]
+process admiKey fs = forM fs (processFile admiKey)
 
 -- | Process a file and returns its new ID from the database.
 -- Returns either the uploaded file or an error message to be returned to the 
@@ -63,7 +61,7 @@ processFile adminKey f = do
         -- possible.
         allowed <- lift $ runDB $ checksIpLimits extras clientHost yesterday 0
         when (not allowed) $
-            left IPDailyLimitReached
+            left DailyIPLimitReached
 
         tmpPath <- lift $ moveToTmp f
         size <- liftIO $ getFileSize tmpPath
@@ -96,7 +94,7 @@ processFile adminKey f = do
             allowed' <- lift $ checksIpLimits extras clientHost yesterday size
             when (not allowed') $ do
                 liftIO $ removeFile tmpPath
-                left IPDailyLimitReached
+                left DailyIPLimitReached
 
             mFileId <- lift $ insertUnique file
             (fileId, new) <- case mFileId of
@@ -113,7 +111,7 @@ processFile adminKey f = do
                     liftIO $ putStrLn "Existing file"
                     Just existingFile <- lift $ getBy (UniqueFileHash hashText)
                     let fileId = entityKey existingFile
-                    update fileId [FileCount +=. 1]
+                    lift $ update fileId [FileCount +=. 1]
                     return $! (fileId, False)
 
             let upload = Upload {

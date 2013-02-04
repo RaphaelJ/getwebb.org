@@ -5,6 +5,7 @@ $maybe (previous, next) <- links
             <a #next href=@{ViewR  next}>Next file →
 
     <script type="text/javascript">
+        // Listen to left-right keys.
         document.onkeydown = function(e) {
             if (e.keyCode == 37)
                 document.location.href = previous;

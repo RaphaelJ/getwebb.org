@@ -161,3 +161,15 @@ a.big_button, a.big_button:hover {
         margin: 15px 5px;
     }
 }
+
+footer {
+    width: 950px;
+    margin: 5px auto;
+    padding-right: 5px;
+
+    color: #86867D;
+
+    a, a:visited {
+        color: #86867D;
+    }
+}

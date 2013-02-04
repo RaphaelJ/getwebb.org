@@ -23,7 +23,7 @@ import System.FilePath ((<.>), takeDirectory, takeFileName)
 import System.IO (hClose)
 import Text.Printf
 
-import Control.Monad.Trans.Resource (register)
+import Control.Monad.Trans.Resource (register, release)
 import qualified Data.Aeson as J
 import Data.Conduit (($$+-))
 import Data.Conduit.Binary (sinkFile, sinkHandle)
@@ -209,9 +209,10 @@ processMedia path ext fileId = do
 
                 request <- liftIO $ parseUrl $ T.unpack coverUrl
                 lift $ do
-                    _ <- register $ hClose hTmp
+                    closeTmp <- register $ hClose hTmp
                     imgResponse <- http request (httpManager app)
                     responseBody imgResponse $$+- sinkHandle hTmp
+                    release closeTmp
 
                 -- Generates the cover image miniature.
                 eImg <- liftIO $ E.try (I.load tmp)
@@ -219,8 +220,10 @@ processMedia path ext fileId = do
                 case eImg of
                     Right img -> do
                         liftIO $ I.save (miniature img) miniaturePath
+                        liftIO $ putStrLn "OK"
                         return $! Just (url, True)
-                    Left (_ :: E.SomeException) -> 
+                    Left (e :: E.SomeException) -> do
+                        liftIO $ print e
                         return $! Just (url, False)
 
     -- Parses the last.fm JSON response and return the possible URL and the

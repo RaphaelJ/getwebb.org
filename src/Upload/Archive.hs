@@ -24,8 +24,6 @@ import Handler.Utils (PrettyFileSize (..), wrappedText)
 import qualified Upload.Compression as C
 import Upload.Path (computeHmac)
 
-import System.TimeIt
-
 -- | Represents a hierarchy of files within an archive.
 data ArchiveTree = NodeDirectory (M.Map FilePath ArchiveTree)
                  | NodeFile Hmac Word64
@@ -40,8 +38,7 @@ processArchive path ext fileId = do
     if not (ext `S.member` extensions)
         then return False
         else do
-            liftIO $ putStrLn "Reads the archive: "
-            eEntries <- liftIO $ timeIt $ E.try (readArchiveFiles >>= E.evaluate)
+            eEntries <- liftIO $ E.try (readArchiveFiles >>= E.evaluate)
 
             case eEntries of
                 Right entries -> do

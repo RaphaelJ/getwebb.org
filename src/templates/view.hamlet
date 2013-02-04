@@ -6,11 +6,11 @@ $maybe (previous, next) <- links
 
     <script type="text/javascript">
         // Listen to left-right keys.
-        document.onkeydown = function(e) {
+        document.addEventListener("keydown", function(e) {
             if (e.keyCode == 37)
                 document.location.href = previous;
             else if (e.keyCode == 39)
                 document.location.href = next;
-        };
+        });
 
 ^{page}

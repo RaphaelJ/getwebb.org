@@ -12,10 +12,10 @@
 
         <script type="text/javascript">
             // Listen to the delete key.
-            document.onkeydown = function(e) {
+            document.addEventListener("keydown", function(e) {
                 if (e.keyCode == 46)
                     removeUpload('#{hmac}');
-            };
+            });
 
     <div .size>
         <span .key>File size :

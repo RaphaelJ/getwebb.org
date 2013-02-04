@@ -4,9 +4,13 @@ module Model where
 import Prelude
 import Yesod
 
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Writer
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Data.Word
+
+import Database.Persist.GenericSql.Raw (SqlPersist)
 
 -- | File types recognized.
 data FileType = Image | Audio | Video | Archive | UnknownType
@@ -38,7 +42,7 @@ data JobType = Compression
     deriving (Show, Read, Eq)
 derivePersistField "JobType"
 
-share [mkPersist sqlOnlySettings, mkMigrate "migrateAll"] [persistUpperCase|
+share [mkPersist sqlOnlySettings, mkMigrate "migrateEnts"] [persistLowerCase|
 AdminKey
     count Int
     deriving Show
@@ -136,3 +140,16 @@ JobDependency
     dependency JobId
     UniqueJobDependency jobId dependency
 |]
+
+-- | Creates each entities and their indexes.
+migrateAll :: (MonadIO m, MonadBaseControl IO m) =>
+              WriterT [Text] (WriterT [(Bool, Text)] (SqlPersist m)) ()
+migrateAll = do
+    migrateEnts
+    lift $ tell [ (False, stm) | stm <- indexes ]
+  where
+    indexes = [
+          "CREATE INDEX IF NOT EXISTS \"upload_admin_key\" ON \"upload\"(\"admin_key\")"
+        , "CREATE INDEX IF NOT EXISTS \"upload_last_view\" ON \"upload\"(\"last_view\")"
+        , "CREATE INDEX IF NOT EXISTS \"job_completed\" ON \"job\"(\"completed\")"
+        ]

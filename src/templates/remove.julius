@@ -16,7 +16,7 @@ function removeUpload(uploadHmac)
                 } else {
                     alert("Failed to remove the file.");
                     document.location.href = document.location.href;
-                }Provided
+                }
             }
         });
     }

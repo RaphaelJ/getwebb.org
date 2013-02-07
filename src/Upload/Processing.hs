@@ -25,9 +25,8 @@ import Upload.Archive (processArchive)
 import qualified Upload.Compression as C
 import Upload.Image (processImage)
 import Upload.Media (processMedia)
-import Upload.Path (
-      getFileSize, hashDir, newTmpFile, getPath, computeHmac
-    )
+import Utils.Hmac (computeHmac)
+import Utils.Path (getFileSize, hashDir, newTmpFile, getPath)
 
 import System.TimeIt (timeIt)
 
@@ -50,6 +49,7 @@ process admiKey fs = forM fs (processFile admiKey)
 processFile :: AdminKeyId -> FileInfo
             -> Handler (Either UploadError Upload)
 processFile adminKey f = do
+    liftIO $ putStrLn "ok1"
     app <- getYesod
     extras <- getExtra
     clientHost <- remoteTextHost
@@ -59,9 +59,12 @@ processFile adminKey f = do
     runEitherT $ do
         -- Checks the user limits before moving the file to fail as soon as
         -- possible.
+        liftIO $ putStrLn "ok1.2"
         allowed <- lift $ runDB $ checksIpLimits extras clientHost yesterday 0
+        liftIO $ putStrLn "ok1.3"
         when (not allowed) $
             left DailyIPLimitReached
+        liftIO $ putStrLn "ok1.5"
 
         tmpPath <- lift $ moveToTmp f
         size <- liftIO $ getFileSize tmpPath
@@ -77,6 +80,7 @@ processFile adminKey f = do
             ext = T.toLower $ T.pack $ takeExtension $ T.unpack $ fileName f
 
         let path = getPath (hashDir app hash) Original
+        liftIO $ putStrLn "ok2"
 
         -- Checks if the file exists.
         -- eithFileId gets a Right value if its a new file which file needs
@@ -132,7 +136,7 @@ processFile adminKey f = do
             lift $ update adminKey [AdminKeyCount +=. 1]
 
             return (upload { uploadHmac = hmac }, new)
-
+        liftIO $ putStrLn "ok3"
         -- Process the special feature depending on the file type if it's a new
         -- file and puts it on the compressing queue afterward.
         let fileId = uploadFileId $ upload
@@ -151,9 +155,10 @@ processFile adminKey f = do
         let sql = T.pack $ unlines [
                   "SELECT COUNT(*), COALESCE(SUM(f.size), 0)"
                 , "FROM Upload AS u"
-                , "INNER JOIN File AS f ON f.id = u.fileId"
+                , "INNER JOIN File AS f ON f.id = u.file_id"
                 , "WHERE u.hostname = ? and u.uploaded >= ?;"
                 ]
+        liftIO $ putStrLn $ T.unpack $ sql
         [(Single n, Single size)] <- rawSql sql [
                   PersistText clientHost
                 , PersistUTCTime minDate

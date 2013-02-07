@@ -20,9 +20,9 @@ import System.FilePath (splitDirectories, hasTrailingPathSeparator)
 import qualified Codec.Archive.Zip as Z
 import Text.Hamlet (shamlet)
 
-import Handler.Utils (PrettyFileSize (..), wrappedText)
 import qualified Upload.Compression as C
-import Upload.Path (computeHmac)
+import Utils.Hmac (computeHmac)
+import Utils.Pretty (PrettyFileSize (..), wrappedText)
 
 -- | Represents a hierarchy of files within an archive.
 data ArchiveTree = NodeDirectory (M.Map FilePath ArchiveTree)

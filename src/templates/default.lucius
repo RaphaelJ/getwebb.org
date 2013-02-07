@@ -153,12 +153,26 @@ a.big_button, a.big_button:hover {
 #page {
     width: 950px;
     min-height: 150px;
-    margin: 0 auto;
+    margin: 10px auto 0 auto;
+    padding: 15px;
+
     box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
     background-color: #F0F1F2;
 
     h1 {
-        margin: 15px 5px;
+        margin: 3px 0;
+    }
+
+    .key, .value {
+        font-size: 0.9em;
+    }
+
+    .key {
+        color: rgba(0, 0, 0, 0.5);
+    }
+
+    .value {
+        color: rgba(0, 0, 0, 0.8);
     }
 }
 

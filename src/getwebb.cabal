@@ -25,23 +25,30 @@ library
                      Foundation
                      Import
                      Model
+                     JobsDaemon
+
+                     Handler.Download
+                     Handler.History
+                     Handler.Home
+                     Handler.Upload
+                     Handler.View
+
                      Settings
                      Settings.StaticFiles
                      Settings.Development
-                     Handler.Home
-                     Handler.Download
-                     Handler.Upload
-                     Handler.Utils
-                     Handler.View
-                     JobsDaemon
+
                      Upload.Archive
                      Upload.Compression
                      Upload.FFmpeg
                      Upload.Image
                      Upload.Media
-                     Upload.Path
                      Upload.Processing
                      Upload.Remove
+
+                     Utils.Extras
+                     Utils.Hmac
+                     Utils.Path
+                     Utils.Pretty
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT

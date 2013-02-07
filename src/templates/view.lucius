@@ -10,40 +10,54 @@
 
     text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.2);
 
+    a {
+        display: block;
+        float: left;
+        color: white;
+        text-decoration: none;
+        line-height: 30px;
+    }
+
+    a:hover {
+        background-color: #609E22;
+        text-decoration: none;
+    }
+
+    a:active {
+        background: #609E22;
+    }
+
     #links {
-        width: 950px;
         margin: auto;
-
-        a {
-            display: block;
-            float: left;
-
-            color: white;
-            text-decoration: none;
-            line-height: 30px;
-        }
-
-        a:hover {
-            background-color: #609E22;
-            text-decoration: none;
-        }
-
-        a:active {
-            background: #609E22;
-        }
+        width: 950px;
 
         #previous {
-            width: 459px;
+            width: 294px;
             padding-left: 15px;
-            border-right: 1px solid rgba(0, 0, 0, 0.2);
+        }
+
+        #download_all {
+            width: 328px;
+
+            text-align: center;
         }
 
         #next {
-            width: 459px;
+            width: 294px;
             padding-right: 15px;
-            border-left: 1px solid rgba(255, 255, 255, 0.3);
 
             text-align: right;
         }
+
+        #previous, #download_all {
+            border-right: 1px solid rgba(0, 0, 0, 0.2);
+        }
+
+        #next, #download_all {
+            border-left: 1px solid rgba(255, 255, 255, 0.3);
+        }
     }
+
+    transition-property: all;
+    transition-duration: 0.2s;
 }

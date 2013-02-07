@@ -1,4 +1,4 @@
-$maybe msg <- mmsg
+$maybe msg <- mMsg
     <h1>#{msg}
 
 ^{widget}

@@ -2,7 +2,12 @@ $maybe (previous, next) <- links
     <div #browser>
         <div #links>
             <a #previous href=@{ViewR  previous}>← Previous file
+            <a #download_all href=@{DownloadR hmacs'}
+               title="Download all files in a single .zip archive.">
+                ↓ Download all
             <a #next href=@{ViewR  next}>Next file →
+
+        <div .clear_float>
 
     <script type="text/javascript">
         // Listen to left-right keys.

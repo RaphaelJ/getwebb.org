@@ -87,7 +87,8 @@ uploadForm prefix extra = do
     let emailId = Just (prefix <> "email")
     let emailSettings = FieldSettings {
           fsLabel = "Send link by email", fsTooltip = Nothing
-        , fsId = emailId, fsName = emailId, fsAttrs = []
+        , fsId = emailId, fsName = emailId
+        , fsAttrs = [("placeholder", "Enter an email or leave empty")]
     }
     (emailRes, emailView) <- mopt emailField emailSettings Nothing
 

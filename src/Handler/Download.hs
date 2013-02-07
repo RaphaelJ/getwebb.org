@@ -42,23 +42,26 @@ import Network.Mime (defaultMimeLookup)
 import Network.Wai (requestHeaders)
 
 import JobsDaemon (runDBIO)
-import Upload.Path (hashDir, getPath)
+import Utils.Path (hashDir, getPath)
 
 import System.TimeIt
 
--- -----------------------------------------------------------------------------
-
 -- | Streams the content of a file over HTTP.
 getDownloadR :: Text -> Handler ()
-getDownloadR hmac = do
-    query <- parseQuery
-    case query of
-        Just (Display _)               -> streamDisplayable
-        Just (CompressedFile fileHmac) -> streamArchiveFile fileHmac
-        Just requestType               -> streamFile requestType
-        Nothing                        -> notFound
+getDownloadR hmacs' = do
+    case hmacs of
+        [hmac] -> do
+            query <- parseQuery
+            case query of
+                Just (Display _)               -> streamDisplayable
+                Just (CompressedFile fileHmac) -> streamArchiveFile fileHmac
+                Just requestType               -> streamFile requestType
+                Nothing                        -> notFound
+        hmacs -> 
   where
-    -- Streams an simple file to the client.
+    hmacs = splitHmacs hmacs'
+
+    -- Streams a simple file to the client.
     streamFile requestType = do
         (file, uploadId, upload, h) <- runDB $ do
             Entity uploadId upload <- getBy404 $ UniqueUploadHmac hmac
@@ -147,6 +150,10 @@ getDownloadR hmac = do
             size = Z.eUncompressedSize entry
         streamByteString uploadId h bs mime size
 
+    -- Streams a set of file inside a .zip archive.
+    streamFiles = do 
+        
+
     -- Responds to the client with the ByteString content and closes the handler
     -- afterwards.
     streamByteString uploadId h bs mime size = do
@@ -214,6 +221,13 @@ getDownloadR hmac = do
     requestMime (Display GIF)  _        = typeGif
     requestMime _              _        = undefined
 
+    -- Splits a string on commas and removes spaces.
+    splitCommas :: String -> [String]
+    splitCommas [] = []
+    splitCommas xs =
+        let (ys, zs) = break (== ',') xs
+        in ys : splitCommas (dropWhile (== ' ') $ drop 1 zs)
+
 -- Creates a sources which commits the amount of transferred to the first
 -- function while sending the data and executes the second action when the
 -- source has been closed.
@@ -245,13 +259,6 @@ routeType urlRdr upload obj =
         CompressedFile hmac -> [("archive", hmac)]
   where
     urlRdr' = urlRdr (DownloadR (uploadHmac upload))
-
--- | Splits a string on commas and removes spaces.
-splitCommas :: String -> [String]
-splitCommas [] = []
-splitCommas xs =
-    let (ys, zs) = break (== ',') xs
-    in ys : splitCommas (dropWhile (== ' ') $ drop 1 zs)
 
 -- -----------------------------------------------------------------------------
 

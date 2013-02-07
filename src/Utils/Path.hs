@@ -1,22 +1,14 @@
--- | Defines a few utilities to process files during the processing of an
--- upload.
-module Upload.Path (
-      getFileSize, uploadDir, hashDir, tmpDir, newTmpFile, getPath, computeHmac
-    , toBase62
+-- | Defines a few utilities to manages uploads files and directories.
+module Utils.Path (
+      getFileSize, uploadDir, hashDir, tmpDir, newTmpFile, getPath
     ) where
 
 import Import
 
-import Data.Array.Unboxed (UArray, listArray, (!))
-import qualified Data.ByteString.Lazy.Char8 as C
-import Data.Digest.Pure.SHA (hmacSha1, integerDigest)
-import Data.Digits (digits)
-import qualified Data.Text as T
 import System.IO
 import System.FilePath
 
 import Yesod.Default.Config
-import Database.Persist.Store (PersistValue (..))
 
 -- | Returns the size in bytes of the given file.
 getFileSize :: FilePath -> IO Word64
@@ -56,19 +48,3 @@ getPath dir MP3                = dir </> "original" <.> "mp3"
 getPath dir WebMVideo          = dir </> "original" <.> "webm"
 getPath dir MKV                = dir </> "original" <.> "mkv"
 getPath dir (CompressedFile _) = getPath dir Original
-
--- | Returns the first eight base 62 encoded digits of the key hmac.
-computeHmac :: App -> Key val -> Hmac
-computeHmac app idKey =
-    let key = encryptKey app
-        PersistInt64 idInt = unKey idKey
-        hmac = integerDigest $ hmacSha1 key $ C.pack $ show idInt
-    in T.pack $ take 8 $ toBase62 $ hmac
-
--- | Encodes an integer in base 62 (using letters and numbers).
-toBase62 :: Integer -> String
-toBase62 i =
-    map (digitToChar !) $ digits 62 i
-  where
-    digitToChar :: UArray Integer Char
-    digitToChar = listArray (0, 61) $ ['a'..'z'] ++ ['A'..'Z'] ++ ['0'..'9'] 

@@ -21,7 +21,7 @@ import Codec.Compression.GZip (
     )
 
 import JobsDaemon (registerJob, runDBIO)
-import Upload.Path (hashDir, newTmpFile, getPath)
+import Utils.Path (hashDir, newTmpFile, getPath)
 
 -- | Tries to compress a file. Replaces the original file and updates the
 -- database if the compressed file is smaller.

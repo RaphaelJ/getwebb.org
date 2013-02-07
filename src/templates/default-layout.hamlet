@@ -8,8 +8,7 @@ $doctype 5
         <meta charset="UTF-8">
 
         <title>#{pageTitle pc}
-        <meta name="author"
-              content="#{extraAuthor $ appExtra $ settings master}">
+        <meta name="author" content="#{extraAuthor $ appExtra $ settings app}">
 
         ^{pageHead pc}
 

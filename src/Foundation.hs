@@ -28,7 +28,7 @@ import Text.Hamlet (shamlet, hamletFile)
 import qualified Web.ClientSession as S
 
 import Model
-import Handler.Utils (PrettyNumber (..))
+import Utils.Pretty (PrettyNumber (..))
 
 -- | Contains a queue of background jobs which can be processed right now.
 type JobsChan = Chan (JobId, IO ())
@@ -143,8 +143,11 @@ instance Yesod App where
         return . Just $ clientSessionBackend key (2 * 365 * 24 * 60)
 
     defaultLayout widget = do
-        master <- getYesod
-        mmsg <- getMessage
+        app <- getYesod
+        mMsg <- getMessage
+
+        toMaster <- getRouteToMaster
+        currentRoute <- getCurrentRoute >>= return . fmap toMaster
 
         mAdminKeyId <- tryAdminKey
         countHistory <- case mAdminKeyId of

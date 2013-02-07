@@ -233,7 +233,7 @@ function continueUpload(loaded, total, files_info, uploaded, errors)
                 alert(errorsToStr(errors, "\n"));
 
             // Yesod generates an - at the end of empty string url. Removes it.
-            viewRoute = "@{ViewR ""}";
+            var viewRoute = "@{ViewR ""}";
             viewRoute  = viewRoute.substr(0, viewRoute.length - 1);
             document.location.href = viewRoute + uploaded.join(",");
         } else

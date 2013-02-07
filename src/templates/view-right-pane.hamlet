@@ -6,8 +6,8 @@
 
     $if isAdmin
         <div .remove>
-            <a .big_button onclick="removeUpload('#{hmac}'); return false"
-                           href="#">
+            <a .big_button .remove_button href="#"
+               onclick="removeUpload('#{hmac}'); return false">
                 Remove
 
         <script type="text/javascript">

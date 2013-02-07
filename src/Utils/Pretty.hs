@@ -1,15 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Handler.Utils (
+-- | Defines types and functions to display various values in an human readable
+-- way.
+module Utils.Pretty (
       WrappedText (wtText, wtMaxLength), wrappedText
     , PrettyNumber (..), PrettyFileSize (..), PrettyDuration (..)
     , PrettyDiffTime (..)
-    , splitHmacs, joinHmacs
     ) where
 
 import Prelude
 
 import Data.Char (intToDigit)
-import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime)
 import Data.Word
@@ -127,11 +127,3 @@ instance Show PrettyDiffTime where
 
 instance ToMarkup PrettyDiffTime where
     toMarkup = toMarkup . show
-
--- | Returns a list of hmacs from a list of url string of hmacs separated by
--- commas.
-splitHmacs :: Text -> [Text]
-splitHmacs = T.split (== ',')
-
-joinHmacs :: [Text] -> Text
-joinHmacs = T.intercalate ","

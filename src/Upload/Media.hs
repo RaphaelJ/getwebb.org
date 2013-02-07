@@ -36,8 +36,6 @@ import qualified Sound.TagLib as ID3
 import System.Posix.Files (createSymbolicLink, removeLink)
 import qualified Vision.Image as I
 
-import Upload.Path (newTmpFile)
-
 import JobsDaemon (registerJob, runDBIO)
 
 import Upload.FFmpeg (
@@ -46,7 +44,7 @@ import Upload.FFmpeg (
     )
 import qualified Upload.Compression as C
 import Upload.Image (miniature)
-import Upload.Path (hashDir, getPath)
+import Utils.Path (hashDir, getPath, newTmpFile)
 
 import Debug.Trace
 

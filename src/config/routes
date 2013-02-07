@@ -2,7 +2,8 @@
 
 /robots.txt     RobotsR         GET
 
+/d/#Text        DownloadR       GET
+/h              HistoryR        GET
 /               HomeR           GET
 /u              UploadR         POST
 /v/#Text        ViewR           GET DELETE
-/d/#Text        DownloadR       GET

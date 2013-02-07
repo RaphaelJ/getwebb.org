@@ -7,17 +7,18 @@ import Yesod
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Writer
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Data.Word
 
 import Database.Persist.GenericSql.Raw (SqlPersist)
 
+type Hmac = Text
+
 -- | File types recognized.
 data FileType = Image | Audio | Video | Archive | UnknownType
     deriving (Show, Read, Eq)
 derivePersistField "FileType"
-
-type Hmac = Text
 
 -- | Used to give the type of a secondary image which can be displayed in the
 -- browser.
@@ -146,10 +147,16 @@ migrateAll :: (MonadIO m, MonadBaseControl IO m) =>
               WriterT [Text] (WriterT [(Bool, Text)] (SqlPersist m)) ()
 migrateAll = do
     migrateEnts
-    lift $ tell [ (False, stm) | stm <- indexes ]
+    lift $ tell [
+          (False, T.concat [
+                "CREATE INDEX IF NOT EXISTS\"", name, "\" ON ", cols
+                ])
+        | (name, cols) <- indexes
+        ]
   where
     indexes = [
-          "CREATE INDEX IF NOT EXISTS \"upload_admin_key\" ON \"upload\"(\"admin_key\")"
-        , "CREATE INDEX IF NOT EXISTS \"upload_last_view\" ON \"upload\"(\"last_view\")"
-        , "CREATE INDEX IF NOT EXISTS \"job_completed\" ON \"job\"(\"completed\")"
+          ("upload_hostname", "\"upload\"(\"hostname\")")
+        , ("upload_admin_key", "\"upload\"(\"admin_key\")")
+        , ("upload_last_view", "\"upload\"(\"last_view\")")
+        , ("job_completed", "\"job\"(\"completed\")")
         ]

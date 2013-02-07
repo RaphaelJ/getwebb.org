@@ -5,27 +5,12 @@
         margin: 10px 0 5px 0;
     }
 
-    .key, .value {
-        font-size: 0.9em;
-    }
-
     .download, .remove {
         margin: 10px 10px 0 10px;
 
         .big_button {
             display: block;
             margin: 0;
-        }
-    }
-
-    .remove {
-        .big_button {
-            background-color: #B71B17;
-            border: 1px solid #631311;
-        }
-
-        .big_button:hover {
-            background-color: #9E1814;
         }
     }
 

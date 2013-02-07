@@ -2,9 +2,12 @@
 function removeUpload(uploadHmac)
 {
     if (confirm("Do you really want to remove this file ?")) {
+        var url = "@{ViewR ""}";
+        url = url.substr(0, url.length - 1) + uploadHmac;
+
         $.ajax({
             type: "DELETE",
-            url: "@{ViewR (uploadHmac upload)}",
+            url: url,
             complete: function (xhr, status) {
                 if (xhr.status == 204)
                     document.location.href = document.location.href;

@@ -22,7 +22,7 @@ $("#upload_form").submit(function ()
         // Checks if some files exceed the maximum file size.
         showError(
             "The following files exceed the maximum file size " +
-            "(#{show $ PrettyFileSize maxFileSize}) :<br />" + 
+            "(#{rawJS $ show $ PrettyFileSize maxFileSize}) :<br />" + 
             larges.join("<br />") + "."
         );
     } else if (!document.getElementById("email").checkValidity()) {
@@ -70,7 +70,7 @@ $("#upload_form").submit(function ()
                 reader.readAsDataURL(file);
             } else {
                 var preview_text = $("<p>");
-                preview_text.html("No preview");
+                preview_text.text("No preview");
                 preview.append(preview_text);
             }
 
@@ -79,7 +79,7 @@ $("#upload_form").submit(function ()
             info.div.append(file_status);
 
             var file_title = $("<h3>");
-            file_title.html(file.name);
+            file_title.text(file.name);
             file_status.append(file_title);
 
             var progress = $("<div>", { class: "progress" });
@@ -101,7 +101,7 @@ $("#upload_form").submit(function ()
                             target: "_blank",
                             title: "Open the file in a new window."
                         });
-                        link.html(filename);
+                        link.text(filename);
 
                         title.empty();
                         title.append(link);
@@ -274,7 +274,7 @@ function largeFiles(files)
     var l = [];
     for (var i = 0; i < files.length; i++) {
         var f = files[i];
-        if (f.size > #{show maxFileSize})
+        if (f.size > #{rawJS $ show maxFileSize})
             l.push(f.name);
     }
 
@@ -298,17 +298,17 @@ function updateGlobalProgress(percent, step_bytes, step_elapsed)
     $("#upload_global_progress_complete").width(strPercent);
 
     if (percent < 100) {
-        $("#upload_status").html("Uploading ...");
+        $("#upload_status").text("Uploading ...");
         document.title = strPercent + " | " + originalTitle;
 
         // Computes the speed in bytes per second
         if (step_elapsed > 0) {
             var speed = step_bytes * 1000 / step_elapsed;
-            $("#upload_speed").html(prettySpeed(speed));
+            $("#upload_speed").text(prettySpeed(speed));
         } else
             $("#upload_speed").empty();
     } else {
-        $("#upload_status").html("Waiting on server response ...");
+        $("#upload_status").text("Waiting on server response ...");
         document.title = "Waiting ... | " + originalTitle;
 
         $("#upload_speed").html();

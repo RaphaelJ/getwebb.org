@@ -151,7 +151,7 @@ a.big_button, a.big_button:hover {
 }
 
 #page {
-    width: 950px;
+    width: 920px;
     min-height: 150px;
     margin: 10px auto 0 auto;
     padding: 15px;

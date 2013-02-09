@@ -4,6 +4,8 @@ module Handler.Home (getHomeR)
 
 import Import
 
+import Text.Julius (rawJS)
+
 import Handler.Upload (uploadForm')
 import Utils.Pretty (PrettyFileSize (..))
 

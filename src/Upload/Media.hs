@@ -12,6 +12,7 @@ module Upload.Media (
 
 import Import
 
+import Control.Applicative
 import qualified Control.Exception as E
 import Control.Monad
 import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
@@ -31,7 +32,7 @@ import qualified Data.HashMap.Strict as H
 import qualified Data.Vector as V
 import Network.HTTP.Conduit (http, parseUrl, responseBody)
 import qualified Network.Lastfm as L
-import qualified Network.Lastfm.JSON.Track as L
+import qualified Network.Lastfm.Track as L
 import qualified Sound.TagLib as ID3
 import System.Posix.Files (createSymbolicLink, removeLink)
 import qualified Vision.Image as I
@@ -51,8 +52,8 @@ import Debug.Trace
 encodeVideos :: Bool
 encodeVideos = False
 
-lastfmKey :: L.APIKey
-lastfmKey = L.APIKey "d1731c5c052d5cde7c82d56388b5d64e"
+lastfmKey :: Text
+lastfmKey = "d1731c5c052d5cde7c82d56388b5d64e"
 
 -- | Files extensions which are supported by ffmpeg.
 extensions :: S.Set Text
@@ -166,7 +167,7 @@ processMedia path ext fileId = do
             -- Tries to find information about the album from Last.fm.
             case (mArtist, mTitle) of
                 (Just artist, Just title) -> do
-                    mLast <- lift $ lastfm (T.unpack artist) (T.unpack title)
+                    mLast <- lift $ lastfm artist title
                     case mLast of
                         Just (url, boolMiniature) ->
                             return $! AudioAttrs fileId mAlbum mArtist mComment
@@ -190,11 +191,12 @@ processMedia path ext fileId = do
 
     -- Returns the last.fm url about the track if it exists and 'True' if a
     -- miniature has been generated in a file named "miniature.png".
-    lastfm :: String -> String -> Handler (Maybe (Text, Bool))
+    lastfm :: Text -> Text -> Handler (Maybe (Text, Bool))
     lastfm artist title = do
-        let search = Left (L.Artist artist, L.Track title)
-            autocorrect = Just (L.Autocorrect True)
-        response <- liftIO $ L.getInfo search autocorrect Nothing lastfmKey
+        let query = L.getInfo <*> L.artist artist <*> L.track title
+                              <*> L.apiKey lastfmKey
+                              <* L.autocorrect True <* L.json
+        response <- liftIO $ L.lastfm query
 
         case parseLastfmResponse response of
             Nothing -> return Nothing
@@ -226,12 +228,12 @@ processMedia path ext fileId = do
 
     -- Parses the last.fm JSON response and return the possible URL and the
     -- possible URL to the track's cover art.
-    parseLastfmResponse :: Either L.LastfmError L.Response
-                        -> Maybe (Text, Maybe Text)
-    parseLastfmResponse (Left _)   = Nothing
-    parseLastfmResponse (Right bs) = do
+    parseLastfmResponse :: Maybe J.Value -> Maybe (Text, Maybe Text)
+    parseLastfmResponse response = do
         -- Runs the parsing of the JSON object in the Maybe monad.
-        J.Object obj <- J.decode' bs
+        obj <- case response of
+                   Just (J.Object obj) -> Just obj
+                   _                   -> Nothing
 
         J.Object track <- "track" `H.lookup` obj
         J.String url <- "url" `H.lookup` track

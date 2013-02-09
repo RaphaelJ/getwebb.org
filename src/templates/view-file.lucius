@@ -3,7 +3,7 @@
 
     #left_pane {
         float: left;
-        width: 620px;
+        width: 590px;
         padding: 15px;
 
         .icon {

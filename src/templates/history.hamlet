@@ -1,0 +1,39 @@
+<div #page>
+    <h1>Upload history
+    $if null uploads
+        <div align=center>
+            <strong>You don't have any uploaded file yet.
+    $else
+        <ul #uploads>
+            $forall (upload, file, icon) <- uploads
+              $with hmac <- uploadHmac upload
+               $with name <- uploadName upload
+                <li .upload>
+                    <a .icon href=@{ViewR hmac}>
+                        <img  alt="File icon" src="#{icon}" />
+
+                    <div .info>
+                        <a .title href=@{ViewR hmac} title=#{name}>
+                            #{wrappedText name 50}
+
+                        <div .buttons>
+                            <a .big_button href=@{DownloadR hmac}
+                               download=#{name}>
+                                Download
+
+                            <a .big_button .remove_button href="#"
+                               onclick="removeUpload('#{hmac}'); return false">
+                                Remove
+
+                        <div .size>
+                            <span .key>File size :
+                            <span .value>#{PrettyFileSize (fileSize file)}
+
+                        <div .date>
+                          $with uploaded <- uploadUploaded upload
+                           $with diffTime <- diffUTCTime currentTime uploaded
+                            <span .key>Uploaded
+                            <span .value>#{PrettyDiffTime diffTime}
+                            <span .key>ago.
+                    <div .clear_float>
+        <div .clear_float>

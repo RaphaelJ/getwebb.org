@@ -32,16 +32,16 @@
     <div .clear_float>
 
     <div .embded_links>
-        <button #button_links .toggle_button_left .active
+        <button #button_links .toggle_button_left .enabled type=button
                 onclick="showCode('links');">
             Links
-        <button #button_html .toggle_button_central
+        <button #button_html .toggle_button_central type=button
                 onclick="showCode('html');">
             HTML
-        <button #button_bbcode .toggle_button_central
+        <button #button_bbcode .toggle_button_central type=button
                 onclick="showCode('bbcode');">
             BBCode
-        <button #button_markdown .toggle_button_right
+        <button #button_markdown .toggle_button_right type=button
                 onclick="showCode('markdown');">
             MarkDown
         <div .clear_float>

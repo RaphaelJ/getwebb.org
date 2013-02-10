@@ -140,7 +140,7 @@ instance Yesod App where
     -- default session idle timeout is two year.
     makeSessionBackend _ = do
         key <- S.getKey encryptKeyFile
-        let timeout = 2 * 365 * 24 * 60 -- 2 years
+        let timeout = 2 * 365 * 24 * 3600 -- 2 years
         (getCachedDate, _closeDateCache) <- clientSessionDateCacher timeout
         return . Just $ clientSessionBackend2 key getCachedDate
 

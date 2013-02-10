@@ -1,8 +1,15 @@
 // Saves the original title (which will be updated during the upload)
 var originalTitle = document.title;
 
+// Changes the privacy of the upload.
+function uploadPublic(isPublic)
+{
+    $("#public_button").toggleClass("enabled", isPublic);
+    $("#private_button").toggleClass("enabled", !isPublic);
+}
+
 // Shows/Hides the options menu.
-$("#options_toggle").click(function () 
+$("#options_toggle").click(function ()
 {
     $("#options_toggle").toggleClass("enabled");
     $("#options").slideToggle(100);

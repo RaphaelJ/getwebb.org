@@ -6,10 +6,10 @@ function showCode(name)
       , bbcode = name == "bbcode"
       , markdown = name == "markdown";
 
-    $("#button_links").toggleClass("active", links);
-    $("#button_html").toggleClass("active", html);
-    $("#button_bbcode").toggleClass("active", bbcode);
-    $("#button_markdown").toggleClass("active", markdown);
+    $("#button_links").toggleClass("enabled", links);
+    $("#button_html").toggleClass("enabled", html);
+    $("#button_bbcode").toggleClass("enabled", bbcode);
+    $("#button_markdown").toggleClass("enabled", markdown);
 
     $("#codes_links").toggle(links);
     $("#codes_html").toggle(html);

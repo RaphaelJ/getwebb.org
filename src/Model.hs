@@ -64,6 +64,7 @@ Upload
     fileId FileId
     name Text
     description Text Maybe
+    public Bool
     uploaded UTCTime
     hostname Text
     adminKey AdminKeyId

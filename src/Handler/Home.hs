@@ -12,7 +12,7 @@ import Utils.Pretty (PrettyFileSize (..))
 -- | Shows the home page.
 getHomeR :: Handler RepHtml
 getHomeR = do
-    ((widgetFiles, widgetOpt), enctype) <- generateFormPost uploadForm'
+    ((filesWidget, optsWidget), enctype) <- generateFormPost uploadForm'
 
     extras <- getExtra
     let maxFileSize = extraMaxFileSize extras

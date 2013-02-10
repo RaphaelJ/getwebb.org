@@ -13,8 +13,10 @@ import Network.HTTP.Types.Status (
 
 import Upload.Processing (UploadError (..), processFile)
 
-data Options = Options { optEmail :: Maybe Text }
-    deriving (Show, Read)
+data Options = Options {
+      optPublic :: Bool
+    , optEmail  :: Maybe Text
+    } deriving (Show, Read)
 
 -- | Uploads files to the server. Returns a Json object which contains the
 -- id and the link of the upload or the errors.
@@ -24,10 +26,11 @@ postUploadR = do
     admiKey <- getAdminKey
     ((res, _), _) <- runFormPostNoToken uploadForm'
     case res of
-        FormSuccess ~(file:_, Options email) -> do
-            eUpload <- processFile admiKey file
+        FormSuccess ~(file:_, Options public email) -> do
+            eUpload <- processFile admiKey file public
             case eUpload of
-                Right upload ->
+                Right upload -> do
+                    {- TODO: email -}
                     sendResponseStatus created201 (uploadJson urlRdr upload)
                 Left err ->
                     let status = case err of
@@ -83,24 +86,36 @@ uploadForm prefix extra = do
             _
                 -> FormFailure ["Send at least one file to upload."]
 
-    -- Options widget.
+    -- Options.
+    let publicId = Just (prefix <> "public")
+        publicSettings = FieldSettings {
+              fsLabel = "Share this file"
+            , fsTooltip = Just "Publish this file in the public gallery."
+            , fsId = publicId, fsName = publicId, fsAttrs = []
+            }
+    (publicRes, publicView) <- mreq checkBoxField publicSettings Nothing
+
     let emailId = Just (prefix <> "email")
-    let emailSettings = FieldSettings {
-          fsLabel = "Send link by email", fsTooltip = Nothing
-        , fsId = emailId, fsName = emailId
-        , fsAttrs = [("placeholder", "Enter an email or leave empty")]
-    }
+        emailSettings = FieldSettings {
+              fsLabel = "Send link by email"
+            , fsTooltip = Just "Send the link to the uploaded file by email."
+            , fsId = emailId, fsName = emailId
+            , fsAttrs = [("placeholder", "Enter an email or leave empty")]
+            }
     (emailRes, emailView) <- mopt emailField emailSettings Nothing
 
-    let optWidget = [whamlet|
+    let optsWidget = [whamlet|
+            <label for=^{toHtml $ fvId publicView}>^{fvLabel publicView}
+            ^{fvInput publicView}
+
             <label for=^{toHtml $ fvId emailView}>^{fvLabel emailView}
             ^{fvInput emailView}
             |]
 
     -- Combines the results of the form.
-    let res = (,) <$> filesRes <*> (Options <$> emailRes)
+    let res = (,) <$> filesRes <*> (Options <$> publicRes <*> emailRes)
 
-    return (res, (filesWidget, optWidget))
+    return (res, (filesWidget, optsWidget))
 
 -- | Same as 'uploadForm' but without a prefix.
 uploadForm' :: Html

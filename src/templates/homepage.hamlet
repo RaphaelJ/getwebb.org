@@ -9,7 +9,7 @@
                            method="post" action="@{UploadR}">
             <h2>Select some files to upload
 
-            ^{widgetFiles}
+            ^{filesWidget}
 
             <div .clear_float>
 
@@ -23,7 +23,18 @@
             <div .clear_float>
 
             <div #options style="display: none">
-                ^{widgetOpt}
+                ^{optsWidget}
+
+            <div #public_private>
+                <button #public_button .toggle_button_left .enabled type=button
+                        title="The files will be published in the public gallery."
+                        onclick="uploadPublic(true);">
+                    Public
+                <button #private_button .toggle_button_right type=button
+                        title="The files will NOT be published in the public gallery."
+                        onclick="uploadPublic(false);">
+                    Private
+                <div .clear_float>
 
         <div #upload_progress style="display: none">
             <h2 #upload_status>

@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | This module handles the processing of an uploaded file.
 module Upload.Processing (
-      UploadError (..), process, processFile, moveToTmp, hashFile, moveToUpload
+      UploadError (..), processFile, moveToTmp, hashFile, moveToUpload
     ) where
 
 import Import
@@ -38,17 +38,12 @@ instance Show UploadError where
     show DailyIPLimitReached = "Daily per IP limit reached."
     show FileTooLarge        = "The file exceeds the maximum file size."
 
--- | Process a list of files and return the list of the resulting database id
--- or the triggered error for each file.
-process :: AdminKeyId -> [FileInfo] -> Handler [Either UploadError Upload]
-process admiKey fs = forM fs (processFile admiKey)
-
 -- | Process a file and returns its new ID from the database.
 -- Returns either the uploaded file or an error message to be returned to the 
 -- user.
-processFile :: AdminKeyId -> FileInfo
+processFile :: AdminKeyId -> FileInfo -> Bool
             -> Handler (Either UploadError Upload)
-processFile adminKey f = do
+processFile adminKey f public = do
     app <- getYesod
     extras <- getExtra
     clientHost <- remoteTextHost
@@ -116,9 +111,10 @@ processFile adminKey f = do
             let upload = Upload {
                   uploadHmac = "",  uploadFileId = fileId
                 , uploadName = fileName f, uploadDescription = Nothing
-                , uploadUploaded = currentTime, uploadHostname = clientHost
-                , uploadAdminKey = adminKey, uploadViews = 0
-                , uploadLastView = currentTime, uploadBandwidth = 0
+                , uploadPublic = public, uploadUploaded = currentTime
+                , uploadHostname = clientHost, uploadAdminKey = adminKey
+                , uploadViews = 0, uploadLastView = currentTime
+                , uploadBandwidth = 0
                 }
 
             uploadId <- lift $ insert upload

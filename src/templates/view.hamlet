@@ -3,7 +3,8 @@ $maybe (previous, next) <- links
         <div #links>
             <a #previous href=@{ViewR  previous}>← Previous file
             <a #download_all href=@{DownloadR hmacs'}
-               title="Download all files in a single .zip archive.">
+               title="Download all files in a single .zip archive."
+               download="archive.zip">
                 ↓ Download all
             <a #next href=@{ViewR  next}>Next file →
 

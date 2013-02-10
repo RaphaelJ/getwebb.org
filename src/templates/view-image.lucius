@@ -178,10 +178,10 @@ body {
                 color: rgba(255, 255, 255, 0.9);
             }
 
-            .toggle_button:active, .toggle_button.active,
-            .toggle_button_left:active, .toggle_button_left.active,
-            .toggle_button_central:active, .toggle_button_central.active,
-            .toggle_button_right:active, .toggle_button_right.active {
+            .toggle_button:active, .toggle_button.enabled,
+            .toggle_button_left:active, .toggle_button_left.enabled,
+            .toggle_button_central:active, .toggle_button_central.enabled,
+            .toggle_button_right:active, .toggle_button_right.enabled {
                 background-color: rgba(0, 0, 0, 0.1);
                 box-shadow: inset 0 1px 4px rgba(0, 0, 0, 1);
                 color: rgba(255, 255, 255, 0.9);

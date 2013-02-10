@@ -6,7 +6,10 @@ function uploadPublic(isPublic)
 {
     $("#public_button").toggleClass("enabled", isPublic);
     $("#private_button").toggleClass("enabled", !isPublic);
+
+    $("#public")[0].checked = isPublic;
 }
+// uploadPublic($("#public_f")[0].checked);
 
 // Shows/Hides the options menu.
 $("#options_toggle").click(function ()
@@ -14,6 +17,7 @@ $("#options_toggle").click(function ()
     $("#options_toggle").toggleClass("enabled");
     $("#options").slideToggle(100);
 });
+
 
 // Maximum size of images in bytes for the thumbnail.
 var maxPreviewSize = 5 * 1024 * 1024; // 5 Mio

@@ -93,7 +93,8 @@ uploadForm prefix extra = do
             , fsTooltip = Just "Publish this file in the public gallery."
             , fsId = publicId, fsName = publicId, fsAttrs = []
             }
-    (publicRes, publicView) <- mreq checkBoxField publicSettings Nothing
+    (publicRes, publicView) <- mreq checkBoxField publicSettings (Just True)
+    liftIO $ print publicRes
 
     let emailId = Just (prefix <> "email")
         emailSettings = FieldSettings {
@@ -105,11 +106,13 @@ uploadForm prefix extra = do
     (emailRes, emailView) <- mopt emailField emailSettings Nothing
 
     let optsWidget = [whamlet|
-            <label for=^{toHtml $ fvId publicView}>^{fvLabel publicView}
-            ^{fvInput publicView}
+            <div id="^{toHtml $ fvId publicView}_div">
+                ^{fvInput publicView}
+                <label for=^{toHtml $ fvId publicView}>^{fvLabel publicView}
 
-            <label for=^{toHtml $ fvId emailView}>^{fvLabel emailView}
-            ^{fvInput emailView}
+            <div id="^{toHtml $ fvId emailView}_div"> 
+                <label for=^{toHtml $ fvId emailView}>^{fvLabel emailView}
+                ^{fvInput emailView}
             |]
 
     -- Combines the results of the form.

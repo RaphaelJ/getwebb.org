@@ -80,6 +80,9 @@
             label {
                 margin-right: 10px;
             }
+
+            #public_div {
+            }
         }
 
         #public_private {

@@ -26,7 +26,7 @@
                 ^{optsWidget}
 
             <div #public_private>
-                <button #public_button .toggle_button_left .enabled type=button
+                <button #public_button .toggle_button_left type=button
                         title="The files will be published in the public gallery."
                         onclick="uploadPublic(true);">
                     Public
@@ -53,9 +53,9 @@
                 <h3>Large files
                 <span .description>
                     With <span class="getwebb">getwebb</span>, you can freely
-                    upload files up to 
-                    <strong>#{PrettyFileSize maxFileSize}</strong> each without
-                    any registration.
+                    upload files up to
+                    <strong>#{PrettyFileSize maxFileSize}
+                    each without any registration.
 
             <li>
                 <img src=@{StaticR img_homepage_formats_png}

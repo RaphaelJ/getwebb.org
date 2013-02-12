@@ -44,8 +44,19 @@ data JobType = Compression
 derivePersistField "JobType"
 
 share [mkPersist sqlOnlySettings, mkMigrate "migrateEnts"] [persistLowerCase|
+User
+    email Text
+    name Text
+    password Text -- SHA1 hash of the password.
+    salt Text -- Salt used to hash the password.
+    avatar Bool
+    UniqueUserEmail email
+    UniqueUserName name
+    deriving Show
+
 AdminKey
     count Int
+    userId UserId Maybe
     deriving Show
 
 File

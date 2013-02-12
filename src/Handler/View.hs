@@ -15,7 +15,9 @@ import Network.HTTP.Types.Header (hUserAgent)
 import Network.HTTP.Types.Status (noContent204)
 import Network.Wai (requestHeaders)
 import Text.Hamlet (shamlet)
+import Text.Julius (rawJS)
 
+import Handler.Comment (maxCommentLength, commentForm)
 import Upload.Remove (removeUpload)
 import Utils.Pretty (
       PrettyNumber (..), PrettyFileSize (..), PrettyDuration (..)
@@ -70,6 +72,7 @@ getViewR hmacs' = do
     stats <- getUploadStats entity
     isAdmin <- getIsAdmin upload
     facebookAppId <- extraFacebook <$> getExtra
+    (newCommentWidget, newCommentEnctype) <- generateFormPost commentForm
     let name = uploadName upload
         wrappedName = wrappedText name 50
         icon = getIcon rdr upload extras

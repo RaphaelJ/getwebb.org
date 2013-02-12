@@ -25,6 +25,8 @@
         #upload_button {
             float: right;
             display: block;
+
+            font-size: 20px;
         }
 
         .options_button {
@@ -82,6 +84,7 @@
             }
 
             #public_div {
+                display: none;
             }
         }
 
@@ -156,7 +159,7 @@
                         }
 
                         img {
-                            display:block;
+                            display: block;
                             margin: 0;
                             padding: 0;
                             max-width: 80px;

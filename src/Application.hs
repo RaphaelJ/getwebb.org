@@ -24,8 +24,11 @@ import Web.ClientSession (randomKey)
 import qualified JobsDaemon as J
 import Settings
 
+
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
+import Account
+import Handler.Comment
 import Handler.Download
 import qualified Handler.Download as D
 import Handler.History
@@ -64,6 +67,10 @@ makeFoundation :: AppConfig DefaultEnv Extra -> IO App
 makeFoundation conf = do
     manager <- newManager def
     s <- staticSite
+
+    reCaptachaKeys <- readFile "config/recaptcha" >>= return . read
+    let account = Account reCaptachaKeys
+
     dbconf <- withYamlEnvironment "config/sqlite.yml" (appEnv conf)
               Database.Persist.Store.loadConfig >>=
               Database.Persist.Store.applyEnv
@@ -75,7 +82,7 @@ makeFoundation conf = do
     jQueue <- J.newQueue
     vBuffer <- D.newBuffer
 
-    let app = App conf s p manager dbconf key jQueue vBuffer
+    let app = App conf s account p manager dbconf key jQueue vBuffer
 
     restoreJobQueue app
 

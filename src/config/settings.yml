@@ -3,7 +3,7 @@ Default: &defaults
   port: 3000
   approot: "http://127.0.0.1:3000"
   author: "Raphael Javaux"
-  authorMail: "raphaeljavaux[at]gmail.com"
+  authorMail: "raphaeljavaux(at)gmail.com"
   uploadDir: "files"
   maxFileSize: 157286400 # 150 MiB
   maxRequestSize: 10485760 # 10 MiB

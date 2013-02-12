@@ -1,0 +1,19 @@
+<div #page>
+    <form #sign_form method=post action=@{toMaster SignInR}
+                        enctype=#{signInEnctype}>
+        <h1>Sign in
+        Connect yourself using an existing account.
+
+        <table>
+            ^{signInWidget}
+
+        <input .big_button type=submit value="Sign in">
+
+    <form #sign_form method=post action=@{toMaster RegisterR}
+                        enctype=#{registerEnctype}>
+        <h1>Register
+        Create a new <span class="getwebb">free</span> account.
+        <table>
+            ^{registerWidget}
+
+        <input .big_button type=submit value="Create my account">

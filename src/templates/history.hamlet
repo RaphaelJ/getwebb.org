@@ -1,5 +1,7 @@
 <div #page>
     <h1>Upload history
+
+    <a href=@{AccountR AuthR}>Login
     $if null uploads
         <div align=center>
             <strong>You don't have any uploaded file yet.

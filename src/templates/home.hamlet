@@ -45,34 +45,33 @@
 
             <div #uploads>
 <div #page>
-    <div align=center>
-        <ul>
-            <li>
-                <img src=@{StaticR img_homepage_storage_png}
-                     alt="Storage icon">
-                <h3>Large files
-                <span .description>
-                    With <span class="getwebb">getwebb</span>, you can freely
-                    upload files up to
-                    <strong>#{PrettyFileSize maxFileSize}
-                    each without any registration.
+    <ul>
+        <li>
+            <img src=@{StaticR img_homepage_storage_png}
+                    alt="Storage icon">
+            <h3>Large files
+            <span .description>
+                With <span class="getwebb">getwebb</span>, you can freely
+                upload files up to
+                <strong>#{PrettyFileSize maxFileSize}
+                each without any registration.
 
-            <li>
-                <img src=@{StaticR img_homepage_formats_png}
-                     alt="Formats icon">
-                <h3>Format aware
-                <span .description>
-                    We didn't restrict file formats which are allowed to be
-                    uploaded.
-                    Moreover, we provide special features for images, medias and
-                    archives.
+        <li>
+            <img src=@{StaticR img_homepage_formats_png}
+                    alt="Formats icon">
+            <h3>Format aware
+            <span .description>
+                We didn't restrict file formats which are allowed to be
+                uploaded.
+                Moreover, we provide special features for images, medias and
+                archives.
 
-            <li>
-                <img src=@{StaticR img_homepage_infinity_png}
-                     alt="Infinity icon">
-                <h3>No expiration
-                <span .description>
-                    As long as your file is downloaded a least once a year,
-                    it will not be removed from our servers.
+        <li>
+            <img src=@{StaticR img_homepage_infinity_png}
+                    alt="Infinity icon">
+            <h3>No expiration
+            <span .description>
+                As long as your file is downloaded a least once a year,
+                it will not be removed from our servers.
 
-        <div .clear_float>
+    <div .clear_float>

@@ -27,3 +27,120 @@ $with headersHeight <- if' (isJust links) 67 37
                     <img #image src=#{fromJust $ image} alt=#{uploadName upload}>
 
             ^{right_pane}
+
+            <div #comments>
+                <div #new_comment>
+                    <div .avatar>
+                        <img src="https://irs1.4sqi.net/img/user/60x60/4Y4NMGQF0LPZYSJN.jpg">
+
+                    <form method=post action="" enctype=#{newCommentEnctype}>
+                        ^{newCommentWidget}
+                        <input #submit_comment .big_button type=submit value=Publish>
+                        <span #chars_left 
+                              title="Number of remaining characters.">
+                            #{maxCommentLength}
+
+                <ul>
+                    <li>
+                        <div .avatar>
+                            <img src="https://lh6.googleusercontent.com/-uJExWRqWFxc/AAAAAAAAAAI/AAAAAAAAAAA/1NLEzRwAMjQ/s48-c-k/photo.jpg">
+
+                        <div .message>
+                            <a href="#" .author>Vincent Keunen
+                            <span .date>Avril 23, 2011
+
+                            <span .actions>
+                                <a href="#">↑ Upvote
+                                <a href="#">↓ Downvote
+
+                            <p .content>
+                                Et les patrons ont un grand cœur!
+                                Cf http://pierre.keunen.net/2007/11/29/marco-polo-chez-soi/
+
+                    <li>
+                        <div .avatar>
+                            <img src="https://i1.ytimg.com/i/X9jszeVMm03_9bGkhiEC3g/1.jpg">
+
+                        <div .message>
+                            <a href="#" .author>Arnaud C.
+                            <span .date>Octobre 11, 2012
+
+                            <span .actions>
+                                <a href="#">↑ Upvote
+                                <a href="#">↓ Downvote
+
+                            <p .content>
+                                "une seule addition par table possible" Mouais, déjà connu 
+                                mieux comme service au client, la sympathie des serveurs est 
+                                aussi toute relative... Sinon, plats corrects et abordables.
+                        <div .clear_float>
+                    <li>
+                        <div .avatar>
+                            <img src="https://i3.ytimg.com/i/2kr0UKtwywJqOHzkwPDP4g/1.jpg">
+
+                        <div .message>
+                            <a href="#" .author>Quentin C.
+                            <span .date>Novembre 4, 2012
+
+                            <span .actions>
+                                <a href="#">↑ Upvote
+                                <a href="#">↓ Downvote
+
+                            <p .content>
+                                Suis toujours très bien servi et la qualité est constante.
+                                Certaines critiques ne sont pas fondées. Ce resto s'améliore
+                                constamment . Bon appétit !
+                    <li>
+                        <div .avatar>
+                            <img src="https://lh6.googleusercontent.com/-uJExWRqWFxc/AAAAAAAAAAI/AAAAAAAAAAA/1NLEzRwAMjQ/s48-c-k/photo.jpg">
+
+                        <div .message>
+                            <a href="#" .author>Vincent Keunen
+                            <span .date>Avril 23, 2011
+
+                            <span .actions>
+                                <a href="#">↑ Upvote
+                                <a href="#">↓ Downvote
+
+                            <p .content>
+                                Et les patrons ont un grand cœur!
+                                Cf http://pierre.keunen.net/2007/11/29/marco-polo-chez-soi/
+
+                    <li>
+                        <div .avatar>
+                            <img src="https://i1.ytimg.com/i/X9jszeVMm03_9bGkhiEC3g/1.jpg">
+
+                        <div .message>
+                            <a href="#" .author>Arnaud C.
+                            <span .date>Octobre 11, 2012
+
+                            <span .actions>
+                                <a href="#">↑ Upvote
+                                <a href="#">↓ Downvote
+
+                            <p .content>
+                                "une seule addition par table possible" Mouais, déjà connu 
+                                mieux comme service au client, la sympathie des serveurs est 
+                                aussi toute relative... Sinon, plats corrects et abordables.
+                        <div .clear_float>
+                    <li>
+                        <div .avatar>
+                            <img src="https://i3.ytimg.com/i/2kr0UKtwywJqOHzkwPDP4g/1.jpg">
+
+                        <div .message>
+                            <a href="#" .author>Quentin C.
+                            <span .date>Novembre 4, 2012
+
+                            <span .actions>
+                                <a href="#">↑ Upvote
+                                <a href="#">↓ Downvote
+
+                            <p .content>
+                                Suis toujours très bien servi et la qualité est constante.
+                                Certaines critiques ne sont pas fondées. Ce resto s'améliore
+                                constamment . Bon appétit !
+
+    <a #comments_button onclick="this.className = 'enabled'">
+        Comments
+        <span .count>
+            50

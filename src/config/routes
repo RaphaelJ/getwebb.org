@@ -1,9 +1,11 @@
 /static         StaticR         Static getStatic
-
 /robots.txt     RobotsR         GET
 
+/               HomeR           GET
+/c/#Text        CommentR        GET
 /d/#Text        DownloadR       GET
 /h              HistoryR        GET
-/               HomeR           GET
 /u              UploadR         POST
 /v/#Text        ViewR           GET DELETE
+
+/user           AccountR        Account getAccount

@@ -7,7 +7,7 @@ body {
 }
 
 a, a:visited {
-    color: #183C4A;
+    color: #3D94B6;
     text-decoration: none;
 }
 
@@ -15,13 +15,23 @@ a:hover {
     text-decoration: underline;
 }
 
-.getwebb {
+strong, .getwebb {
     font-family: "Chau Philomene One", sans-serif;
 }
 
 .clear_float {
     clear: both;
 }
+
+.count {
+        margin-left: 5px;
+        padding: 2px 5px;
+        background-color: rgba(255, 255, 255, 0.2);
+        border-radius: 1px;
+        box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
+
+        font-size: 12px;
+    }
 
 .big_button {
     padding: 8px 15px;
@@ -32,7 +42,7 @@ a:hover {
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
 
     color: white;
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 700;
     text-align: center;
     text-shadow: 0px -1px 0px rgba(0, 0, 0, 0.3);
@@ -55,9 +65,9 @@ a.big_button, a.big_button:hover {
     box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
-.big_button[disabled] {
+.big_button[disabled], .big_button[disabled]:active {
     background: #D9D9D9;
-    border: 1px solid #696969;
+    border: 1px solid #868686;
 
     text-shadow: none;
 }
@@ -68,6 +78,7 @@ a.big_button, a.big_button:hover {
 
 .big_button[disabled]:active {
     padding: 8px 15px;
+    box-shadow: none;
 }
 
 .toggle_button, .toggle_button_left, .toggle_button_central,
@@ -154,13 +165,15 @@ a.big_button, a.big_button:hover {
     width: 920px;
     min-height: 150px;
     margin: 10px auto 0 auto;
-    padding: 15px;
+    padding: 10px;
 
+    background-color: #F0F0F0;
     box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
-    background-color: #F0F1F2;
 
     h1 {
-        margin: 3px 0;
+        margin: 0 0 7px 0;
+        padding-bottom: 7px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     }
 
     .key, .value {
@@ -174,7 +187,12 @@ a.big_button, a.big_button:hover {
     .value {
         color: rgba(0, 0, 0, 0.8);
     }
+
+    td {
+        padding: 5px;
+    }
 }
+
 
 footer {
     width: 950px;

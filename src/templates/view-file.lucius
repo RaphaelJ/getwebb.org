@@ -1,9 +1,10 @@
 #page {
+    width: 950px;
     padding: 0;
 
     #left_pane {
         float: left;
-        width: 590px;
+        width: 620px;
         padding: 15px;
 
         .icon {
@@ -110,8 +111,8 @@
 
     #right_pane {
         float: right;
-        background-color: #E6E6E6;
-        border-left: 1px solid #CCCDCE;
+        background-color: rgba(0, 0, 0, 0.05);
+        border-left: 1px solid rgba(0, 0, 0, 0.1);
 
         text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
     }

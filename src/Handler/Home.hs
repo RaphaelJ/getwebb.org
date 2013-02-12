@@ -6,13 +6,13 @@ import Import
 
 import Text.Julius (rawJS)
 
-import Handler.Upload (uploadForm')
+import Handler.Upload (uploadForm)
 import Utils.Pretty (PrettyFileSize (..))
 
 -- | Shows the home page.
 getHomeR :: Handler RepHtml
 getHomeR = do
-    ((filesWidget, optsWidget), enctype) <- generateFormPost uploadForm'
+    ((filesWidget, optsWidget), enctype) <- generateFormPost uploadForm
 
     extras <- getExtra
     let maxFileSize = extraMaxFileSize extras
@@ -20,4 +20,4 @@ getHomeR = do
 
     defaultLayout $ do
         setTitle "getwebb - Free file sharing"
-        $(widgetFile "homepage")
+        $(widgetFile "home")

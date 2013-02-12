@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 -- | Streams files to clients. Use a daemon to buffer statistics and save disk
@@ -28,7 +29,8 @@ import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Internal as L
-import qualified Data.Map.Strict as M
+import Data.IORef (newIORef, readIORef, writeIORef)
+import qualified Data.Map as M
 import Data.Maybe
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
@@ -165,6 +167,11 @@ getDownloadR hmacs' = do
     -- Streams a set of file inside a .zip archive.
     streamFiles = do
         uploads' <- runDB $ do
+            -- The archive cann't contains two files with the same name.
+            -- Thus a mutable Map is used to count the number of occurence of
+            -- each name.
+            ioNames <- liftIO $ newIORef (M.empty :: M.Map Text Int)
+
             forM hmacs $ \hmac -> do
                 -- Opens every file, skips non-existing/removed files.
                 mUpload <- getBy $ UniqueUploadHmac hmac
@@ -172,34 +179,44 @@ getDownloadR hmacs' = do
                     Just entity@(Entity _ upload) -> do
                         Just file <- get $ uploadFileId upload
 
+                        -- Adds a suffix to duplicates filenames.
+                        names <- liftIO $ readIORef ioNames
+                        let name' = uploadName upload
+                            name = case name' `M.lookup` names of
+                                Just n  ->
+                                    name' <> "_" <> (T.pack $ show $ n + 1)
+                                Nothing -> name'
+                            names' = M.insertWith (+) name' 1 names
+                        liftIO $ writeIORef ioNames names'
+
                         -- Opens the file inside the transaction to ensure data
                         -- consistency.
                         h <- lift $ safeOpenFile file Original
 
-                        return $! Just (entity, file, h)
+                        return $! Just (name, entity, file, h)
                     Nothing ->
                         return Nothing
-        let uploads = take 25 {-FIXME: Space leak-} $ catMaybes $ uploads'
+        let uploads = take 15 {-FIXME: Space leak-} $ catMaybes $ uploads'
 
         when (null uploads)
             notFound
 
         archive <- foldM addToArchive Z.emptyArchive uploads
-        let hs = map (\(_, _, h) -> h) uploads
+        let hs = map (\(_, _, _, h) -> h) uploads
             bs = Z.fromArchive archive
 
         streamByteString hs bs "application/zip" Nothing
 
     -- Returns the original archive with the upload's file appended.
-    addToArchive archive (Entity uploadId upload, file, h) = do
-        let name = T.unpack $ uploadName upload
+    addToArchive archive (name, Entity uploadId upload, file, h) = do
+        let name' = T.unpack name
             epoch = round $ utcTimeToPOSIXSeconds $ uploadUploaded upload
             decompress' = if isJust (fileCompressed file)
                               then decompress
                               else id
 
         bs <- liftIO (L.hGetContents h) >>= getTrackedBS uploadId . decompress'
-        return $! Z.addEntryToArchive (Z.toEntry name epoch bs) archive
+        return $! Z.addEntryToArchive (Z.toEntry name' epoch bs) archive
 
     -- Responds to the client with the ByteString content and closes the
     -- handlers afterwards.
@@ -349,27 +366,31 @@ incrementViewCount app uploadId = do
     -- Updates the buffer atomically.
     currentTime <- getCurrentTime
     modifyMVar_ buffer $ \accum -> do
-        let f _ (oldCount, _, bw) = (oldCount + 1, Just currentTime, bw)
         return $! M.insertWith f uploadId (1, Just currentTime, 0) accum
 
     -- Signals to the daemon that at least an entry has been added to the 
     -- buffer.
     _ <- signal `tryPutMVar` ()
     return ()
+  where
+    f (_, time, _) (!c, _, !bw) = let !c' = c + 1
+                                  in (c', time, bw)
 
 -- | Adds the number of bytes to the uncommited amount of bandwidth.
 addBandwidth :: App -> UploadId -> Word64 -> IO ()
-addBandwidth app uploadId len = do
+addBandwidth app uploadId !len = do
     let (buffer, signal) = viewsBuffer app
 
     -- Updates the buffer atomically.
     liftIO $ modifyMVar_ buffer $ \accum -> do
-        let f _ (c, time, bw) = (c, time, bw + len)
         return $! M.insertWith f uploadId (0, Nothing, len) accum
 
     -- Signal to the daemon at least an entry has been added to the buffer.
     _ <- liftIO $ signal `tryPutMVar` ()
     return ()
+  where
+    f _ (!c, !time, !bw) = let !bw' = bw + len
+                           in (c, time, bw')
 
 -- | Returns the buffer entry for the given upload. 'Nothing' if the database is
 -- up to date.

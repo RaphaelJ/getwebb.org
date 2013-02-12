@@ -1,0 +1,3 @@
+/auth              AuthR           GET
+/signin            SignInR         GET POST
+/register          RegisterR       GET POST

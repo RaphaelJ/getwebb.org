@@ -1,0 +1,10 @@
+$("#message").keyup(function (e)
+{
+    var remain = #{rawJS $ show maxCommentLength} - $("#message").val().length;
+    var elem = $("#chars_left");
+    var negative = remain < 0;
+
+    elem.text(remain);
+    elem.toggleClass("negative", negative);
+    $("#submit_comment").attr("disabled", negative ? "disabled" : null);
+});

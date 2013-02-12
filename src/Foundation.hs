@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Foundation where
 
 import Prelude
@@ -27,6 +28,7 @@ import Text.Jasmine (minifym)
 import Text.Hamlet (shamlet, hamletFile)
 import qualified Web.ClientSession as S
 
+import Account.Foundation (YesodAccount (..), Account)
 import Model
 import Utils.Pretty (PrettyNumber (..))
 
@@ -53,6 +55,7 @@ type JobsQueue = (JobsChan, JobsDepends)
 data App = App {
       settings :: AppConfig DefaultEnv Extra
     , getStatic :: Static -- ^ Settings for static file serving.
+    , getAccount :: Account -- ^ Account management subsite.
     , connPool :: Database.Persist.Store.PersistConfigPool Settings.PersistConfig -- ^ Database connection pool.
     , httpManager :: Manager
     , persistConfig :: Settings.PersistConfig
@@ -208,30 +211,24 @@ instance YesodPersist App where
             f
             (connPool master)
 
--- instance YesodAuth App where
---     type AuthId App = UserId
--- 
---     -- Where to send a user after successful login
---     loginDest _ = HomeR
---     -- Where to send a user after logout
---     logoutDest _ = HomeR
--- 
---     getAuthId creds = runDB $ do
---         x <- getBy $ UniqueUser $ credsIdent creds
---         case x of
---             Just (Entity uid _) -> return $ Just uid
---             Nothing -> do
---                 fmap Just $ insert $ User (credsIdent creds) Nothing
--- 
---     -- You can add other plugins like BrowserID, email or OAuth here
---     authPlugins _ = [authBrowserId, authGoogleEmail]
--- 
---     authHttpManager = httpManager
-
 -- This instance is required to use forms. You can modify renderMessage to
 -- achieve customized and internationalized form validation messages.
 instance RenderMessage App FormMessage where
     renderMessage _ _ = defaultFormMessage
+
+instance YesodAccount App where
+    type AccountUser App = User
+
+    signInDest _  = HistoryR
+    signOutDest _ = HomeR
+
+    emailLookup    = getBy . UniqueUserEmail
+    usernameLookup = getBy . UniqueUserName
+
+    accountEmail = userEmail
+    accountUsername = userName
+    accountPassword = userPassword
+    accountSalt = userSalt
 
 -- | Get the 'Extra' value, used to hold data from the settings.yml file.
 getExtra :: Handler Extra
@@ -264,7 +261,7 @@ getAdminKey = do
         Just k ->
             return k
         Nothing -> do
-            k <- runDB $ insert (AdminKey 0)
+            k <- runDB $ insert (AdminKey 0 Nothing)
 
             setSession "admin_key" (pack $ show k)
             return k

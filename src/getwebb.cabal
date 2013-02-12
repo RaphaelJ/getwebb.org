@@ -27,6 +27,11 @@ library
                      Model
                      JobsDaemon
 
+                     Account
+                     Account.Auth
+                     Account.Foundation
+
+                     Handler.Comment
                      Handler.Download
                      Handler.History
                      Handler.Home

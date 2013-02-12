@@ -9,7 +9,7 @@ function uploadPublic(isPublic)
 
     $("#public")[0].checked = isPublic;
 }
-// uploadPublic($("#public_f")[0].checked);
+uploadPublic($("#public")[0].checked);
 
 // Shows/Hides the options menu.
 $("#options_toggle").click(function ()
@@ -155,6 +155,7 @@ function uploadFiles(loaded, total, files_info, uploaded, errors)
 
     var data = new FormData();
     data.append("email", $("#email").val());
+    data.append("public", $("#public")[0].checked ? "yes" : "no");
     data.append("file", info.file);
 
     var old_percent = 0;

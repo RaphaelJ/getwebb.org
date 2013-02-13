@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Defines types and functions to display various values in an human readable
 -- way.
-module Utils.Pretty (
+module Util.Pretty (
       WrappedText (wtText, wtMaxLength), wrappedText
     , PrettyNumber (..), PrettyFileSize (..), PrettyDuration (..)
     , PrettyDiffTime (..)

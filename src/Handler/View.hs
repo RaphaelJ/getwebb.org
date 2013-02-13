@@ -19,17 +19,17 @@ import Text.Julius (rawJS)
 
 import Handler.Comment (maxCommentLength, commentForm)
 import Upload.Remove (removeUpload)
-import Utils.Pretty (
+import Util.Pretty (
       PrettyNumber (..), PrettyFileSize (..), PrettyDuration (..)
     , PrettyDiffTime (..)
     , wrappedText
     )
-import Utils.Extras (
+import Util.Extras (
       Extras (..), getFileExtras
     , getIsAdmin, getUploadStats, getIcon, getImage, getMiniature
     , getAudioSources, getArchive
     )
-import Utils.Hmac (splitHmacs, joinHmacs)
+import Util.Hmac (splitHmacs, joinHmacs)
 
 -- | Shows information about a file.
 getViewR :: Text -> Handler RepHtml

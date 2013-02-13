@@ -1,5 +1,5 @@
 -- | This module defines functions to compute and process Hmacs.
-module Utils.Hmac (
+module Util.Hmac (
       Hmac {- From Model.hs -}
     , computeHmac, splitHmacs, joinHmacs, toBase62
     ) where

@@ -7,7 +7,7 @@ import Import
 import Text.Julius (rawJS)
 
 import Handler.Upload (uploadForm)
-import Utils.Pretty (PrettyFileSize (..))
+import Util.Pretty (PrettyFileSize (..))
 
 -- | Shows the home page.
 getHomeR :: Handler RepHtml

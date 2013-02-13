@@ -21,8 +21,8 @@ import qualified Codec.Archive.Zip as Z
 import Text.Hamlet (shamlet)
 
 import qualified Upload.Compression as C
-import Utils.Hmac (computeHmac)
-import Utils.Pretty (PrettyFileSize (..), wrappedText)
+import Util.Hmac (computeHmac)
+import Util.Pretty (PrettyFileSize (..), wrappedText)
 
 -- | Represents a hierarchy of files within an archive.
 data ArchiveTree = NodeDirectory (M.Map FilePath ArchiveTree)

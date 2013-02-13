@@ -47,8 +47,8 @@ import Network.Wai (requestHeaders)
 import System.IO.Unsafe (unsafeInterleaveIO)
 
 import JobsDaemon (runDBIO)
-import Utils.Hmac (splitHmacs)
-import Utils.Path (hashDir, getPath)
+import Util.Hmac (splitHmacs)
+import Util.Path (hashDir, getPath)
 
 import System.TimeIt
 

@@ -32,7 +32,7 @@ import System.TimeIt (timeIt)
 
 import JobsDaemon (registerJob, runDBIO)
 import qualified Upload.Compression as C
-import Utils.Path (hashDir, getPath, getFileSize)
+import Util.Path (hashDir, getPath, getFileSize)
 
 -- | Files extensions which are supported by the DevIL image library.
 extensions :: S.Set Text

@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternGuards #-}
 -- | Defines functions to retrieve meta-data from a file.
-module Utils.Extras (
+module Util.Extras (
       Extras (..), getFileExtras
     , getIsAdmin, getUploadStats, getIcon, getImage, getMiniature
     , getAudioSources, getArchive

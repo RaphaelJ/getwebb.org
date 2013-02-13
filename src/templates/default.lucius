@@ -15,7 +15,7 @@ a:hover {
     text-decoration: underline;
 }
 
-strong, .getwebb {
+.getwebb {
     font-family: "Chau Philomene One", sans-serif;
 }
 

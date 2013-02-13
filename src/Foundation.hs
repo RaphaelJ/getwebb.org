@@ -30,7 +30,7 @@ import qualified Web.ClientSession as S
 
 import Account.Foundation (YesodAccount (..), Account)
 import Model
-import Utils.Pretty (PrettyNumber (..))
+import Util.Pretty (PrettyNumber (..))
 
 -- | Contains a queue of background jobs which can be processed right now.
 type JobsChan = Chan (JobId, IO ())

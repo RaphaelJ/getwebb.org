@@ -45,7 +45,7 @@ import Upload.FFmpeg (
     )
 import qualified Upload.Compression as C
 import Upload.Image (miniature)
-import Utils.Path (hashDir, getPath, newTmpFile)
+import Util.Path (hashDir, getPath, newTmpFile)
 
 import Debug.Trace
 

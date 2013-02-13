@@ -1,5 +1,5 @@
 -- | Defines a few utilities to manages uploads files and directories.
-module Utils.Path (
+module Util.Path (
       getFileSize, uploadDir, hashDir, tmpDir, newTmpFile, getPath
     ) where
 

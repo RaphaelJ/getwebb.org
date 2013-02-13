@@ -8,8 +8,8 @@ import Control.Monad
 import Data.Time.Clock (getCurrentTime, diffUTCTime)
 
 import Account.Foundation
-import Utils.Extras (getFileExtras, getIcon)
-import Utils.Pretty (PrettyFileSize (..), PrettyDiffTime (..), wrappedText)
+import Util.Extras (getFileExtras, getIcon)
+import Util.Pretty (PrettyFileSize (..), PrettyDiffTime (..), wrappedText)
 
 -- | Shows the user's upload history.
 getHistoryR :: Handler RepHtml

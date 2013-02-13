@@ -25,8 +25,8 @@ import Upload.Archive (processArchive)
 import qualified Upload.Compression as C
 import Upload.Image (processImage)
 import Upload.Media (processMedia)
-import Utils.Hmac (computeHmac)
-import Utils.Path (getFileSize, hashDir, newTmpFile, getPath)
+import Util.Hmac (computeHmac)
+import Util.Path (getFileSize, hashDir, newTmpFile, getPath)
 
 import System.TimeIt (timeIt)
 

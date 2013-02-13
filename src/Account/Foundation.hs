@@ -3,8 +3,8 @@
 module Account.Foundation where
 
 import Prelude
-import Language.Haskell.TH (Pred (..), Type (..), mkName)
 import Data.Text (Text)
+import Language.Haskell.TH (Pred (..), Type (..), mkName)
 
 import Yesod
 
@@ -12,6 +12,9 @@ data Account = Account {
       -- | The public and the private reCaptcha keys.
       acRecaptchaKeys :: (Text, Text)
     }
+
+keySession :: Text
+keySession = "_ACCOUNT_ID"
 
 -- | Defines a few getters and lookup functions to interact with the master
 -- site routes and entities.
@@ -24,7 +27,7 @@ class (Yesod master, RenderMessage master FormMessage) =>
 
     -- | Fetches the user from the database.
     emailLookup, usernameLookup ::
-        Text -> GHandler sub master (Maybe (Entity (AccountUser master)))
+        Text -> YesodDB sub master (Maybe (Entity (AccountUser master)))
 
     -- | Accesses data from the user account data type.
     accountEmail, accountUsername, accountPassword, accountSalt ::

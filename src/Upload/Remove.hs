@@ -9,7 +9,7 @@ import Control.Monad
 import qualified Data.Text as T
 import System.Directory (removeDirectoryRecursive)
 
-import Utils.Path (hashDir)
+import Util.Path (hashDir)
 
 removeUpload :: Entity Upload -> YesodDB App App ()
 removeUpload (Entity uploadId upload) = do

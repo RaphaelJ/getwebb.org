@@ -8,6 +8,8 @@ module Account.Auth (
 
 import Import
 
+import Account.Util (randomSalt, saltedHash)
+
 import Account.Foundation
 
 -- | Displays the sign in and the register forms in the default layout.
@@ -45,6 +47,10 @@ showForm (signInWidget, signInEnctype) (registerWidget, registerEnctype) = do
     defaultLayout $ do
         setTitle "Authentication - getwebb"
         $(whamletFile "templates/auth.hamlet")
+
+redirectIfConnected :: AccountHandler RepHtml
+redirectIfConnected = do
+    
 
 -- | Generates a form which returns the username and the password.
 signInForm :: AccountForm (Text, Text)

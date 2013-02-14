@@ -28,7 +28,7 @@ import Text.Jasmine (minifym)
 import Text.Hamlet (shamlet, hamletFile)
 import qualified Web.ClientSession as S
 
-import Account.Foundation (YesodAccount (..), Account)
+import Account.Foundation
 import Model
 import Util.Pretty (PrettyNumber (..))
 
@@ -176,6 +176,8 @@ instance Yesod App where
 --         Just $ uncurry (joinPath y (Settings.staticRoot $ settings y)) $ renderRoute s
 --     urlRenderOverride _ _ = Nothing
 
+    authRoute _ = Just $ AccountR AuthR
+
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows
     -- expiration dates to be set far in the future without worry of
@@ -222,8 +224,8 @@ instance YesodAccount App where
     signInDest _  = HistoryR
     signOutDest _ = HomeR
 
-    emailLookup    = getBy . UniqueUserEmail
-    usernameLookup = getBy . UniqueUserName
+    emailLookup    = UniqueUserEmail
+    usernameLookup =  UniqueUserName
 
     accountEmail = userEmail
     accountUsername = userName

@@ -6,15 +6,20 @@ module Account.Auth (
     , signInForm, registerForm
     ) where
 
-import Import
+import Prelude
+import Control.Applicative  as Import ((<$>), (<*>))
+import Data.Text as Import (Text)
+import qualified Data.Text as T
 
-import Account.Util (randomSalt, saltedHash)
+import Yesod
 
 import Account.Foundation
+import Account.Util (requireNoAuth, getUser, randomSalt, saltedHash)
 
 -- | Displays the sign in and the register forms in the default layout.
 getAuthR, getSignInR, getRegisterR :: AccountHandler RepHtml
 getAuthR = do
+    requireNoAuth
     signIn <- generateFormPost signInForm
     register <- generateFormPost registerForm
 
@@ -25,6 +30,7 @@ getRegisterR = getAuthR
 
 postSignInR :: AccountHandler RepHtml
 postSignInR = do
+    requireNoAuth
     ((signInRes, signInWidget), signInEnctype) <- runFormPost signInForm
     register <- generateFormPost registerForm
 
@@ -32,6 +38,7 @@ postSignInR = do
 
 postRegisterR :: AccountHandler RepHtml
 postRegisterR = do
+    requireNoAuth
     signIn <- generateFormPost signInForm
     ((registerRes, registerWidget), registerEnctype) <- runFormPost registerForm
 
@@ -48,50 +55,61 @@ showForm (signInWidget, signInEnctype) (registerWidget, registerEnctype) = do
         setTitle "Authentication - getwebb"
         $(whamletFile "templates/auth.hamlet")
 
-redirectIfConnected :: AccountHandler RepHtml
-redirectIfConnected = do
-    
-
 -- | Generates a form which returns the username and the password.
 signInForm :: AccountForm (Text, Text)
 signInForm = renderTable $
-    (,) <$> areq textField     loginSettings    Nothing
-        <*> areq passwordField passwordSettings Nothing
+    (,) <$> areq loginField    loginSettings    Nothing
+        <*> areq passwordField' passwordSettings Nothing
   where
+    loginField = check checkLogin textField
     loginSettings =
-        let name = Just "signin_login"
+        let name = Just "login"
         in FieldSettings {
               fsLabel = "Username or email address", fsTooltip = Nothing
             , fsId = name, fsName = name, fsAttrs = []
             }
+    checkLogin password | T.length password < 6 =
+        Left ("Your password must be at least 6 characters long." :: Text)
+                     | otherwise          = Right password
+
+    passwordField' = check checkPassword passwordField
     passwordSettings =
-        let name = Just "signin_password"
+        let name = Just "password"
         in FieldSettings {
               fsLabel = "Password", fsTooltip = Nothing, fsId = name
             , fsName = name, fsAttrs = []
             }
+    checkPassword password | T.length password < 6 =
+        Left ("Your password must be at least 6 characters long." :: Text)
+                           | otherwise          = Right password
 
 registerForm :: AccountForm (Text, Text, Text)
 registerForm = renderTable $
-    (\a b c -> (a, b, c)) <$> areq emailField    emailSettings    Nothing
-                          <*> areq textField     loginSettings    Nothing
-                          <*> areq passwordField passwordSettings Nothing
+    (\a b c -> (a, b, c)) <$> areq emailField     emailSettings    Nothing
+                          <*> areq textField      loginSettings    Nothing
+                          <*> areq passwordField' passwordSettings Nothing
   where
     emailSettings =
-        let name = Just "register_email"
+        let name = Just "email"
         in FieldSettings {
               fsLabel = "Email address", fsTooltip = Nothing
             , fsId = name, fsName = name, fsAttrs = []
             }
     loginSettings =
-        let name = Just "register_login"
+        let name = Just "login"
         in FieldSettings {
               fsLabel = "Username", fsTooltip = Nothing
             , fsId = name, fsName = name, fsAttrs = []
             }
+
+    passwordField' = check checkPassword passwordField
     passwordSettings =
-        let name = Just "register_password"
+        let name = Just "password"
         in FieldSettings {
-              fsLabel = "Password", fsTooltip = Nothing, fsId = name
-            , fsName = name, fsAttrs = []
+              fsLabel = "Password"
+            , fsTooltip = Just "Your 
+            , fsId = name, fsName = name, fsAttrs = []
             }
+    checkPassword password | T.length password < 6 =
+        Left ("Your password must be at least 6 characters long." :: Text)
+                           | otherwise             = Right password

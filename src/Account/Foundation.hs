@@ -13,21 +13,24 @@ data Account = Account {
       acRecaptchaKeys :: (Text, Text)
     }
 
-keySession :: Text
-keySession = "_ACCOUNT_ID"
+-- | The key used in the sessions to store the user's ID.
+sessionKey :: Text
+sessionKey = "_ACCOUNT_ID"
 
--- | Defines a few getters and lookup functions to interact with the master
--- site routes and entities.
-class (Yesod master, RenderMessage master FormMessage) =>
-      YesodAccount master where
+-- | Defines a few parameters, getters and lookup functions to interact with the 
+-- master site routes and entities.
+class (Yesod master, YesodPersist master, RenderMessage master FormMessage
+      , PersistEntityBackend (AccountUser master)
+        ~ PersistMonadBackend (YesodDB Account master)
+      , PersistStore (YesodDB Account master)
+      , PersistEntity (AccountUser master)) => YesodAccount master where
     type AccountUser master
 
     -- | Post sign in/sign out routes.
     signInDest, signOutDest :: master -> Route master
 
-    -- | Fetches the user from the database.
-    emailLookup, usernameLookup ::
-        Text -> YesodDB sub master (Maybe (Entity (AccountUser master)))
+    -- | Unique keys to fetch users from the database.
+    emailLookup, usernameLookup :: Text -> Unique (AccountUser master)
 
     -- | Accesses data from the user account data type.
     accountEmail, accountUsername, accountPassword, accountSalt ::

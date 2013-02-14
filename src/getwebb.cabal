@@ -30,6 +30,7 @@ library
                      Account
                      Account.Auth
                      Account.Foundation
+                     Account.Util
 
                      Handler.Comment
                      Handler.Download

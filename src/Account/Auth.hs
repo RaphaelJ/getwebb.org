@@ -58,19 +58,16 @@ showForm (signInWidget, signInEnctype) (registerWidget, registerEnctype) = do
 -- | Generates a form which returns the username and the password.
 signInForm :: AccountForm (Text, Text)
 signInForm = renderTable $
-    (,) <$> areq loginField    loginSettings    Nothing
+    (,) <$> areq usernameField  usernameSettings Nothing
         <*> areq passwordField' passwordSettings Nothing
   where
-    loginField = check checkLogin textField
-    loginSettings =
-        let name = Just "login"
+    usernameField = textField
+    usernameSettings =
+        let name = Just "username"
         in FieldSettings {
               fsLabel = "Username or email address", fsTooltip = Nothing
             , fsId = name, fsName = name, fsAttrs = []
             }
-    checkLogin password | T.length password < 6 =
-        Left ("Your password must be at least 6 characters long." :: Text)
-                     | otherwise          = Right password
 
     passwordField' = check checkPassword passwordField
     passwordSettings =
@@ -81,35 +78,84 @@ signInForm = renderTable $
             }
     checkPassword password | T.length password < 6 =
         Left ("Your password must be at least 6 characters long." :: Text)
-                           | otherwise          = Right password
+                           | otherwise             = Right password
+
+data RegisterRes = RegisterRes {
+      rrEmail :: Text, rrUsername :: Text, rrPassword :: Text, rrConfirm :: Text
+    }
 
 registerForm :: AccountForm (Text, Text, Text)
-registerForm = renderTable $
-    (\a b c -> (a, b, c)) <$> areq emailField     emailSettings    Nothing
-                          <*> areq textField      loginSettings    Nothing
-                          <*> areq passwordField' passwordSettings Nothing
+registerForm html = do
+    let form = RegisterRes <$> areq emailField'    emailSettings    Nothing
+                           <*> areq usernameField  usernameSettings Nothing
+                           <*> areq passwordField' passwordSettings Nothing
+                           <*> areq passwordField  passwordSettings Nothing
+    (res, widget) <- renderTable form html
+
+    -- Checks if both passwords matche.
+    return $! case res of
+        FormSuccess (RegisterRes email username pass confirm)
+            | pass /= confirm ->
+                let msg = "Your passwords don't match."
+                    widget' = [whamlet|
+                        <p .errors>#{msg}
+                        ^{widget}
+                    |]
+                in (FormFailure [msg], widget')
+            | otherwise -> (FormSuccess (email, username, pass), widget)
+        FormFailure errs -> (FormFailure errs, widget)
+        FormMissing -> (FormMissing, widget)
   where
+    emailField' = checkM checkEmail emailField
     emailSettings =
         let name = Just "email"
         in FieldSettings {
               fsLabel = "Email address", fsTooltip = Nothing
             , fsId = name, fsName = name, fsAttrs = []
             }
-    loginSettings =
-        let name = Just "login"
+    checkEmail email =
+        checkExists emailLookup email
+                    "This email is already used by another user."
+
+    usernameField = checkM checkUsername textField
+    usernameSettings =
+        let name = Just "username"
         in FieldSettings {
               fsLabel = "Username", fsTooltip = Nothing
             , fsId = name, fsName = name, fsAttrs = []
             }
+    checkUsername username =
+        checkExists usernameLookup username
+                    "This username is already used by another user."
+
+    -- Returns the error message if the user already exists in the database 
+    -- for the given unique lookup key and field value.
+    checkExists :: YesodAccount master =>
+                   (a -> Unique master) -> a -> Text 
+                -> GHandler Account master (Either Text a)
+    checkExists unique value errMsg = do
+        master <- getYesod
+        mUser <- runDB $ getBy $ unique value
+        return $! case mUser of
+            Just _  -> Left  errMsg
+            Nothing -> Right value
 
     passwordField' = check checkPassword passwordField
     passwordSettings =
         let name = Just "password"
         in FieldSettings {
               fsLabel = "Password"
-            , fsTooltip = Just "Your 
+            , fsTooltip = Just "Minimum 6 characters."
             , fsId = name, fsName = name, fsAttrs = []
             }
     checkPassword password | T.length password < 6 =
         Left ("Your password must be at least 6 characters long." :: Text)
                            | otherwise             = Right password
+
+    confirmSettings =
+        let name = Just "confirm"
+        in FieldSettings {
+              fsLabel = "Password confirmation"
+            , fsTooltip = Just "Repeat your password."
+            , fsId = name, fsName = name, fsAttrs = []
+            }

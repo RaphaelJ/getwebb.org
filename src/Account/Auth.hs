@@ -96,7 +96,7 @@ registerForm html = do
     return $! case res of
         FormSuccess (RegisterRes email username pass confirm)
             | pass /= confirm ->
-                let msg = "Your passwords don't match."
+                let msg = "Your passwords don't match." :: Text
                     widget' = [whamlet|
                         <p .errors>#{msg}
                         ^{widget}
@@ -124,6 +124,8 @@ registerForm html = do
               fsLabel = "Username", fsTooltip = Nothing
             , fsId = name, fsName = name, fsAttrs = []
             }
+    checkUsername, checkEmail :: YesodAccount master =>
+            Text -> GHandler Account master (Either Text Text)
     checkUsername username =
         checkExists usernameLookup username
                     "This username is already used by another user."
@@ -131,7 +133,7 @@ registerForm html = do
     -- Returns the error message if the user already exists in the database 
     -- for the given unique lookup key and field value.
     checkExists :: YesodAccount master =>
-                   (a -> Unique master) -> a -> Text 
+                   (a -> Unique (AccountUser master)) -> a -> Text
                 -> GHandler Account master (Either Text a)
     checkExists unique value errMsg = do
         master <- getYesod

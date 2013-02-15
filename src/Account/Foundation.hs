@@ -22,7 +22,7 @@ sessionKey = "_ACCOUNT_ID"
 class (Yesod master, YesodPersist master, RenderMessage master FormMessage
       , PersistEntityBackend (AccountUser master)
         ~ PersistMonadBackend (YesodDB Account master)
-      , PersistStore (YesodDB Account master)
+      , PersistUnique (YesodDB Account master)
       , PersistEntity (AccountUser master)) => YesodAccount master where
     type AccountUser master
 

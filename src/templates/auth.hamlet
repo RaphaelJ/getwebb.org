@@ -2,18 +2,33 @@
     <form #sign_form method=post action=@{toMaster SignInR}
                         enctype=#{signInEnctype}>
         <h1>Sign in
-        Connect yourself using an existing account.
+        Connect yourself using an <span class="getwebb">existing account</span>.
 
         <table>
             ^{signInWidget}
 
         <input .big_button type=submit value="Sign in">
 
-    <form #sign_form method=post action=@{toMaster RegisterR}
-                        enctype=#{registerEnctype}>
+    <form #register_form method=post action=@{toMaster RegisterR}
+                         enctype=#{registerEnctype}>
         <h1>Register
-        Create a new <span class="getwebb">free</span> account.
+        Create a new <span class="getwebb">free account</span>.
+
+        <ul>
+            <li>
+                <span .getwebb>Track
+                each of your files whatever the computer from which they have 
+                been uploaded ;
+            <li>
+                <span .getwebb>Write comments
+                about files ;
+            <li>
+                <span .getwebb>Share
+                your public files on your public gallery.
+
         <table>
             ^{registerWidget}
 
-        <input .big_button type=submit value="Create my account">
+        <input .big_button type=submit value="Create an account">
+
+    <div .clear_float>

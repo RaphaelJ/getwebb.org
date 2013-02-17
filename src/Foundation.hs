@@ -222,15 +222,21 @@ instance YesodAccount App where
     type AccountUser App = User
 
     signInDest _  = HistoryR
-    signOutDest _ = HomeR
+    signOutDest _ = HistoryR
 
-    emailLookup    = UniqueUserEmail
-    usernameLookup =  UniqueUserName
+    initUser email name pass salt = return User {
+          userEmail = email, userName = name, userPassword = pass
+        , userSalt = salt, userAvatar = False, userIsAdmin = False
+        , userPublic = True
+        }
 
-    accountEmail = userEmail
-    accountUsername = userName
-    accountPassword = userPassword
-    accountSalt = userSalt
+    emailLookup    = return . UniqueUserEmail
+    usernameLookup = return . UniqueUserName
+
+    accountEmail    = return . userEmail
+    accountUsername = return . userName
+    accountPassword = return . userPassword
+    accountSalt     = return . userSalt
 
 -- | Get the 'Extra' value, used to hold data from the settings.yml file.
 getExtra :: Handler Extra
@@ -249,7 +255,7 @@ getExtra = fmap (appExtra . settings) getYesod
 -- uploads.
 tryAdminKey :: GHandler sub App (Maybe AdminKeyId)
 tryAdminKey = do
-    mKey <- lookupSession "admin_key"
+    mKey <- lookupSession "ADMIN_KEY"
     return $ (read . unpack) `fmap` mKey
 
 -- | Reads the         session value to get the admin key of the visitor. If the user
@@ -265,5 +271,5 @@ getAdminKey = do
         Nothing -> do
             k <- runDB $ insert (AdminKey 0 Nothing)
 
-            setSession "admin_key" (pack $ show k)
+            setSession "ADMIN_KEY" (pack $ show k)
             return k

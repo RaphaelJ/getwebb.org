@@ -1,0 +1,13 @@
+#sign_form, #register_form {
+    float: left;
+    width: 440px;
+}
+
+#sign_form {
+    padding-right: 20px;
+}
+
+#register_form {
+    padding-left: 19px;
+    border-left: 1px solid rgba(0, 0, 0, 0.05);
+}

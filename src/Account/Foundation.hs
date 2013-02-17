@@ -3,6 +3,7 @@
 module Account.Foundation where
 
 import Prelude
+import Control.Monad.Trans (MonadTrans)
 import Data.Text (Text)
 import Language.Haskell.TH (Pred (..), Type (..), mkName)
 
@@ -20,27 +21,33 @@ sessionKey = "_ACCOUNT_ID"
 -- | Defines a few parameters, getters and lookup functions to interact with the 
 -- master site routes and entities.
 class (Yesod master, YesodPersist master, RenderMessage master FormMessage
+      , PersistEntity (AccountUser master)
       , PersistEntityBackend (AccountUser master)
         ~ PersistMonadBackend (YesodDB Account master)
+      , PersistStore (YesodDB Account master)
       , PersistUnique (YesodDB Account master)
-      , PersistEntity (AccountUser master)) => YesodAccount master where
-    type AccountUser master
+      , MonadTrans (YesodPersistBackend master)
+      , Functor (YesodDB Account master)) => YesodAccount master where
+    type AccountUser master :: *
 
     -- | Post sign in/sign out routes.
     signInDest, signOutDest :: master -> Route master
 
+    -- | Initialise a new user value (musn't add the user to the database).
+    initUser :: Text -- ^ Email
+             -> Text -- ^ Username
+             -> Text -- ^ Salted password
+             -> Text -- ^ Salt
+             -> GHandler sub master (AccountUser master)
+
     -- | Unique keys to fetch users from the database.
-    emailLookup, usernameLookup :: Text -> Unique (AccountUser master)
+    emailLookup, usernameLookup ::
+        Text -> GHandler sub master (Unique (AccountUser master))
 
     -- | Accesses data from the user account data type.
     accountEmail, accountUsername, accountPassword, accountSalt ::
-        AccountUser master -> Text
+        AccountUser master -> GHandler sub master Text
 
 mkYesodSubData "Account"
     [ ClassP ''YesodAccount [VarT $ mkName "master"] ]
     $(parseRoutesFile "config/routes_account")
-
-type AccountHandler x = YesodAccount master => GHandler Account master x
-
-type AccountForm x = YesodAccount master =>
-    Html -> MForm Account master (FormResult x, GWidget Account master ())

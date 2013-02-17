@@ -50,6 +50,8 @@ User
     password Text -- SHA1 hash of the password.
     salt Text -- Salt used to hash the password.
     avatar Bool
+    isAdmin Bool
+    public Bool -- True if the user want new files to be public.
     UniqueUserEmail email
     UniqueUserName name
     deriving Show
@@ -161,7 +163,7 @@ migrateAll = do
     migrateEnts
     lift $ tell [
           (False, T.concat [
-                "CREATE INDEX IF NOT EXISTS\"", name, "\" ON ", cols
+                "CREATE INDEX IF NOT EXISTS \"", name, "\" ON ", cols
                 ])
         | (name, cols) <- indexes
         ]

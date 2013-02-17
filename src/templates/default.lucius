@@ -15,6 +15,34 @@ a:hover {
     text-decoration: underline;
 }
 
+form {
+    label {
+        font-family: "Chau Philomene One", sans-serif;
+    }
+
+    .tooltip {
+        display: inline;
+        margin: 0 10px;
+
+        font-size: 0.9em;
+        font-style: italic;
+    }
+
+    input[type=text], input[type=password], input[type=email] {
+        display: block;
+        margin: 5px 0;
+    }
+
+    .errors {
+        margin: 5px 0;
+        padding: 5px 10px;
+        background-color: #AE3737;
+        border-radius: 2px;
+
+        color: white;
+    }
+}
+
 .getwebb {
     font-family: "Chau Philomene One", sans-serif;
 }
@@ -165,7 +193,7 @@ a.big_button, a.big_button:hover {
     width: 920px;
     min-height: 150px;
     margin: 10px auto 0 auto;
-    padding: 10px;
+    padding: 15px;
 
     background-color: #F0F0F0;
     box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
@@ -187,12 +215,7 @@ a.big_button, a.big_button:hover {
     .value {
         color: rgba(0, 0, 0, 0.8);
     }
-
-    td {
-        padding: 5px;
-    }
 }
-
 
 footer {
     width: 950px;

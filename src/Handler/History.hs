@@ -7,7 +7,7 @@ import Import
 import Control.Monad
 import Data.Time.Clock (getCurrentTime, diffUTCTime)
 
-import Account.Foundation
+import Account
 import Util.Extras (getFileExtras, getIcon)
 import Util.Pretty (PrettyFileSize (..), PrettyDiffTime (..), wrappedText)
 
@@ -15,6 +15,7 @@ import Util.Pretty (PrettyFileSize (..), PrettyDiffTime (..), wrappedText)
 getHistoryR :: Handler RepHtml
 getHistoryR = do
     mAdminKey <- tryAdminKey
+    mUser <- getUser
     rdr <- getUrlRenderParams
 
     uploads <- case mAdminKey of

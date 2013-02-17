@@ -1,7 +1,12 @@
 <div #page>
     <h1>Upload history
 
-    <a href=@{AccountR AuthR}>Login
+    $maybe Entity _ user <- mUser
+        <a href=@{AccountR SignOutR}>Sign out
+        (<a href="@{AccountR SettingsR}">#{userName user}</a>)
+    $nothing
+        <a href=@{AccountR AuthR}>Sign in
+
     $if null uploads
         <div align=center>
             <strong>You don't have any uploaded file yet.

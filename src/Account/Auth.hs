@@ -1,23 +1,28 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | The handlers in this modules manage the sign in and the register of new
 -- accounts.
 module Account.Auth (
-      getAuthR, getSignInR, getRegisterR
+      getAuthR, getSignInR, getRegisterR, getSignOutR
     , postSignInR, postRegisterR
-    , signInForm, registerForm
     ) where
 
 import Prelude
 import Control.Applicative  as Import ((<$>), (<*>))
-import Data.Text as Import (Text)
+import qualified Data.Set as S
+import Data.Text (Text)
 import qualified Data.Text as T
 
 import Yesod
 
 import Account.Foundation
-import Account.Util (requireNoAuth, getUser, randomSalt, saltedHash)
+import Account.Util (
+      registerUser, validateUser, setUserId, unsetUserId, requireNoAuth
+    )
+import Settings (widgetFile)
 
 -- | Displays the sign in and the register forms in the default layout.
-getAuthR, getSignInR, getRegisterR :: AccountHandler RepHtml
+getAuthR, getSignInR, getRegisterR :: YesodAccount master =>
+                                      GHandler Account master RepHtml
 getAuthR = do
     requireNoAuth
     signIn <- generateFormPost signInForm
@@ -28,21 +33,37 @@ getAuthR = do
 getSignInR   = getAuthR
 getRegisterR = getAuthR
 
-postSignInR :: AccountHandler RepHtml
+-- | Tries to sign in the user.
+postSignInR :: YesodAccount master => GHandler Account master RepHtml
 postSignInR = do
     requireNoAuth
     ((signInRes, signInWidget), signInEnctype) <- runFormPost signInForm
     register <- generateFormPost registerForm
 
-    showForm (signInWidget, signInEnctype) register
+    case signInRes of
+        FormSuccess userId -> do
+            setUserId userId
+            getYesod >>= redirect . signInDest 
+        _ -> showForm (signInWidget, signInEnctype) register
 
-postRegisterR :: AccountHandler RepHtml
+-- | Tries to register the user.
+postRegisterR :: YesodAccount master => GHandler Account master RepHtml
 postRegisterR = do
     requireNoAuth
     signIn <- generateFormPost signInForm
     ((registerRes, registerWidget), registerEnctype) <- runFormPost registerForm
 
-    showForm signIn (registerWidget, registerEnctype)
+    case registerRes of
+        FormSuccess (email, name, pass) -> do
+            registerUser email name pass >>= setUserId
+            getYesod >>= redirect . signInDest
+        _ -> showForm signIn (registerWidget, registerEnctype)
+
+-- | Removes the session value so the user is then signed out. Then redirects.
+getSignOutR :: YesodAccount master => GHandler Account master ()
+getSignOutR = do
+    unsetUserId
+    getYesod >>= redirect . signOutDest
 
 -- | Responds with the sign in and the register forms in the default layout.
 showForm :: YesodAccount master =>
@@ -53,15 +74,33 @@ showForm (signInWidget, signInEnctype) (registerWidget, registerEnctype) = do
     toMaster <- getRouteToMaster
     defaultLayout $ do
         setTitle "Authentication - getwebb"
-        $(whamletFile "templates/auth.hamlet")
+        $(widgetFile "auth")
 
 -- | Generates a form which returns the username and the password.
-signInForm :: AccountForm (Text, Text)
-signInForm = renderTable $
-    (,) <$> areq usernameField  usernameSettings Nothing
-        <*> areq passwordField' passwordSettings Nothing
+signInForm :: YesodAccount master => Html
+           -> MForm Account master (FormResult (Key (AccountUser master))
+                                   , GWidget Account master ())
+signInForm html = do
+    let form = (,) <$> areq textField     usernameSettings Nothing
+                   <*> areq passwordField passwordSettings Nothing
+    (res, widget) <- renderDivs form html
+
+    -- Checks the validity of the credentials.
+    case res of
+        FormSuccess (name, pass) -> do
+            mUserId <- lift $ validateUser name pass
+            return $! case mUserId of
+                Just userId -> (FormSuccess userId, widget)
+                Nothing ->
+                    let msg = "Invalid username/email or password." :: Text
+                        widget' = [whamlet|
+                            <p .errors>#{msg}
+                            ^{widget}
+                        |]
+                    in (FormFailure [msg], widget')
+        FormFailure errs -> return (FormFailure errs, widget)
+        FormMissing -> return (FormMissing, widget)
   where
-    usernameField = textField
     usernameSettings =
         let name = Just "username"
         in FieldSettings {
@@ -69,32 +108,30 @@ signInForm = renderTable $
             , fsId = name, fsName = name, fsAttrs = []
             }
 
-    passwordField' = check checkPassword passwordField
     passwordSettings =
         let name = Just "password"
         in FieldSettings {
               fsLabel = "Password", fsTooltip = Nothing, fsId = name
             , fsName = name, fsAttrs = []
             }
-    checkPassword password | T.length password < 6 =
-        Left ("Your password must be at least 6 characters long." :: Text)
-                           | otherwise             = Right password
 
 data RegisterRes = RegisterRes {
       rrEmail :: Text, rrUsername :: Text, rrPassword :: Text, rrConfirm :: Text
     }
 
-registerForm :: AccountForm (Text, Text, Text)
+registerForm :: YesodAccount master => Html
+             -> MForm Account master (FormResult (Text, Text, Text)
+                                     , GWidget Account master ())
 registerForm html = do
     let form = RegisterRes <$> areq emailField'    emailSettings    Nothing
                            <*> areq usernameField  usernameSettings Nothing
                            <*> areq passwordField' passwordSettings Nothing
-                           <*> areq passwordField  passwordSettings Nothing
-    (res, widget) <- renderTable form html
+                           <*> areq passwordField  confirmSettings  Nothing
+    (res, widget) <- renderDivs form html
 
-    -- Checks if both passwords matche.
+    -- Checks if both passwords match.
     return $! case res of
-        FormSuccess (RegisterRes email username pass confirm)
+        FormSuccess (RegisterRes email name pass confirm)
             | pass /= confirm ->
                 let msg = "Your passwords don't match." :: Text
                     widget' = [whamlet|
@@ -102,7 +139,7 @@ registerForm html = do
                         ^{widget}
                     |]
                 in (FormFailure [msg], widget')
-            | otherwise -> (FormSuccess (email, username, pass), widget)
+            | otherwise -> (FormSuccess (email, name, pass), widget)
         FormFailure errs -> (FormFailure errs, widget)
         FormMissing -> (FormMissing, widget)
   where
@@ -115,39 +152,30 @@ registerForm html = do
             }
     checkEmail email =
         checkExists emailLookup email
-                    "This email is already used by another user."
+                    ("This email is already used by another user." :: Text)
 
-    usernameField = checkM checkUsername textField
+    usernameField = check checkUsername $ checkM checkUsernameExists textField
     usernameSettings =
         let name = Just "username"
         in FieldSettings {
-              fsLabel = "Username", fsTooltip = Nothing
+              fsLabel = "Username"
+            , fsTooltip = Just "Alphanumeric characters."
             , fsId = name, fsName = name, fsAttrs = []
             }
-    checkUsername, checkEmail :: YesodAccount master =>
-            Text -> GHandler Account master (Either Text Text)
-    checkUsername username =
-        checkExists usernameLookup username
-                    "This username is already used by another user."
-
-    -- Returns the error message if the user already exists in the database 
-    -- for the given unique lookup key and field value.
-    checkExists :: YesodAccount master =>
-                   (a -> Unique (AccountUser master)) -> a -> Text
-                -> GHandler Account master (Either Text a)
-    checkExists unique value errMsg = do
-        master <- getYesod
-        mUser <- runDB $ getBy $ unique value
-        return $! case mUser of
-            Just _  -> Left  errMsg
-            Nothing -> Right value
+    checkUsername name | T.all (`S.member` validChars) name = Right name
+                       | otherwise                          =
+        Left ("Username must only contain alphanumeric characters." :: Text)
+    checkUsernameExists name =
+        checkExists usernameLookup name
+                    ("This username is already used by another user." :: Text)
+    validChars = S.fromList $ ['A'..'Z'] ++ ['a'..'z'] ++ ['0'..'9']
 
     passwordField' = check checkPassword passwordField
     passwordSettings =
         let name = Just "password"
         in FieldSettings {
               fsLabel = "Password"
-            , fsTooltip = Just "Minimum 6 characters."
+            , fsTooltip = Just "Must be at least 6 characters long."
             , fsId = name, fsName = name, fsAttrs = []
             }
     checkPassword password | T.length password < 6 =
@@ -161,3 +189,12 @@ registerForm html = do
             , fsTooltip = Just "Repeat your password."
             , fsId = name, fsName = name, fsAttrs = []
             }
+
+    -- Returns the error message if the user already exists in the database 
+    -- for the given unique lookup key and field value.
+    checkExists unique value errMsg = do
+        key <- unique value
+        mUser <- runDB $ getBy key
+        return $! case mUser of
+            Just _  -> Left  errMsg
+            Nothing -> Right value

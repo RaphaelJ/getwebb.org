@@ -32,13 +32,13 @@ infixr 5 <>
 
 -- | Executes the inner action when the item is 'Just'
 whenJust :: Monad m => Maybe a -> (a -> m ()) -> m ()
-whenJust m f =
-    case m of
-        Just a  -> f a
-        Nothing -> return ()
+whenJust (Just a) f = fa
+whenJust Nothing  _ = return ()
 
 int :: Integral a => a -> Int
 int = fromIntegral
+double :: Integral a => a -> Double
+double = fromIntegral
 word32 :: Integral a => a -> Word32
 word32 = fromIntegral
 word64 :: Integral a => a -> Word64

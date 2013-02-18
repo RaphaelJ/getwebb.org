@@ -25,7 +25,7 @@ import Upload.Archive (processArchive)
 import qualified Upload.Compression as C
 import Upload.Image (processImage)
 import Upload.Media (processMedia)
-import Util.Hmac (computeHmac)
+import Util.Hmac (newHmac)
 import Util.Path (getFileSize, hashDir, newTmpFile, getPath)
 
 import System.TimeIt (timeIt)
@@ -81,7 +81,7 @@ processFile adminKey f public = do
             let file = File {
                       fileHash = hashText, fileType = UnknownType
                     , fileSize = size, fileCompressed = Nothing
-                    , fileUploaded = currentTime, fileCount = 1
+                    , fileDate = currentTime, fileCount = 1
                     }
 
             -- Checks again if the user hasn't reach the upload limit.
@@ -108,25 +108,22 @@ processFile adminKey f public = do
                     lift $ update fileId [FileCount +=. 1]
                     return $! (fileId, False)
 
+            (key, hmac) <- lift $ newHmac
             let upload = Upload {
-                  uploadHmac = "",  uploadFileId = fileId
+                  uploadHmac = hmac,  uploadFileId = fileId
                 , uploadName = fileName f, uploadDescription = Nothing
-                , uploadPublic = public, uploadUploaded = currentTime
+                , uploadPublic = public, uploadDate = currentTime
                 , uploadHostname = clientHost, uploadAdminKey = adminKey
                 , uploadViews = 0, uploadLastView = currentTime
                 , uploadBandwidth = 0
                 }
 
-            uploadId <- lift $ insert upload
-
-            -- Computes and update the hmac of the upload.
-            let hmac = computeHmac app uploadId
-            lift $ update uploadId [UploadHmac =. hmac]
+            lift $ insertKey key upload
 
             -- Increments the user's upload count
             lift $ update adminKey [AdminKeyCount +=. 1]
 
-            return (upload { uploadHmac = hmac }, new)
+            return (upload, new)
         -- Process the special feature depending on the file type if it's a new
         -- file and puts it on the compressing queue afterward.
         let fileId = uploadFileId $ upload

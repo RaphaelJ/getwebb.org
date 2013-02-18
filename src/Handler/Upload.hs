@@ -48,7 +48,6 @@ postUploadR = do
         in toRepJson $ object [
               "id"   .= hmac
             , "name" .= uploadName upload
-            , "url"  .= urlRdr (ViewR hmac)
             ]
 
     toRepJson = RepJson . toContent

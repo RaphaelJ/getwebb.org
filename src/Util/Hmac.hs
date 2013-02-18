@@ -1,11 +1,12 @@
 -- | This module defines functions to compute and process Hmacs.
 module Util.Hmac (
-      Hmac {- From Model.hs -}
+      AllocatedHmacId, Hmac {- From Model.hs -}
     , computeHmac, splitHmacs, joinHmacs, toBase62
     ) where
 
 import Import
 
+import Control.Monad
 import Data.Array.Unboxed (UArray, listArray, (!))
 import qualified Data.ByteString.Lazy.Char8 as C
 import Data.Digest.Pure.SHA (hmacSha1, integerDigest)
@@ -14,12 +15,35 @@ import qualified Data.Text as T
 
 import Database.Persist.Store (PersistValue (..))
 
+-- | Returns a new unique identifier for a resource.
+newHmac :: Monad m => HmacResource
+        -> YesodPersistBackend App (m IO) (AllocatedHmacId, Hmac)
+newHmac resource = do
+    hmacId <- insert $ AllocatedHmac "" resource
+
+    -- Concatenates the new ID until the generated Hmac is unique
+    let PersistInt64 idInt = unKey idKey
+        idBs = C.pack $ show idInt
+        idBsInf = iterate (`C.append` idBs) idBs
+    hmac <- untilUnique idBsInf
+
+    update hmacId [UniqueHmacValue =. hmac]
+
+    return (hmacId, hmac)
+  where
+    untilUnique (x:xs) = do
+        hmac <- computeHmac x
+        exists <- isJust <$> getBy $ UniqueHmacValue hmac
+        if exists then untilUnique xs
+                  else return hmac
+
 -- | Returns the first eight base 62 encoded digits of the key hmac.
-computeHmac :: App -> Key val -> Hmac
-computeHmac app idKey =
+computeHmac :: C.ByteString -> Handler Hmac
+computeHmac idKey =
+    app <- getYesod
     let key = encryptKey app
         PersistInt64 idInt = unKey idKey
-        hmac = integerDigest $ hmacSha1 key $ C.pack $ show idInt
+        hmac = integerDigest $ hmacSha1 key $ 
     in T.pack $ take 8 $ toBase62 $ hmac
 
 -- | Returns a list of hmacs from a list of url string of hmacs separated by

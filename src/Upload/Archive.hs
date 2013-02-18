@@ -21,7 +21,7 @@ import qualified Codec.Archive.Zip as Z
 import Text.Hamlet (shamlet)
 
 import qualified Upload.Compression as C
-import Util.Hmac (computeHmac)
+import Util.Hmac (newHmac)
 import Util.Pretty (PrettyFileSize (..), wrappedText)
 
 -- | Represents a hierarchy of files within an archive.
@@ -50,21 +50,17 @@ processArchive path ext fileId = do
                         forM_ entries $ \e -> do
                             let ePath = Z.eRelativePath e
                                 ePathText = T.pack ePath
-                                eSize = word64 $ Z.eUncompressedSize e
-                                archiveFile = if hasTrailingPathSeparator ePath
-                                    then ArchiveFile "" fileId ePathText
-                                                     Nothing
-                                    else ArchiveFile "" fileId ePathText
-                                                     (Just eSize)
 
-                            mArchiveFileId <- insertUnique archiveFile
+                            exists <- getBy $ UniqueArchiveFile fileId ePathText
 
-                            case mArchiveFileId of
-                                Just archiveFileId ->
-                                    let hmac = computeHmac app archiveFileId
-                                    in update archiveFileId
-                                              [ArchiveFileHmac =. hmac]
-                                Nothing -> return ()
+                            whenJust exists $ \_ -> do
+                                (key, hmac) <- newHmac
+                                let eSize = if hasTrailingPathSeparator ePath
+                                        then Nothing
+                                        else word64 $ Z.eUncompressedSize e
+
+                                insertKey key $ ArchiveFile hmac fileId
+                                                            ePathText eSize
 
                     _ <- liftIO $ C.putFile app fileId []
                     return True

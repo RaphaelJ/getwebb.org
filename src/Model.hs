@@ -57,6 +57,7 @@ User
     name Text
     password Text -- SHA1 hash of the password.
     salt Text -- Salt used to hash the password.
+    created UTCTime
     avatar Bool
     isAdmin Bool
     public Bool -- True if the user want new files to be public.
@@ -74,13 +75,13 @@ File
     type FileType
     size Word64
     compressed Word64 Maybe -- The compressed size if the file is compressed.
-    date UTCTime
+    created UTCTime
     count Int -- Number of uploads which point to this file
     -- Each file is identified by its hash:
     UniqueFileHash hash
     deriving Show
 
--- Tracks hmacs allocations for uploads, archive files and comments.
+-- Tracks HMACs allocations for uploads, archive files and comments.
 UniqueHmac
     value Hmac -- An unique identifier generated from its ID.
     type HmacResource
@@ -93,11 +94,11 @@ Upload
     name Text
     description Text Maybe
     public Bool
-    date UTCTime
+    created UTCTime
     hostname Text
     adminKey AdminKeyId
     views Word64 default=0
-    lastView UTCTime
+    viewed UTCTime
     bandwidth Word64 default=0
     UniqueUploadHmac hmac
     deriving Show
@@ -107,7 +108,7 @@ Comment
     userId UserId
     uploadId UploadId
     message Text
-    date UTCTime
+    created UTCTime
     score Double
     upvotes Word64 default=0
     downvotes Word64 default=0
@@ -177,6 +178,7 @@ ArchiveFile
 Job
     fileId FileId
     type JobType
+    created UTCTime
     completed Bool
     cpuTime Double Maybe -- CPU time in seconds used by the job to complete.
     exception Text Maybe -- The exception text if the process has failed.

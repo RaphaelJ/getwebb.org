@@ -1,4 +1,4 @@
--- | This module defines functions to compute and process Hmacs.
+-- | This module defines functions to compute and process HMACs.
 module Util.Hmac (
       AllocatedHmacId, Hmac {- From Model.hs -}
     , computeHmac, splitHmacs, joinHmacs, toBase62
@@ -21,7 +21,7 @@ newHmac :: Monad m => HmacResource
 newHmac resource = do
     hmacId <- insert $ AllocatedHmac "" resource
 
-    -- Concatenates the new ID until the generated Hmac is unique
+    -- Concatenates the new ID until the generated HMAC is unique
     let PersistInt64 idInt = unKey idKey
         idBs = C.pack $ show idInt
         idBsInf = iterate (`C.append` idBs) idBs
@@ -37,7 +37,7 @@ newHmac resource = do
         if exists then untilUnique xs
                   else return hmac
 
--- | Returns the first eight base 62 encoded digits of the key hmac.
+-- | Returns the first eight base 62 encoded digits of the key HMAC.
 computeHmac :: C.ByteString -> Handler Hmac
 computeHmac idKey =
     app <- getYesod
@@ -46,12 +46,12 @@ computeHmac idKey =
         hmac = integerDigest $ hmacSha1 key $ 
     in T.pack $ take 8 $ toBase62 $ hmac
 
--- | Returns a list of hmacs from a list of url string of hmacs separated by
+-- | Returns a list of HMACs from a list of url string of HMACs separated by
 -- commas.
 splitHmacs :: Text -> [Text]
 splitHmacs = T.split (== ',')
 
--- | Returns an url string from a list of hmacs.
+-- | Returns an url string from a list of HMACs.
 joinHmacs :: [Text] -> Text
 joinHmacs = T.intercalate ","
 

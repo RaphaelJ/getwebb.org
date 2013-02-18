@@ -47,8 +47,8 @@ processFile adminKey f public = do
     app <- getYesod
     extras <- getExtra
     clientHost <- remoteTextHost
-    currentTime <- liftIO getCurrentTime
-    let yesterday = (-3600 * 24) `addUTCTime` currentTime
+    time <- liftIO getCurrentTime
+    let yesterday = (-3600 * 24) `addUTCTime` time
 
     runEitherT $ do
         -- Checks the user limits before moving the file to fail as soon as
@@ -81,7 +81,7 @@ processFile adminKey f public = do
             let file = File {
                       fileHash = hashText, fileType = UnknownType
                     , fileSize = size, fileCompressed = Nothing
-                    , fileDate = currentTime, fileCount = 1
+                    , fileCreated = time, fileCount = 1
                     }
 
             -- Checks again if the user hasn't reach the upload limit.
@@ -112,9 +112,9 @@ processFile adminKey f public = do
             let upload = Upload {
                   uploadHmac = hmac,  uploadFileId = fileId
                 , uploadName = fileName f, uploadDescription = Nothing
-                , uploadPublic = public, uploadDate = currentTime
+                , uploadPublic = public, uploadCreated = time
                 , uploadHostname = clientHost, uploadAdminKey = adminKey
-                , uploadViews = 0, uploadLastView = currentTime
+                , uploadViews = 0, uploadViewed = time
                 , uploadBandwidth = 0
                 }
 

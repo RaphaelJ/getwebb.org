@@ -9,7 +9,6 @@ import Control.Monad
 import Data.List (head, tail, last, init)
 import Data.Maybe
 import qualified Data.ByteString as B
-import Data.Time.Clock (getCurrentTime, diffUTCTime)
 
 import Network.HTTP.Types.Header (hUserAgent)
 import Network.HTTP.Types.Status (noContent204)
@@ -19,6 +18,7 @@ import Text.Julius (rawJS)
 
 import Handler.Comment (maxCommentLength, commentForm)
 import Upload.Remove (removeUpload)
+import Util.Date (getDiffTime)
 import Util.Pretty (
       PrettyNumber (..), PrettyFileSize (..), PrettyDuration (..)
     , PrettyDiffTime (..)
@@ -67,12 +67,12 @@ getViewR hmacs' = do
                     else lift $ redirect $ ViewR $ joinHmacs existing
 
     rdr <- getUrlRenderParams
-    currentUrl <- (flip rdr [] . fromJust) <$> getCurrentRoute
-    currentTime <- liftIO $ getCurrentTime
+    currUrl <- (flip rdr [] . fromJust) <$> getCurrentRoute
     stats <- getUploadStats entity
     isAdmin <- getIsAdmin upload
     facebookAppId <- extraFacebook <$> getExtra
     (newCommentWidget, newCommentEnctype) <- generateFormPost commentForm
+
     let name = uploadName upload
         wrappedName = wrappedText name 50
         icon = getIcon rdr upload extras
@@ -80,7 +80,7 @@ getViewR hmacs' = do
         miniature = getMiniature rdr upload extras
         audioSources = getAudioSources rdr upload extras
         archive = getArchive rdr upload extras
-        uploadDiffTime = currentTime `diffUTCTime` (uploadDate upload)
+    uploadDiffTime <- getDiffTime
 
     defaultLayout $ do
         setTitle [shamlet|#{wrappedName} - getwebb|]

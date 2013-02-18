@@ -16,10 +16,10 @@
 
     <div .share>
         <a .facebook_button
-            href="https://www.facebook.com/dialog/feed?app_id=#{facebookAppId}&link=@{ViewR hmac}&picture=#{icon}&name=#{wrappedName}&redirect_uri=#{currentUrl}">
+            href="https://www.facebook.com/dialog/feed?app_id=#{facebookAppId}&link=@{ViewR hmac}&picture=#{icon}&name=#{wrappedName}&redirect_uri=#{currUrl}">
             Share
         <a .twitter_button
-            href="https://twitter.com/intent/tweet?text=#{wrappedName}&url=@{ViewR hmac}&via=GetwebbFiles&original_referer=#{currentUrl}">
+            href="https://twitter.com/intent/tweet?text=#{wrappedName}&url=@{ViewR hmac}&via=GetwebbFiles&original_referer=#{currUrl}">
             Tweet
 
     <div .clear_float>

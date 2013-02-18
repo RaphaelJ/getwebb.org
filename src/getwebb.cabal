@@ -51,6 +51,7 @@ library
                      Upload.Processing
                      Upload.Remove
 
+                     Util.Date
                      Util.Extras
                      Util.Hmac
                      Util.Path

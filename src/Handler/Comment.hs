@@ -10,6 +10,8 @@ import Import
 import qualified Data.Text as T
 import Text.Printf
 
+import Util.Date (rfc822Date)
+
 -- | Maximum number of comments which will be fetched in one request.
 nComments :: Int
 nComments = 50
@@ -25,25 +27,34 @@ getCommentR hmac = do
     let restrict = maybe [] ((CommentScore <.) . max 0) mAfter
 
     comments <- runDB $ do
-        _ <- getBy404 $ UploadUnicHmac hmac
-        selectList (CommentUploadId ==. hmac : restrict)
-                   [Desc CommentScore, LimitTo nComments]
+        _ <- getBy404 $ UploadUniqueHmac hmac
+        retrieveComments hmac maxScore
 
     jsonToRepJson $ array [ object [
-              "id"        .= commentHmac c
-            , "user"      .= comment
-            , "message"   .= commentMessage c
-            , "date"      .= show $ commentDate
-            , "upvotes"   .= commentUpvotes c
-            , "downvotes" .= commentDownvotes c
+              "id"         .= commentHmac c
+            , "user"       .= object [
+                  "name"        .= userName u
+                ]
+            , "message"    .= commentMessage c
+            , "created_at" .= Rfc822Date $ commentCreated c
+            , "score"      .= commentScore
+            , "upvotes"    .= commentUpvotes c
+            , "downvotes"  .= commentDownvotes c
             ]
-        | c <- comments
-        ]
+        | (c, u) <- comments
+        ] 
 
 -- | Posts a new comment
-postCommentR :: Hmac -> Handler ()
+postCommentR :: Hmac -> 
 postCommentR hmac = do
-    return ()
+    
+retrieveComments :: Hmac -> Maybe Double -> YesodDB sub App
+retrieveComments hmac maxScore = do
+    cs <- selectList (CommentUploadId ==. (hmac : restrict))
+                        [Desc CommentScore, LimitTo nComments]
+    forM cs $ \c -> do
+        u <- getJust $ commentUserId c
+        return (c, u)
 
 -- | Creates a form to post a new comment.
 commentForm :: Form Textarea

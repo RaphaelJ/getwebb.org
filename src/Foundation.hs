@@ -9,7 +9,7 @@ import qualified Data.ByteString.Lazy as B
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.Map as M
 import Data.Text (Text, pack, unpack)
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Word
 
 import Yesod
@@ -224,10 +224,12 @@ instance YesodAccount App where
     signInDest _  = HistoryR
     signOutDest _ = HistoryR
 
-    initUser email name pass salt = return User {
+    initUser email name pass salt = 
+        time <- getCurrentTime
+        return User {
           userEmail = email, userName = name, userPassword = pass
-        , userSalt = salt, userAvatar = False, userIsAdmin = False
-        , userPublic = True
+        , userSalt = salt, userCreated = time, userAvatar = False
+        , userIsAdmin = False, userPublic = True
         }
 
     emailLookup    = return . UniqueUserEmail

@@ -420,10 +420,10 @@ viewsDaemon app = do
 
         -- Inserts the old buffer in the database.
         timeIt $ runDBIO app $ do
-            forM_ (M.assocs oldBuffer) $ \(uploadId, (views, mLastView, bw)) ->
-                case mLastView of
-                    Just lastView -> update uploadId [
-                         UploadViews +=. views, UploadLastView =. lastView
+            forM_ (M.assocs oldBuffer) $ \(uploadId, (views, mViewed, bw)) ->
+                case mViewed of
+                    Just viewed -> update uploadId [
+                          UploadViews +=. views, UploadViewed =. viewed
                         , UploadBandwidth +=. bw
                         ]
                     Nothing -> update uploadId [

@@ -28,7 +28,7 @@ derivePersistField "HmacResource"
 -- browser.
 data DisplayType = PNG | JPG | GIF
     deriving (Show, Read, Eq)
-derivePersistField "DisplayTextType"
+derivePersistField "DisplayType"
 
 -- | Used to represents the different items which can be downloaded.
 data ObjectType = Original
@@ -85,7 +85,7 @@ File
 UniqueHmac
     value Hmac -- An unique identifier generated from its ID.
     type HmacResource
-    UniqueHmacValue value
+    UniqueUniqueHmacValue value
     deriving Show
 
 Upload

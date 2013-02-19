@@ -151,7 +151,7 @@ getAudioSources rdr upload (AudioExtras _ _) = [
 getAudioSources _   _      _                 = []
 
 -- | Returns the content of the archive as a hierarchical HTML structure.
-getArchive :: (Route App -> [(Text, Text)] -> Text) -> Upload -> Extras 
+getArchive :: (Route App -> [(Text, Text)] -> Text) -> Upload -> Extras
            -> Maybe Html
 getArchive rdr upload (ArchiveExtras files) =
     let rdr' fileHmac = routeType rdr upload (CompressedFile fileHmac)

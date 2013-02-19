@@ -224,8 +224,8 @@ instance YesodAccount App where
     signInDest _  = HistoryR
     signOutDest _ = HistoryR
 
-    initUser email name pass salt = 
-        time <- getCurrentTime
+    initUser email name pass salt = do
+        time <- liftIO $ getCurrentTime
         return User {
           userEmail = email, userName = name, userPassword = pass
         , userSalt = salt, userCreated = time, userAvatar = False

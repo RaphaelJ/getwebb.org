@@ -22,7 +22,6 @@ data Options = Options {
 -- id and the link of the upload or the errors.
 postUploadR :: Handler ()
 postUploadR = do
-    urlRdr <- getUrlRender
     admiKey <- getAdminKey
     ((res, _), _) <- runFormPostNoToken uploadForm
     case res of
@@ -31,26 +30,18 @@ postUploadR = do
             case eUpload of
                 Right upload -> do
                     {- TODO: email -}
-                    sendResponseStatus created201 (uploadJson urlRdr upload)
-                Left err ->
+                    rep <- jsonToRepJson $ uploadHmac upload
+                    sendResponseStatus created201 rep
+                Left err -> do
                     let status = case err of
                             DailyIPLimitReached -> forbidden403
                             FileTooLarge -> requestEntityTooLarge413
-                        response = toRepJson $ array [show err]
-                    in sendResponseStatus status response
-        FormFailure errs ->
-            sendResponseStatus badRequest400 (toRepJson $ array errs)
+                    rep <- jsonToRepJson $ array [show err]
+                    in sendResponseStatus status rep
+        FormFailure errs -> do
+            rep <- jsonToRepJson $ array errs
+            sendResponseStatus badRequest400 rep
         FormMissing -> undefined
-  where
-    -- Constructs a json object with the information of the file.
-    uploadJson urlRdr  upload =
-        let hmac = uploadHmac upload
-        in toRepJson $ object [
-              "id"   .= hmac
-            , "name" .= uploadName upload
-            ]
-
-    toRepJson = RepJson . toContent
 
 -- | Creates a form for the upload and its options.
 uploadForm :: Html

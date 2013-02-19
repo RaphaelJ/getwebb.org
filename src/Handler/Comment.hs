@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Handler.Comment (
-      nComments, maxCommentLength
+      maxNComments, defaultNComments, maxCommentLength
     , getCommentR
     , score)
     where
@@ -10,48 +10,49 @@ import Import
 import qualified Data.Text as T
 import Text.Printf
 
-import Util.Date (rfc822Date)
+import Util.Json (CommentUser (..))
 
 -- | Maximum number of comments which will be fetched in one request.
-nComments :: Int
-nComments = 50
+maxNComments :: Int
+maxNComments = 200
+
+-- | Default number of comments which will be fetched in one request.
+defaultNComments :: Int
+defaultNComments = 50
 
 -- | Maximum length of a comment in characters.
 maxCommentLength :: Int
 maxCommentLength = 400
 
--- | Returns the first 50 comments of a file.
+-- | Returns the comments of a file.
 getCommentR :: Hmac -> Handler RepJSON
 getCommentR hmac = do
-    mMaxScore <- (max 0 . read) <$> lookupGetParam "max_score"
-    let maxScore =  mMaxScore
+    mNComments <- lookupGetParam "n"
+    mMaxScore  <- lookupGetParam "max_score"
+    let nComments = fromMaybe defaultNComments (max 0 . min maxNComments . read)
+        maxScore  = (max 0 . read) <$> mMaxScore
 
     comments <- runDB $ do
         _ <- getBy404 $ UploadUniqueHmac hmac
-        retrieveComments hmac maxScore
+        retrieveComments hmac nComments maxScore
 
-    jsonToRepJson $ array [ object [
-              "id"         .= commentHmac c
-            , "user"       .= object [
-                  "name"        .= userName u
-                ]
-            , "message"    .= commentMessage c
-            , "created_at" .= Rfc822Date $ commentCreated c
-            , "score"      .= commentScore
-            , "upvotes"    .= commentUpvotes c
-            , "downvotes"  .= commentDownvotes c
-            ]
-        | (c, u) <- comments
-        ] 
+    jsonToRepJson $ array $ map CommentUser comments
 
--- | Posts a new comment
-postCommentR :: Hmac -> 
+-- | Posts a new comment.
+postCommentR :: Hmac -> Handler ()
 postCommentR hmac = do
-    
+    (res, _), _) <- runFormPostNoToken commentForm
+
+    case res of
+        FormSuccess msg  -> do
+            runDB $ do
+                
+        FormFailure errs -> 
+        FormMissing      -> 
 
 retrieveComments :: Hmac -> Maybe Double -> YesodDB sub App [(Comment, User)]
-retrieveComments hmac mMaxScore = do
-    let restrict = maybeToList ((CommentScore <) <$> mMaxScore)
+retrieveComments hmac maxScore = do
+    let restrict = maybeToList ((CommentScore <.) <$> maxScore)
 
     cs <- selectList ((CommentUploadId ==. hmac) : restrict)
                      [Desc CommentScore, LimitTo nComments]

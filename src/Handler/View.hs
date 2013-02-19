@@ -40,11 +40,11 @@ getViewR hmacs' = do
     let hmac = head hmacs
 
     -- Redirects immediately to the download handler if the client is wget.
-    mUserAgent <- ((hUserAgent `lookup`). requestHeaders) <$> waiRequest
+    mUserAgent <- ((hUserAgent `lookup`) . requestHeaders) <$> waiRequest
     case mUserAgent of
         Just userAgent | "Wget/" `B.isPrefixOf` userAgent ->
             redirect (DownloadR hmac)
-        _ -> 
+        _ ->
             return ()
 
     (entity@(Entity _ upload), file, extras) <- runDB $ do
@@ -116,6 +116,9 @@ getViewR hmacs' = do
     if' True  a _ = a
     if' False _ b = b
 
+-- | Deletes an upload, given its HMAC. Returns a 204 No content on success,
+-- a 404 Not found if doesn't exists or 403 if the user isn't allowed to remove
+-- the upload.
 deleteViewR :: Text -> Handler ()
 deleteViewR hmac = do
     mKey <- tryAdminKey
@@ -138,6 +141,3 @@ deleteViewR hmac = do
                         "Your admin key doesn't match the upload's admin key."
 
         Nothing -> permissionDenied "Your admin key cookie is empty."
-
-int :: Integral a => a -> Int
-int = fromIntegral

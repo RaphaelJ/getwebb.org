@@ -50,8 +50,6 @@ import JobsDaemon (runDBIO)
 import Util.Hmac (splitHmacs)
 import Util.Path (hashDir, getPath)
 
-import System.TimeIt
-
 -- | Streams the content of a file over HTTP.
 getDownloadR :: Text -> Handler ()
 getDownloadR hmacs' = do
@@ -364,9 +362,9 @@ incrementViewCount app uploadId = do
     let (buffer, signal) = viewsBuffer app
 
     -- Updates the buffer atomically.
-    currentTime <- getCurrentTime
+    time <- getCurrentTime
     modifyMVar_ buffer $ \accum -> do
-        return $! M.insertWith f uploadId (1, Just currentTime, 0) accum
+        return $! M.insertWith f uploadId (1, Just time, 0) accum
 
     -- Signals to the daemon that at least an entry has been added to the 
     -- buffer.
@@ -399,7 +397,7 @@ getBufferEntry uploadId = do
     app <- getYesod
     let (buffer, _) = viewsBuffer app
     accum <- liftIO $ readMVar buffer
-    return $ uploadId `M.lookup` accum
+    return $! uploadId `M.lookup` accum
 
 -- | Delay in microseconds at which the views buffer is commited to the
 -- database.
@@ -419,7 +417,7 @@ viewsDaemon app = do
         oldBuffer <- buffer `swapMVar` M.empty
 
         -- Inserts the old buffer in the database.
-        timeIt $ runDBIO app $ do
+        runDBIO app $ do
             forM_ (M.assocs oldBuffer) $ \(uploadId, (views, mViewed, bw)) ->
                 case mViewed of
                     Just viewed -> update uploadId [

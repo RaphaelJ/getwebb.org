@@ -23,8 +23,8 @@ maxCommentLength = 400
 -- | Returns the first 50 comments of a file.
 getCommentR :: Hmac -> Handler RepJSON
 getCommentR hmac = do
-    mAfter <- lookupGetParam "after"
-    let restrict = maybe [] ((CommentScore <.) . max 0) mAfter
+    mMaxScore <- (max 0 . read) <$> lookupGetParam "max_score"
+    let maxScore =  mMaxScore
 
     comments <- runDB $ do
         _ <- getBy404 $ UploadUniqueHmac hmac
@@ -48,12 +48,15 @@ getCommentR hmac = do
 postCommentR :: Hmac -> 
 postCommentR hmac = do
     
-retrieveComments :: Hmac -> Maybe Double -> YesodDB sub App
-retrieveComments hmac maxScore = do
-    cs <- selectList (CommentUploadId ==. (hmac : restrict))
-                        [Desc CommentScore, LimitTo nComments]
-    forM cs $ \c -> do
-        u <- getJust $ commentUserId c
+
+retrieveComments :: Hmac -> Maybe Double -> YesodDB sub App [(Comment, User)]
+retrieveComments hmac mMaxScore = do
+    let restrict = maybeToList ((CommentScore <) <$> mMaxScore)
+
+    cs <- selectList ((CommentUploadId ==. hmac) : restrict)
+                     [Desc CommentScore, LimitTo nComments]
+    forM cs $ \(Entity _ c) -> do
+        Entity _ u <- getJust $ commentUserId c
         return (c, u)
 
 -- | Creates a form to post a new comment.

@@ -10,6 +10,8 @@ import Import
 import qualified Data.Text as T
 import Text.Printf
 
+import Account (requireAuth)
+import Util.Hmac (newHmac)
 import Util.Json (CommentUser (..))
 
 -- | Maximum number of comments which will be fetched in one request.
@@ -41,12 +43,14 @@ getCommentR hmac = do
 -- | Posts a new comment.
 postCommentR :: Hmac -> Handler ()
 postCommentR hmac = do
+    Entity userId _ <- requireAuth
     (res, _), _) <- runFormPostNoToken commentForm
 
     case res of
         FormSuccess msg  -> do
             runDB $ do
-                
+                (key, hmac) <- newHmac
+                insertKey key $ Comment hmac 
         FormFailure errs -> 
         FormMissing      -> 
 

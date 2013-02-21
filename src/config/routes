@@ -4,7 +4,7 @@
 /               HomeR           GET
 /c/#Text        CommentR        GET POST
 /c_up/#Text     CommentUpR      PUT
-/c_down/#Text   CommentDown     PUT
+/c_down/#Text   CommentDownR    PUT
 /d/#Text        DownloadR       GET
 /h              HistoryR        GET
 /u              UploadR         POST

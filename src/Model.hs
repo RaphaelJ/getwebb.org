@@ -116,7 +116,7 @@ Comment
     deriving Show
 
 CommentVote
-    comment CommentId
+    commentId CommentId
     userId UserId
     type VoteType
     UniqueCommentVoteUser comment userId

@@ -8,12 +8,12 @@ import Prelude
 import Yesod
 
 import Account.Foundation
-import Account.Util (requireAuth)
+import Account.Util (redirectAuth)
 
 -- | Displays the sign in and the register forms in the default layout.
 getSettingsR :: YesodAccount master => GHandler Account master RepHtml
 getSettingsR = do
-    requireAuth
+    redirectAuth
 
 data AccountSettings = AccountSettings {
       asAvatar :: Bool, asAvatarFile :: Maybe FileInfo, asPrivacyPublic :: Bool

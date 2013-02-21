@@ -43,7 +43,7 @@ getViewR hmacs' = do
     mUserAgent <- ((hUserAgent `lookup`) . requestHeaders) <$> waiRequest
     case mUserAgent of
         Just userAgent | "Wget/" `B.isPrefixOf` userAgent ->
-            redirect (DownloadR hmac)
+            redirect (DownloadR hmacs')
         _ ->
             return ()
 

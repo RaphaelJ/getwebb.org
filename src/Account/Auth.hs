@@ -16,7 +16,7 @@ import Yesod
 
 import Account.Foundation
 import Account.Util (
-      registerUser, validateUser, setUserId, unsetUserId, requireNoAuth
+      registerUser, validateUser, setUserId, unsetUserId, redirectNoAuth
     )
 import Settings (widgetFile)
 
@@ -24,7 +24,7 @@ import Settings (widgetFile)
 getAuthR, getSignInR, getRegisterR :: YesodAccount master =>
                                       GHandler Account master RepHtml
 getAuthR = do
-    requireNoAuth
+    redirectNoAuth
     signIn <- generateFormPost signInForm
     register <- generateFormPost registerForm
 
@@ -36,7 +36,7 @@ getRegisterR = getAuthR
 -- | Tries to sign in the user.
 postSignInR :: YesodAccount master => GHandler Account master RepHtml
 postSignInR = do
-    requireNoAuth
+    redirectNoAuth
     ((signInRes, signInWidget), signInEnctype) <- runFormPost signInForm
     register <- generateFormPost registerForm
 
@@ -49,7 +49,7 @@ postSignInR = do
 -- | Tries to register the user.
 postRegisterR :: YesodAccount master => GHandler Account master RepHtml
 postRegisterR = do
-    requireNoAuth
+    redirectNoAuth
     signIn <- generateFormPost signInForm
     ((registerRes, registerWidget), registerEnctype) <- runFormPost registerForm
 

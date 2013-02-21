@@ -30,7 +30,9 @@ postUploadR = do
             case eUpload of
                 Right upload -> do
                     {- TODO: email -}
-                    rep <- jsonToRepJson $ uploadHmac upload
+                    rep <- jsonToRepJson $ object [
+                              "id"            .= uploadHmac upload
+                            ]
                     sendResponseStatus created201 rep
                 Left err -> do
                     let status = case err of

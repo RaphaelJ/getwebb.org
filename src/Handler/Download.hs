@@ -221,8 +221,7 @@ getDownloadR hmacs' = do
     streamByteString :: [Handle] -> L.ByteString -> C.ByteString -> Maybe Word64
                      -> Handler ()
     streamByteString hs bs mime mSize = do
-        setHeader "Buffer-Control" "public, max-age=31536000"
-        setHeader "Expires" "Thu, 31 Dec 2037 23:55:55 GMT"
+        neverExpires
 
         whenJust mSize $ \size ->
             setHeader "Content-Length" (T.pack $ show size)

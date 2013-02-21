@@ -1,6 +1,6 @@
 module Account.Util (
       registerUser, validateUser, setUserId, getUserId, getUser, unsetUserId
-    , requireAuth, requireNoAuth
+    , requireAuth, redirectAuth, requireNoAuth
     , randomSalt, saltedHash
     ) where
 
@@ -83,8 +83,8 @@ getUser = runMaybeT $ do
 unsetUserId :: YesodAccount master => GHandler sub master ()
 unsetUserId = deleteSession sessionKey
 
--- | Returns the user entity. If the user is not authenticated, redirects to
--- the login page.
+-- | Returns the user entity or invokes a 403 Permission denied if the user 
+-- isn't authenticated.
 requireAuth :: (YesodAccount master, PersistEntityBackend (AccountUser master)
                 ~ PersistMonadBackend (YesodDB sub master)
                , PersistStore (YesodDB sub master)) =>
@@ -92,9 +92,22 @@ requireAuth :: (YesodAccount master, PersistEntityBackend (AccountUser master)
 requireAuth = do
     mUser <- getUser
 
-    case mUser of 
+    case mUser of
         Just user -> return user
-        Nothing -> do
+        Nothing   -> permissionDenied "You are not authenticated"
+
+-- | Returns the user entity. If the user is not authenticated, redirects to
+-- the login page.
+redirectAuth :: (YesodAccount master, PersistEntityBackend (AccountUser master)
+                ~ PersistMonadBackend (YesodDB sub master)
+               , PersistStore (YesodDB sub master)) =>
+               GHandler sub master (Entity (AccountUser master))
+redirectAuth = do
+    mUser <- getUser
+
+    case mUser of
+        Just user -> return user
+        Nothing   -> do
             master <- getYesod
             setUltDestCurrent
             case authRoute master of
@@ -102,11 +115,11 @@ requireAuth = do
                 Nothing  -> permissionDenied "Please configure authRoute"
 
 -- | Redirects to 'signInDest' if the user is authenticated.
-requireNoAuth :: (YesodAccount master, PersistEntityBackend (AccountUser master)
+redirectNoAuth :: (YesodAccount master, PersistEntityBackend (AccountUser master)
                   ~ PersistMonadBackend (YesodDB sub master)
                   , PersistStore (YesodDB sub master)) =>
                  GHandler sub master ()
-requireNoAuth = do
+redirectNoAuth = do
     mUser <- getUser
     case mUser of
         Just _  -> getYesod >>= redirect . signInDest

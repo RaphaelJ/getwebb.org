@@ -119,7 +119,7 @@ CommentVote
     commentId CommentId
     userId UserId
     type VoteType
-    UniqueCommentVoteUser comment userId
+    UniqueCommentVoteUser commentId userId
     deriving Show
 
 -- Saves the attributes of an image.

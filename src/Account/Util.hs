@@ -1,6 +1,6 @@
 module Account.Util (
       registerUser, validateUser, setUserId, getUserId, getUser, unsetUserId
-    , requireAuth, redirectAuth, requireNoAuth
+    , requireAuth, redirectAuth, redirectNoAuth
     , randomSalt, saltedHash
     ) where
 

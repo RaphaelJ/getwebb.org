@@ -17,6 +17,7 @@ import Account.Foundation as Account
 import Account.Util as Account
 
 import Account.Auth as Account
+import Account.Settings as Account
 
 mkYesodSubDispatch "Account" 
     [ ClassP ''YesodAccount [VarT $ mkName "master"] ]

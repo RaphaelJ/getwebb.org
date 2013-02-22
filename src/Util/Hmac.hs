@@ -39,7 +39,7 @@ newHmac resource = do
 
 -- | Returns the first eight base 62 encoded digits of the key HMAC.
 computeHmac :: C.ByteString -> Handler Hmac
-computeHmac idKey =
+computeHmac idKey = do
     app <- getYesod
     let key = encryptKey app
         PersistInt64 idInt = unKey idKey

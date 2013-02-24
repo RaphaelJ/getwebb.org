@@ -1,0 +1,7 @@
+<div #page>
+    <form method=post action=@{toMaster SettingsR} enctype=#{enctype}>
+        <h1>Account settings
+
+        ^{widget}
+
+        <input .big_button type=submit value="Save">

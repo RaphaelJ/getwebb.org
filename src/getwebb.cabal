@@ -30,6 +30,7 @@ library
                      Account
                      Account.Auth
                      Account.Foundation
+                     Account.Settings
                      Account.Util
 
                      Handler.Comment

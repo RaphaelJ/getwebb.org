@@ -28,7 +28,8 @@ class (Yesod master, YesodPersist master, RenderMessage master FormMessage
       , PersistUnique (YesodDB Account master)
       , MonadTrans (YesodPersistBackend master)
       , Functor (YesodDB Account master)) => YesodAccount master where
-    type AccountUser master :: *
+    type AccountUser     master :: *
+    type AccountSettings master :: *
 
     -- | Post sign in/sign out routes.
     signInDest, signOutDest :: master -> Route master
@@ -47,6 +48,8 @@ class (Yesod master, YesodPersist master, RenderMessage master FormMessage
     -- | Accesses data from the user account data type.
     accountEmail, accountUsername, accountPassword, accountSalt ::
         AccountUser master -> GHandler sub master Text
+
+    accountSettingsForm :: AForm sub master (AccountSettings master)
 
 mkYesodSubData "Account"
     [ ClassP ''YesodAccount [VarT $ mkName "master"] ]

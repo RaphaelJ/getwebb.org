@@ -20,9 +20,9 @@ derivePersistField "FileType"
 
 type Hmac = Text
 -- | Types of resources which use an Hmac as an unique and global identifier.
-data HmacResource = HmacFile | HmacComment | HmacArchiveFile
+data HmacResourceType = HmacFile | HmacUpload | HmacComment | HmacArchiveFile
     deriving (Show, Read, Eq)
-derivePersistField "HmacResource"
+derivePersistField "HmacResourceType"
 
 -- | Used to give the type of a secondary image which can be displayed in the
 -- browser.
@@ -84,7 +84,7 @@ File
 -- Tracks HMACs allocations for uploads, archive files and comments.
 UniqueHmac
     value Hmac -- An unique identifier generated from its ID.
-    type HmacResource
+    type HmacResourceType
     UniqueUniqueHmacValue value
     deriving Show
 

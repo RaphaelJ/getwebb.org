@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 module Handler.Comment (
       maxNComments, defaultNComments, maxCommentLength
     , getCommentR
@@ -7,8 +8,13 @@ module Handler.Comment (
 
 import Import
 
+import Control.Monad
+import Data.Maybe
 import qualified Data.Text as T
+import Data.Time.Clock (getCurrentTime)
 import Text.Printf
+
+import Network.HTTP.Types.Status (created201, badRequest400)
 
 import Account (requireAuth)
 import Util.Hmac (newHmac)
@@ -27,31 +33,33 @@ maxCommentLength :: Int
 maxCommentLength = 400
 
 -- | Returns the comments of a file.
-getCommentR :: Hmac -> Handler RepJSON
+getCommentR :: Hmac -> Handler RepJson
 getCommentR hmac = do
     mNComments <- lookupGetParam "n"
     mMaxScore  <- lookupGetParam "max_score"
-    let nComments = fromMaybe defaultNComments (max 0 . min maxNComments . read)
-        maxScore  = (max 0 . read) <$> mMaxScore
+    let nComments = maybe defaultNComments 
+                          (max 0 . min maxNComments . read . T.unpack)
+                          mNComments
+        maxScore  = (max 0 . read . T.unpack) <$> mMaxScore
 
     comments <- runDB $ do
-        _ <- getBy404 $ UploadUniqueHmac hmac
+        _ <- getBy404 $ UniqueUploadHmac hmac
         retrieveComments hmac nComments maxScore
 
-    jsonToRepJson $ array $ map CommentUser comments
+    jsonToRepJson $ array $ map (uncurry CommentUser) comments
 
 -- | Posts a new comment.
 postCommentR :: Hmac -> Handler ()
 postCommentR hmac = do
     Entity userId _ <- requireAuth
-    (res, _), _) <- runFormPostNoToken commentForm
+    ((res, _), _) <- runFormPostNoToken commentForm
 
     case res of
         FormSuccess msg  -> do
-            time <- getCurrentTime
+            time <- liftIO $ getCurrentTime
             runDB $ do
-                Entity uploadId _ <- getBy404 $ UploadUniqueHmac hmac
-                (key, hmac) <- newHmac
+                Entity uploadId _ <- getBy404 $ UniqueUploadHmac hmac
+                (key, hmac) <- newHmac HmacComment
                 insertKey key $ Comment hmac userId uploadId msg time
                                         (score 0 0) 0 0
                 sendResponseStatus created201 ()
@@ -85,7 +93,7 @@ vote voteType hmac = do
                     Upvote   -> return (commentUpvotes+1, commentDownvotes-1)
                     Downvote -> return (commentUpvotes-1, commentDownvotes+1)
                 update voteId [CommentVoteType =. voteType]
-                                      | otherwise =
+                                      | otherwise ->
                 return (commentUpvotes, commentDownvotes)
             Nothing     -> do
                 insert_ $ CommentVote commentId userId voteType
@@ -97,8 +105,9 @@ vote voteType hmac = do
                          , CommentDownvotes =. downvotes
                          , CommentScore     =. score upvotes downvotes ]
 
-retrieveComments :: Hmac -> Maybe Double -> YesodDB sub App [(Comment, User)]
-retrieveComments hmac maxScore = do
+retrieveComments :: Hmac -> Int -> Maybe Double
+                 -> YesodDB sub App [(Comment, User)]
+retrieveComments hmac nComments maxScore = do
     let restrict = maybeToList ((CommentScore <.) <$> maxScore)
 
     cs <- selectList ((CommentUploadId ==. hmac) : restrict)

@@ -4,4 +4,4 @@
 
         ^{widget}
 
-        <input .big_button type=submit value="Save">
+        <input .big_button type=submit value=Save>

@@ -32,7 +32,7 @@ infixr 5 <>
 
 -- | Executes the inner action when the item is 'Just'
 whenJust :: Monad m => Maybe a -> (a -> m ()) -> m ()
-whenJust (Just a) f = fa
+whenJust (Just a) f = f a
 whenJust Nothing  _ = return ()
 
 int :: Integral a => a -> Int

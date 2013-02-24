@@ -191,7 +191,7 @@ instance Yesod App where
     -- in development, and warnings and errors in production.
     shouldLog _ _source level =
         development || level == LevelWarn || level == LevelError
-                     ccccc
+
     -- Permits a query which can hold the request and the file if its the upload
     -- page.
     maximumContentLength app page =
@@ -241,7 +241,7 @@ instance YesodAccount App where
     accountPassword = return . userPassword
     accountSalt     = return . userSalt
 
-    accountSettingsForm = aopt checkBoxField "Default privacy" Nothing
+    accountSettingsForm = areq checkBoxField "Default privacy" Nothing
 
 -- | Get the 'Extra' value, used to hold data from the settings.yml file.
 getExtra :: Handler Extra

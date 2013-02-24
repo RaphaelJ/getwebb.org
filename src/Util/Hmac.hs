@@ -1,50 +1,55 @@
 -- | This module defines functions to compute and process HMACs.
 module Util.Hmac (
-      AllocatedHmacId, Hmac {- From Model.hs -}
-    , computeHmac, splitHmacs, joinHmacs, toBase62
+      UniqueHmacId, Hmac {- From Model.hs -}, hmacLength
+    , newHmac, computeHmac, splitHmacs, joinHmacs, toBase62
     ) where
 
 import Import
 
-import Control.Monad
 import Data.Array.Unboxed (UArray, listArray, (!))
 import qualified Data.ByteString.Lazy.Char8 as C
 import Data.Digest.Pure.SHA (hmacSha1, integerDigest)
 import Data.Digits (digits)
+import Data.Maybe
 import qualified Data.Text as T
 
 import Database.Persist.Store (PersistValue (..))
+import Database.Persist.GenericSql.Raw (SqlBackend)
+
+hmacLength :: Int
+hmacLength = 8
 
 -- | Returns a new unique identifier for a resource.
-newHmac :: Monad m => HmacResource
-        -> YesodPersistBackend App (m IO) (AllocatedHmacId, Hmac)
+newHmac :: (Functor m, PersistUnique m, MonadLift (GHandler App App) m
+           , PersistQuery m, PersistMonadBackend m ~ SqlBackend
+           , PersistEntity val) =>
+           HmacResourceType -> m (Key val, Hmac)
 newHmac resource = do
-    hmacId <- insert $ AllocatedHmac "" resource
+    hmacId <- insert $ UniqueHmac "" resource
 
     -- Concatenates the new ID until the generated HMAC is unique
-    let PersistInt64 idInt = unKey idKey
+    let PersistInt64 idInt = unKey hmacId
         idBs = C.pack $ show idInt
         idBsInf = iterate (`C.append` idBs) idBs
     hmac <- untilUnique idBsInf
 
     update hmacId [UniqueHmacValue =. hmac]
 
-    return (hmacId, hmac)
+    return (Key $ unKey hmacId, hmac)
   where
-    untilUnique (x:xs) = do
-        hmac <- computeHmac x
-        exists <- isJust <$> getBy $ UniqueHmacValue hmac
+    untilUnique ~(x:xs) = do
+        hmac <- lift $ computeHmac x
+        exists <- isJust <$> getBy (UniqueUniqueHmacValue hmac)
         if exists then untilUnique xs
                   else return hmac
 
 -- | Returns the first eight base 62 encoded digits of the key HMAC.
 computeHmac :: C.ByteString -> Handler Hmac
-computeHmac idKey =
+computeHmac idKey = do
     app <- getYesod
     let key = encryptKey app
-        PersistInt64 idInt = unKey idKey
-        hmac = integerDigest $ hmacSha1 key $ 
-    in T.pack $ take 8 $ toBase62 $ hmac
+        hmac = integerDigest $ hmacSha1 key idKey
+    return $! T.pack $ take hmacLength $ toBase62 $ hmac
 
 -- | Returns a list of HMACs from a list of url string of HMACs separated by
 -- commas.

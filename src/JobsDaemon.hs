@@ -24,6 +24,7 @@ import Control.Monad
 import Data.List (foldl')
 import qualified Data.Map as M
 import qualified Data.Text as T
+import Data.Time.Clock (getCurrentTime)
 
 import Control.Monad.Trans.Resource (ResourceT, runResourceT)
 import Database.Persist.Store (runPool)
@@ -52,9 +53,10 @@ registerJob :: App -> FileId -> JobType
             -> IO JobId
 registerJob app fileId typ deps action = do
     -- Commits the job and its dependencies graph to the database
+    time <- getCurrentTime
     let job = Job {
-              jobFileId = fileId, jobType = typ, jobCompleted = False
-            , jobCpuTime = Nothing, jobException = Nothing
+              jobFileId = fileId, jobType = typ, jobCreated = time
+            , jobCompleted = False, jobCpuTime = Nothing, jobException = Nothing
             }
     jobId <- runDBIO app $ do
         jobId <- insert job

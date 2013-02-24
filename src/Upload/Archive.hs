@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Recognises zip archives and adds their content to the database.
 module Upload.Archive (
       ArchiveTree (..), extensions, processArchive, archiveTree, treeToHtml

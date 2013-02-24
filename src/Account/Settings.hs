@@ -6,19 +6,26 @@ module Account.Settings (getSettingsR, postSettingsR) where
 import Prelude
 
 import Yesod
+import Control.Applicative
 
 import Account.Foundation
 import Account.Util (redirectAuth)
+import Settings (widgetFile)
 
 -- | Displays the sign in and the register forms in the default layout.
 getSettingsR :: YesodAccount master => GHandler Account master RepHtml
 getSettingsR = do
-    Entity userId user <- redirectAuth
-    form <- generateFormPost $ settingsForm user
+    Entity _ user <- redirectAuth
 
+    (widget, enctype) <- generateFormPost $ settingsForm user
+
+    toMaster <- getRouteToMaster
     defaultLayout $ do
-        setTitle "Authentication - getwebb"
+        setTitle "Account settings - getwebb"
         $(widgetFile "settings")
+
+postSettingsR :: YesodAccount master => GHandler Account master RepHtml
+postSettingsR = getSettingsR
 
 data AvatarSettings = AvatarSettings {
       asAvatar :: Bool, asAvatarFile :: Maybe FileInfo

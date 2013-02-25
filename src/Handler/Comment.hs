@@ -2,9 +2,9 @@
 {-# LANGUAGE RecordWildCards #-}
 module Handler.Comment (
       maxNComments, defaultNComments, maxCommentLength
-    , getCommentR
-    , retrieveComments, score)
-    where
+    , getCommentR, postCommentR, putCommentUpR, putCommentDownR
+    , retrieveComments, commentForm, score
+    ) where
 
 import Import
 
@@ -43,8 +43,8 @@ getCommentR hmac = do
         maxScore  = (max 0 . read . T.unpack) <$> mMaxScore
 
     comments <- runDB $ do
-        _ <- getBy404 $ UniqueUploadHmac hmac
-        retrieveComments hmac nComments maxScore
+        Entity uploadId _ <- getBy404 $ UniqueUploadHmac hmac
+        retrieveComments uploadId nComments maxScore
 
     jsonToRepJson $ array $ map (uncurry CommentUser) comments
 
@@ -55,14 +55,14 @@ postCommentR hmac = do
     ((res, _), _) <- runFormPostNoToken commentForm
 
     case res of
-        FormSuccess msg  -> do
+        FormSuccess (Textarea msg)  -> do
             time <- liftIO $ getCurrentTime
             runDB $ do
                 Entity uploadId _ <- getBy404 $ UniqueUploadHmac hmac
-                (key, hmac) <- newHmac HmacComment
-                insertKey key $ Comment hmac userId uploadId msg time
+                (key, commentHmac) <- newHmac HmacComment
+                insertKey key $ Comment commentHmac userId uploadId msg time
                                         (score 0 0) 0 0
-                sendResponseStatus created201 ()
+            sendResponseStatus created201 ()
         FormFailure errs -> do
             rep <- jsonToRepJson $ array errs
             sendResponseStatus badRequest400 rep
@@ -72,15 +72,15 @@ postCommentR hmac = do
 
 -- | Votes for a comment.
 putCommentUpR :: Hmac -> Handler ()
-putCommentUpR = vote Upvote
+putCommentUpR = voteComment Upvote
 
 -- | Votes against a comment.
 putCommentDownR :: Hmac -> Handler ()
-putCommentDownR = vote Downvote
+putCommentDownR = voteComment Downvote
 
 -- | Votes for or against a comment.
-vote :: VoteType -> Hmac -> Handler ()
-vote voteType hmac = do
+voteComment :: VoteType -> Hmac -> Handler ()
+voteComment voteType hmac = do
     Entity userId _ <- requireAuth
     runDB $ do
         Entity commentId Comment { .. } <- getBy404 $ UniqueCommentHmac hmac
@@ -89,10 +89,10 @@ vote voteType hmac = do
         (upvotes, downvotes) <- case mExists of
             Just (Entity voteId vote) | voteType /= commentVoteType vote -> do
                 -- Replaces the previous vote.
+                update voteId [CommentVoteType =. voteType]
                 case voteType of
                     Upvote   -> return (commentUpvotes+1, commentDownvotes-1)
                     Downvote -> return (commentUpvotes-1, commentDownvotes+1)
-                update voteId [CommentVoteType =. voteType]
                                       | otherwise ->
                 return (commentUpvotes, commentDownvotes)
             Nothing     -> do
@@ -105,15 +105,15 @@ vote voteType hmac = do
                          , CommentDownvotes =. downvotes
                          , CommentScore     =. score upvotes downvotes ]
 
-retrieveComments :: Hmac -> Int -> Maybe Double
+retrieveComments :: UploadId -> Int -> Maybe Double
                  -> YesodDB sub App [(Comment, User)]
-retrieveComments hmac nComments maxScore = do
+retrieveComments uploadId nComments maxScore = do
     let restrict = maybeToList ((CommentScore <.) <$> maxScore)
 
-    cs <- selectList ((CommentUploadId ==. hmac) : restrict)
+    cs <- selectList ((CommentUploadId ==. uploadId) : restrict)
                      [Desc CommentScore, LimitTo nComments]
     forM cs $ \(Entity _ c) -> do
-        Entity _ u <- getJust $ commentUserId c
+        u <- getJust $ commentUserId c
         return (c, u)
 
 -- | Creates a form to post a new comment.

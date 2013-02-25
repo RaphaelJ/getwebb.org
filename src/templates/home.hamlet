@@ -27,11 +27,11 @@
 
             <div #public_private>
                 <button #public_button .toggle_button_left type=button
-                        title="The files will be published in the public gallery."
+                        title="Uploaded files will be published in the public gallery."
                         onclick="uploadPublic(true);">
                     Public
                 <button #private_button .toggle_button_right type=button
-                        title="The files will NOT be published in the public gallery."
+                        title="Uploaded files will NOT be published in the public gallery."
                         onclick="uploadPublic(false);">
                     Private
                 <div .clear_float>

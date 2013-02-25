@@ -208,7 +208,7 @@ getDownloadR hmacs' = do
     -- Returns the original archive with the upload's file appended.
     addToArchive archive (name, Entity uploadId upload, file, h) = do
         let name' = T.unpack name
-            epoch = round $ utcTimeToPOSIXSeconds $ uploadUploaded upload
+            epoch = round $ utcTimeToPOSIXSeconds $ uploadCreated upload
             decompress' = if isJust (fileCompressed file)
                               then decompress
                               else id

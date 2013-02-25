@@ -200,7 +200,7 @@ function uploadFiles(loaded, total, files_info, uploaded, errors)
             res = jQuery.parseJSON(e.target.responseText);
 
         if (status == 201) { // 201 created
-            info.changeStatus("uploaded", 100, uploadUrl([res.id]);
+            info.changeStatus("uploaded", 100, uploadUrl([res.id]));
             uploaded.push(res.id);
         } else {
             info.changeStatus("error", 100, null);

@@ -53,7 +53,7 @@ getFileExtras (Entity fileId file) =
 getUploadStats :: Entity Upload -> Handler (Word64, UTCTime, Word64)
 getUploadStats (Entity uploadId upload) = do
     let views = uploadViews upload
-        lastView = uploadLastView upload
+        lastView = uploadViewed upload
         bw = uploadBandwidth upload
 
     mBuffer <- getBufferEntry uploadId

@@ -7,7 +7,7 @@
         <table>
             ^{signInWidget}
 
-        <input .big_button type=submit value="Sign in">
+        <input .big_button type=submit value="Sign in" />
 
     <form #register_form method=post action=@{toMaster RegisterR}
                          enctype=#{registerEnctype}>
@@ -29,6 +29,6 @@
         <table>
             ^{registerWidget}
 
-        <input .big_button type=submit value="Create an account">
+        <input .big_button type=submit value="Create an account" />
 
     <div .clear_float>

@@ -2,4 +2,4 @@
 /signin            SignInR         GET POST
 /register          RegisterR       GET POST
 /signout           SignOutR        GET
-/settings          SettingsR       GET
+/settings          SettingsR       GET POST

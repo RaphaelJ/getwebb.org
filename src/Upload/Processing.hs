@@ -108,7 +108,7 @@ processFile adminKey f public = do
                     lift $ update fileId [FileCount +=. 1]
                     return $! (fileId, False)
 
-            (key, hmac) <- lift $ newHmac
+            (key, hmac) <- lift $ newHmac HmacUpload
             let upload = Upload {
                   uploadHmac = hmac,  uploadFileId = fileId
                 , uploadName = fileName f, uploadDescription = Nothing

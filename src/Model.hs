@@ -209,7 +209,7 @@ migrateAll = do
     indexes = [
           ("upload_hostname", "\"upload\"(\"hostname\")")
         , ("upload_admin_key", "\"upload\"(\"admin_key\")")
-        , ("upload_last_view", "\"upload\"(\"last_view\")")
-        , ("comment_score", "\"comment\"(\"upload_id, score DESC\")")
+        , ("upload_last_view", "\"upload\"(\"viewed\")")
+        , ("comment_score", "\"comment\"(\"upload_id\", \"score\" DESC)")
         , ("job_completed", "\"job\"(\"completed\")")
         ]

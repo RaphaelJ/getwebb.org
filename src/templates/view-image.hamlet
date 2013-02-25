@@ -35,7 +35,8 @@ $with headersHeight <- if' (isJust links) 67 37
 
                     <form method=post action="" enctype=#{newCommentEnctype}>
                         ^{newCommentWidget}
-                        <input #submit_comment .big_button type=submit value=Publish>
+                        <input #submit_comment .big_button type=submit 
+                               value=Publish />
                         <span #chars_left 
                               title="Number of remaining characters.">
                             #{maxCommentLength}

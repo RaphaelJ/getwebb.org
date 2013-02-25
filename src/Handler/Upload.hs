@@ -39,7 +39,7 @@ postUploadR = do
                             DailyIPLimitReached -> forbidden403
                             FileTooLarge -> requestEntityTooLarge413
                     rep <- jsonToRepJson $ array [show err]
-                    in sendResponseStatus status rep
+                    sendResponseStatus status rep
         FormFailure errs -> do
             rep <- jsonToRepJson $ array errs
             sendResponseStatus badRequest400 rep

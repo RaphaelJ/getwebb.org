@@ -18,19 +18,21 @@ a:hover {
 form {
     label {
         font-family: "Chau Philomene One", sans-serif;
+        margin: 5px 10px 5px 0;
     }
 
     .tooltip {
         display: inline;
-        margin: 0 10px;
+        margin-right: 10px;
 
         font-size: 0.9em;
         font-style: italic;
     }
 
-    input[type=text], input[type=password], input[type=email] {
+    input[type=text], input[type=password], input[type=email],
+    input[type=file], input[type=submit] {
         display: block;
-        margin: 5px 0;
+        margin-top: 5px;
     }
 
     .errors {

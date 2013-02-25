@@ -7,6 +7,7 @@ import Prelude
 
 import Yesod
 import Control.Applicative
+import Data.Monoid
 
 import Account.Foundation
 import Account.Util (redirectAuth)
@@ -32,18 +33,34 @@ data AvatarSettings = AvatarSettings {
     }
 
 -- | Generates a form which returns the username and the password.
-settingsForm :: YesodAccount master =>
-                AccountUser master -> Html
+settingsForm :: YesodAccount master => AccountUser master -> Html
              -> MForm Account master (FormResult (AvatarSettings
                                                  , AccountSettings master)
                                      , GWidget Account master ())
-settingsForm user =
-    let avatarForm = AvatarSettings
-                        <$> areq checkBoxField avatarSettings  Nothing
-                        <*> aopt fileField     fileSettings    Nothing
-        form = (,) <$> avatarForm <*> accountSettingsForm
-    in renderDivs form
+settingsForm user extra = do
+    (cbRes, cbWidget)     <- renderDivs' $ areq checkBoxField avatarSettings
+                                                Nothing
+    (fileRes, fileWidget) <- renderDivs' $ aopt fileField     fileSettings
+                                                Nothing
+    (setsRes, setsWidget) <- renderDivs' accountSettingsForm
+
+    let avatarRes = AvatarSettings <$> cbRes <*> fileRes
+        widget = do
+        [whamlet|
+            #{extra}
+            ^{cbWidget}
+            <div style="margin-left: 30px">
+                ^{fileWidget}
+
+            ^{setsWidget}
+        |]
+
+    return ((,) <$> avatarRes <*> setsRes, widget)
   where
+    renderDivs' :: AForm sub master a -> 
+                   MForm sub master (FormResult a, GWidget sub master ())
+    renderDivs' aform = renderDivs aform mempty
+
     avatarSettings =
         let name = Just "avatar"
         in FieldSettings {

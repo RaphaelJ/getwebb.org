@@ -53,10 +53,11 @@ processArchive path ext fileId = do
                             exists <- getBy $ UniqueArchiveFile fileId ePathText
 
                             whenJust exists $ \_ -> do
-                                (key, hmac) <- newHmac
+                                (key, hmac) <- newHmac HmacArchiveFile
                                 let eSize = if hasTrailingPathSeparator ePath
                                         then Nothing
-                                        else word64 $ Z.eUncompressedSize e
+                                        else let size = Z.eUncompressedSize e
+                                             in Just $ word64 size
 
                                 insertKey key $ ArchiveFile hmac fileId
                                                             ePathText eSize

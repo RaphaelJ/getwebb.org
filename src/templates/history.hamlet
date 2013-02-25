@@ -37,7 +37,7 @@
                             <span .value>#{PrettyFileSize (fileSize file)}
 
                         <div .date>
-                          $with uploaded <- uploadUploaded upload
+                          $with uploaded <- uploadCreated upload
                            $with diffTime <- diffUTCTime currentTime uploaded
                             <span .key>Uploaded
                             <span .value>#{PrettyDiffTime diffTime}

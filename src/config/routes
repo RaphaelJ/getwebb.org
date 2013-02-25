@@ -8,6 +8,6 @@
 /d/#Text        DownloadR       GET
 /h              HistoryR        GET
 /u              UploadR         POST
-/v/#Text        ViewR           GET POST DELETE
+/v/#Text        ViewR           GET DELETE
 
 /account        AccountR        Account getAccount

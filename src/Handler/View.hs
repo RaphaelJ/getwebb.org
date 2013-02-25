@@ -80,7 +80,7 @@ getViewR hmacs' = do
         miniature = getMiniature rdr upload extras
         audioSources = getAudioSources rdr upload extras
         archive = getArchive rdr upload extras
-    uploadDiffTime <- getDiffTime
+    uploadDiffTime <- getDiffTime $ uploadCreated upload
 
     defaultLayout $ do
         setTitle [shamlet|#{wrappedName} - getwebb|]

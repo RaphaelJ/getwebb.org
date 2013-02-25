@@ -29,6 +29,7 @@ library
 
                      Account
                      Account.Auth
+                     Account.Avatar
                      Account.Foundation
                      Account.Settings
                      Account.Util

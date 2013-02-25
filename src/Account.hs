@@ -5,6 +5,7 @@
 -- user accounts.
 module Account (
       module Account
+    , makeAccount
     )
     where
 
@@ -22,3 +23,10 @@ import Account.Settings as Account
 mkYesodSubDispatch "Account" 
     [ ClassP ''YesodAccount [VarT $ mkName "master"] ]
     resourcesAccount
+
+-- | Initialize a new 'Account' foundation type.
+makeAccount :: IO Account
+makeAccount = do
+    reCaptachaKeys <- read `fmap` readFile "config/recaptcha"
+    sprite <- loadSprite
+    return $! Account reCaptachaKeys sprite

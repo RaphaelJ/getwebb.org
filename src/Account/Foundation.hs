@@ -4,14 +4,17 @@ module Account.Foundation where
 
 import Prelude
 import Control.Monad.Trans (MonadTrans)
+import qualified Data.Array as A
 import Data.Text (Text)
 import Language.Haskell.TH (Pred (..), Type (..), mkName)
 
 import Yesod
+import qualified Vision.Image as I
 
 data Account = Account {
       -- | The public and the private reCaptcha keys.
       acRecaptchaKeys :: (Text, Text)
+    , acAvatarSprite :: A.Array Int I.GreyImage
     }
 
 -- | The key used in the sessions to store the user's ID.

@@ -68,8 +68,7 @@ makeFoundation conf = do
     manager <- newManager def
     s <- staticSite
 
-    reCaptachaKeys <- readFile "config/recaptcha" >>= return . read
-    let account = Account reCaptachaKeys
+    account <- makeAccount
 
     dbconf <- withYamlEnvironment "config/sqlite.yml" (appEnv conf)
               Database.Persist.Store.loadConfig >>=

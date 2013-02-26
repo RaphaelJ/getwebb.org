@@ -5,7 +5,6 @@
 -- user accounts.
 module Account (
       module Account
-    , makeAccount
     )
     where
 
@@ -17,6 +16,7 @@ import Yesod
 import Account.Foundation as Account
 import Account.Util as Account
 
+import Account.Avatar as Account
 import Account.Auth as Account
 import Account.Settings as Account
 

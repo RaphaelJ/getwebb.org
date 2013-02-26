@@ -11,7 +11,7 @@ import Control.Monad
 import qualified Data.Array as A
 import qualified Data.Binary.Get as G
 import qualified Data.ByteString.Lazy.Char8 as C
-import Data.Digest.Pure.SHA (sha1, showDigest)
+import Data.Digest.Pure.SHA (sha1, bytestringDigest)
 import Data.Text (Text)
 import qualified Data.Text as T
 import System.FilePath ((</>), (<.>))
@@ -35,18 +35,18 @@ avatarSize = 60
 loadSprite :: IO (A.Array Int I.GreyImage)
 loadSprite = do
     img <- I.load spriteFile
-    let Size w _ = I.getSize img
+    let I.Size w _ = I.getSize img
         n = w `quot` tileSize
         tiles = [ I.crop img (I.Rect x 0 tileSize tileSize)
             | x <- [0,tileSize..n-1] ]
-    return $! A.arrayList (0, n-1) tiles
+    return $! A.listArray (0, n-1) tiles
 
 -- | Generates a deterministic avatar using .
 genIdenticon :: Text -> GHandler Account master I.RGBImage
 genIdenticon str = do
     sprite  <- acAvatarSprite <$> getYesodSub
-    (color, tilesMap) <- G.runGet (getVals sprite) hash
-    return $ I.fromFunction $ \(I.Point x y) ->
+    let (color, tilesMap) = G.runGet (getVals sprite) hash
+    return $ I.fromFunction (I.Size avatarSize avatarSize) $ \(I.Point x y) ->
         let (xQuot, xRem) = x `quotRem` tileSize
             (yQuot, yRem) = y `quotRem` tileSize
             tile = tilesMap A.! (xQuot, yQuot)
@@ -60,9 +60,9 @@ genIdenticon str = do
 
     -- Number of tiles on each side of the generated avatar.
     nSide = avatarSize `quot` tileSize
-    nRegions = nSide^2
+    nRegions = nSide * nSide
 
-    getVals srite = do
+    getVals sprite = do
         -- Uses the first 3 bytes to get a random color.
         color <- I.RGBPixel <$> G.getWord8 <*> G.getWord8 <*> G.getWord8
 
@@ -70,12 +70,15 @@ genIdenticon str = do
         let nTiles = 1 + (snd $ A.bounds sprite)
         regions <- replicateM nRegions $ do
             w <- G.getWord8
-            sprite A.! (w `rem` nTiles)
+            return $! sprite A.! (int w `rem` nTiles)
 
         let maxIdx = nSide - 1
-            arr = A.arrayList ((0, 0), (maxIdx, maxIdx)) regions
+            arr = A.listArray ((0, 0), (maxIdx, maxIdx)) regions
 
         return (color, arr)
 
-    colorize color (I.GreyPixel 255) = rgb
-    colorize _     _                 = I.RGBPixel 0 0 0
+    colorize color 255 = color
+    colorize _     _   = I.RGBPixel 0 0 0
+
+int :: Integral a => a -> Int
+int = fromIntegral

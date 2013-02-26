@@ -19,7 +19,6 @@ import Network.Wai.Middleware.Autohead (autohead)
 import Network.Wai.Middleware.RequestLogger (logStdout, logStdoutDev)
 import Network.HTTP.Conduit (newManager, def)
 import System.Directory (doesFileExist)
-import System.IO (readFile)
 import Web.ClientSession (randomKey)
 
 import qualified JobsDaemon as J

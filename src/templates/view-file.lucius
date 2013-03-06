@@ -20,6 +20,13 @@
 
         h1 {
             margin-left: 140px;
+            position: relative;
+
+            img.qrcode {
+                position: absolute;
+                top: 0;
+                right: 0;
+            }
         }
 
         .audio_player {

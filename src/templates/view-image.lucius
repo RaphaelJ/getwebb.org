@@ -110,6 +110,14 @@ body {
 
                 background-color: #DFDFDF;
             }
+
+            
+            img.qrcode {
+                position: absolute;
+                top: 0;
+                right: 0;
+            }
+
         }
 
         #right_pane {
@@ -258,7 +266,9 @@ body {
                 border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 
                 .avatar {
-                    float: left;
+                    position: absolute;
+                    top: 10px;
+                    left: 10px;
 
                     img {
                         width: 60px;
@@ -267,9 +277,6 @@ body {
                 }
 
                 form {
-                    margin: 0;
-                    text-align: right;
-
                     div {
                         display: inline;
                     }
@@ -279,19 +286,18 @@ body {
                     }
 
                     textarea {
+                        position: absolute;
+                        top: 10px;
+                        left: 90px;
                         height: 70px;
                         width: 390px;
                         resize: none;
                     }
 
-                    input[type="submit"] {
-                        width: 120px;
-                    }
-
                     #chars_left {
                         position: absolute;
                         bottom: 20px;
-                        right: 20px;
+                        right: 140px;
 
                         font-size: 1.3em;
                         font-weight: 700;
@@ -300,6 +306,13 @@ body {
 
                     #chars_left.negative {
                         color: #AE3737;
+                    }
+
+                    input[type="submit"] {
+                        position: absolute;
+                        top: 7px;
+                        left: 495px;
+                        width: 115px;
                     }
                 }
             }

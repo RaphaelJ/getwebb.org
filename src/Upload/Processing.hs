@@ -75,7 +75,7 @@ processFile adminKey f public = do
         -- Checks if the file exists.
         -- eithFileId gets a Right value if its a new file which file needs
         -- to be processed.
-        -- Inserts the file before knowing its type to lock and prevent others 
+        -- Inserts the file before knowing its type to lock and prevent others
         -- uploads to insert the same file during the processing.
         (upload, new) <- EitherT $ runDB $ runEitherT $ do
             let file = File {
@@ -143,7 +143,7 @@ processFile adminKey f public = do
                   "SELECT COUNT(*), COALESCE(SUM(f.size), 0)"
                 , "FROM Upload AS u"
                 , "INNER JOIN File AS f ON f.id = u.file_id"
-                , "WHERE u.hostname = ? and u.uploaded >= ?;"
+                , "WHERE u.hostname = ? and u.created >= ?;"
                 ]
         [(Single n, Single size)] <- rawSql sql [
                   PersistText clientHost

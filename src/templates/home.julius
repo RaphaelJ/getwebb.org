@@ -357,7 +357,7 @@ function uploadUrl(hmacs)
     // Yesod generates an - at the end of empty string url. Removes it.
     var viewRoute = "@{ViewR ""}";
     viewRoute = viewRoute.substr(0, viewRoute.length - 1);
-    return viewRoute + uploaded.join(",");
+    return viewRoute + hmacs.join(",");
 }
 
 // Add a sprintf-like method to String objects.

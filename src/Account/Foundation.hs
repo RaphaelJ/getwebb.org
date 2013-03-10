@@ -11,6 +11,8 @@ import Language.Haskell.TH (Pred (..), Type (..), mkName)
 import Yesod
 import qualified Vision.Image as I
 
+import Settings (PersistConfig)
+
 data Account = Account {
       -- | The public and the private reCaptcha keys.
       acRecaptchaKeys :: (Text, Text)
@@ -32,6 +34,7 @@ class (Yesod master, YesodPersist master, RenderMessage master FormMessage
       , MonadTrans (YesodPersistBackend master)
       , Functor (YesodDB Account master)) => YesodAccount master where
     type AccountUser     master :: *
+    type AccountUserId   master :: *
     type AccountSettings master :: *
 
     -- | Post sign in/sign out routes.
@@ -52,8 +55,20 @@ class (Yesod master, YesodPersist master, RenderMessage master FormMessage
     accountEmail, accountUsername, accountPassword, accountSalt ::
         AccountUser master -> GHandler sub master Text
 
-    accountSettingsForm :: AForm sub master (AccountSettings master)
+    accountSettingsForm :: AccountUser master
+                        -> AForm sub master (AccountSettings master)
 
 mkYesodSubData "Account"
     [ ClassP ''YesodAccount [VarT $ mkName "master"] ]
     $(parseRoutesFile "config/routes_account")
+
+share [mkPersist sqlOnlySettings, mkMigrate "migrateAvatar"] [persistLowerCase|
+Avatar
+    hash Text -- SHA1 of the resized file.
+    count Int -- Number of user using this avatar.
+    UniqueAvatarHash hash
+    deriving Show
+
+AvatarUser
+    avatar AvatarId
+|]

@@ -28,34 +28,25 @@ getSettingsR = do
 postSettingsR :: YesodAccount master => GHandler Account master RepHtml
 postSettingsR = getSettingsR
 
-data AvatarSettings = AvatarSettings {
-      asAvatar :: Bool, asAvatarFile :: Maybe FileInfo
-    }
-
 -- | Generates a form which returns the username and the password.
 settingsForm :: YesodAccount master => AccountUser master -> Html
-             -> MForm Account master (FormResult (AvatarSettings
+             -> MForm Account master (FormResult (Maybe FileInfo
                                                  , AccountSettings master)
                                      , GWidget Account master ())
 settingsForm user extra = do
-    (cbRes, cbWidget)     <- renderDivs' $ areq checkBoxField avatarSettings
-                                                Nothing
     (fileRes, fileWidget) <- renderDivs' $ aopt fileField     fileSettings
                                                 Nothing
-    (setsRes, setsWidget) <- renderDivs' accountSettingsForm
+    (setsRes, setsWidget) <- renderDivs' $ accountSettingsForm user
 
-    let avatarRes = AvatarSettings <$> cbRes <*> fileRes
-        widget = do
-        [whamlet|
+    let widget = [whamlet|
             #{extra}
-            ^{cbWidget}
             <div style="margin-left: 30px">
                 ^{fileWidget}
 
             ^{setsWidget}
         |]
 
-    return ((,) <$> avatarRes <*> setsRes, widget)
+    return ((,) <$> fileRes <*> setsRes, widget)
   where
     renderDivs' :: AForm sub master a -> 
                    MForm sub master (FormResult a, GWidget sub master ())

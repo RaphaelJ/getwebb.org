@@ -241,7 +241,7 @@ instance YesodAccount App where
     accountPassword = return . userPassword
     accountSalt     = return . userSalt
 
-    accountSettingsForm = areq checkBoxField "Default privacy" Nothing
+    accountSettingsForm _ = areq checkBoxField "Default privacy" Nothing
 
 -- | Get the 'Extra' value, used to hold data from the settings.yml file.
 getExtra :: Handler Extra

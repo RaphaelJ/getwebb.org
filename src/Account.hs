@@ -25,8 +25,8 @@ mkYesodSubDispatch "Account"
     resourcesAccount
 
 -- | Initialize a new 'Account' foundation type.
-makeAccount :: IO Account
-makeAccount = do
+makeAccount :: PersistConfig c => c -> PersistConfigPool c -> IO Accountt
+makeAccount conf pool = do
     reCaptachaKeys <- read `fmap` readFile "config/recaptcha"
     sprite <- loadSprite
     return $! Account reCaptachaKeys sprite

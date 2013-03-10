@@ -7,7 +7,7 @@ Default: &defaults
   uploadDir: "files"
   maxFileSize: 157286400 # 150 MiB
   maxRequestSize: 10485760 # 10 MiB
-  maxDailyUploads: 500 # 300 uploads per ip per day
+  maxDailyUploads: 500 # 500 uploads per ip per day
   maxDailySize: 3221225472 # 3 Gio per ip per day
   timeout: 120 # Web server timeout in seconds
   jobsThreads: 1 # Number of threads which executes background tasks

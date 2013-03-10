@@ -11,6 +11,7 @@ import qualified Data.Map as M
 import Data.Text (Text, pack, unpack)
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Word
+import System.FilePath ((</>))
 
 import Yesod
 import Yesod.Static
@@ -242,6 +243,8 @@ instance YesodAccount App where
     accountSalt     = return . userSalt
 
     accountSettingsForm = areq checkBoxField "Default privacy" Nothing
+
+    avatarDir _ = Settings.staticDir </> "avatar"
 
 -- | Get the 'Extra' value, used to hold data from the settings.yml file.
 getExtra :: Handler Extra

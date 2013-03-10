@@ -70,6 +70,13 @@ AdminKey
     userId UserId Maybe
     deriving Show
 
+-- Tracks HMACs allocations for uploads, archive files and comments.
+UniqueHmac
+    value Hmac -- An unique identifier generated from its ID.
+    type HmacResourceType
+    UniqueUniqueHmacValue value
+    deriving Show
+
 File
     hash Text -- SHA1 hash of the file
     type FileType
@@ -79,13 +86,6 @@ File
     count Int -- Number of uploads which point to this file
     -- Each file is identified by its hash:
     UniqueFileHash hash
-    deriving Show
-
--- Tracks HMACs allocations for uploads, archive files and comments.
-UniqueHmac
-    value Hmac -- An unique identifier generated from its ID.
-    type HmacResourceType
-    UniqueUniqueHmacValue value
     deriving Show
 
 Upload

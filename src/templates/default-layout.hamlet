@@ -12,8 +12,7 @@ $doctype 5
 
         ^{pageHead pc}
 
-        <link href=/static/img/favicon.png
-              rel=icon type=image/png>
+        <link href=@{StaticR img_favicon_png} rel=icon type=image/png>
 
         <link href=http://fonts.googleapis.com/css?family=Chau+Philomene+One|Ubuntu
               rel=stylesheet type=text/css>

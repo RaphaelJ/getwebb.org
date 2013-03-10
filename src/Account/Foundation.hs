@@ -42,6 +42,7 @@ class (Yesod master, YesodPersist master, RenderMessage master FormMessage
              -> Text -- ^ Username
              -> Text -- ^ Salted password
              -> Text -- ^ Salt
+             -> Bool -- ^ User choosen avatar
              -> GHandler sub master (AccountUser master)
 
     -- | Unique keys to fetch users from the database.
@@ -53,20 +54,12 @@ class (Yesod master, YesodPersist master, RenderMessage master FormMessage
         AccountUser master -> GHandler sub master Text
 
     -- | Form used on the settings page and which is added to the avatar form.
-    accountSettingsForm :: AForm sub master (AccountSettings master)
+    accountSettingsForm :: AccountUser master
+                        -> AForm sub master (AccountSettings master)
 
-    -- | Directory where avatar will be stored.
+    -- | Directory where avatars will be stored.
     avatarDir :: master -> FilePath
 
 mkYesodSubData "Account"
     [ ClassP ''YesodAccount [VarT $ mkName "master"] ]
     $(parseRoutesFile "config/routes_account")
-
--- Keeps track of used avatar
-share [mkPersist sqlOnlySettings, mkMigrate "migrateAvatar"] [persistLowerCase|
-Avatar
-    hash Text -- SHA1 of the image file.
-    count Int -- Number of users using this avatar.
-    UniqueAvatarHash hash
-    deriving Show
-|]

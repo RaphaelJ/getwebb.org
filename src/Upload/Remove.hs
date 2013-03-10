@@ -38,7 +38,5 @@ removeUpload (Entity uploadId upload) = do
         delete fileId
 
         app <- lift $ getYesod
-        let hash = T.unpack $ fileHash file
-            dir = hashDir app hash
+        let dir = hashDir app (fileHash file)
         liftIO $ removeDirectoryRecursive dir
-        liftIO $ putStrLn "ok"

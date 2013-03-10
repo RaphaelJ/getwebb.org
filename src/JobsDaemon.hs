@@ -110,8 +110,7 @@ jobsDaemon app = do
                 Right _                     -> Nothing
 
         runDBIO app $ do
-            update jobId [ JobCompleted =. True
-                         , JobCpuTime =. Just time
+            update jobId [ JobCompleted =. True, JobCpuTime =. Just time
                          , JobException =. except ]
 
         -- Unlocks dependent jobs.

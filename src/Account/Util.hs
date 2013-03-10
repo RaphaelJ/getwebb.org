@@ -11,14 +11,17 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans (MonadTrans)
 import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
-import qualified Data.ByteString.Lazy.Char8 as BS (pack)
-import Data.Text (Text, pack, unpack, append)
+import qualified Data.ByteString.Lazy.Char8 as C
+import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Digest.Pure.SHA (sha1, showDigest)
 import System.Random (randomRIO)
+import System.IO (hClose)
 
 import Yesod
 
 import Account.Foundation
+import Util.Path (newTmpFile, hashDir')
 
 -- | Creates a new user. Returns the ID of the created entity. Doesn't set the
 -- session value.
@@ -30,7 +33,13 @@ registerUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)
 registerUser email name pass = do
     salt <- randomSalt
 
-    initUser email name (saltedHash salt pass) salt >>= runDB . insert
+    initUser email name (saltedHash salt pass) salt False >>= runDB . insert
+  where
+    newAvatar = do
+        img <- genIdenticon email
+
+        let hash = T.pack $ showDigest $ sha1 $ C.pack email
+        I.save path (avatarDir </> hashDir 
 
 -- | Checks the given credentials without setting the session value.
 -- Returns the user ID if succeed. Tries with the username then the email.
@@ -129,12 +138,12 @@ redirectNoAuth = do
 
 -- | Generate random salt. Length of 8 is chosen arbitrarily
 randomSalt :: MonadIO m => m Text
-randomSalt = pack `liftM` liftIO (replicateM 8 (randomRIO ('0','z')))
+randomSalt = T.pack `liftM` liftIO (replicateM 8 (randomRIO ('0','z')))
 
 -- | Calculate salted hash using SHA1.
 saltedHash :: Text              -- ^ Salt
            -> Text              -- ^ Password
            -> Text
-saltedHash salt = pack . showDigest . sha1 . BS.pack . unpack . append salt
+saltedHash salt = T.pack . showDigest . sha1 . C.pack . T.unpack . T.append salt
 
 -- -----------------------------------------------------------------------------

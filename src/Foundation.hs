@@ -226,11 +226,11 @@ instance YesodAccount App where
     signInDest _  = HistoryR
     signOutDest _ = HistoryR
 
-    initUser email name pass salt = do
+    initUser email name pass salt avatar = do
         time <- liftIO $ getCurrentTime
         return User {
           userEmail = email, userName = name, userPassword = pass
-        , userSalt = salt, userCreated = time, userAvatar = False
+        , userSalt = salt, userCreated = time, userAvatar = avatar
         , userIsAdmin = False, userPublic = True
         }
 
@@ -242,7 +242,7 @@ instance YesodAccount App where
     accountPassword = return . userPassword
     accountSalt     = return . userSalt
 
-    accountSettingsForm = areq checkBoxField "Default privacy" Nothing
+    accountSettingsForm _ = areq checkBoxField "Default privacy" Nothing
 
     avatarDir _ = Settings.staticDir </> "avatar"
 

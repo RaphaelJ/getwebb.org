@@ -258,7 +258,7 @@ getDownloadR hmacs' = do
     -- Tries to open the file. 404 Not found if doesn't exists.
     safeOpenFile file requestType = do
         app <- getYesod
-        let dir = hashDir app (T.unpack $ fileHash file)
+        let dir = hashDir app (fileHash file)
             path = getPath dir requestType
 
         eH <- liftIO $ E.try (openBinaryFile path ReadMode)

@@ -1,7 +1,7 @@
 -- | The functions in this modules defines an identicon algorithm which
 -- generates random avatar from a string (eg. the user email).
 module Account.Avatar (
-      spriteFile, tileSize, avatarSize
+      avatarSize, spriteFile, tileSize
     , loadSprite, genIdenticon
     ) where
 
@@ -10,8 +10,9 @@ import Control.Applicative
 import Control.Monad
 import qualified Data.Array as A
 import qualified Data.Binary.Get as G
+import qualified Data.ByteString.Lazy as B
 import qualified Data.ByteString.Lazy.Char8 as C
-import Data.Digest.Pure.SHA (sha1, bytestringDigest)
+import Data.Digest.Pure.SHA (SHA1Digest, sha1, bytestringDigest)
 import Data.Text (Text)
 import qualified Data.Text as T
 import System.FilePath ((</>), (<.>))
@@ -22,13 +23,13 @@ import Yesod
 
 import Account.Foundation
 
-spriteFile :: FilePath
-spriteFile = "Account" </> "avatar_sprite" <.> "png"
+avatarSize, tileSize :: Int
+avatarSize = 60
 
-tileSize, avatarSize :: Int
 tileSize = 20
 
-avatarSize = 60
+spriteFile :: FilePath
+spriteFile = "Account" </> "avatar_sprite" <.> "png"
 
 -- | Loads the image file which contains the different tiles and generates a
 -- vector of these tiles. Tiles must be arranged in horizontal order.
@@ -41,7 +42,7 @@ loadSprite = do
             | x <- [0,tileSize..n-1] ]
     return $! A.listArray (0, n-1) tiles
 
--- | Generates a deterministic avatar using .
+-- | Generates a deterministic avatar using an user identifier.
 genIdenticon :: Text -> GHandler Account master I.RGBImage
 genIdenticon str = do
     sprite  <- acAvatarSprite <$> getYesodSub

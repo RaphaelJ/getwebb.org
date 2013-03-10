@@ -67,14 +67,14 @@ makeFoundation conf = do
     manager <- newManager def
     s <- staticSite
 
-    account <- makeAccount
-
     dbconf <- withYamlEnvironment "config/sqlite.yml" (appEnv conf)
               Database.Persist.Store.loadConfig >>=
               Database.Persist.Store.applyEnv
     p <- Database.Persist.Store.createPoolConfig (dbconf :: Settings.PersistConfig)
     Database.Persist.Store.runPool dbconf (runMigration migrateAll) p
     key <- getEncryptionKey
+
+    account <- makeAccount dbconf p
 
     -- Initialises the concurrent queues.
     jQueue <- J.newQueue

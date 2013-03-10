@@ -192,8 +192,7 @@ jobResize :: DisplayType -> App -> FileId -> IO ()
 jobResize destType app fileId = do
     Just file <- runDBIO app $ get fileId
 
-    let hash = T.unpack $! fileHash file
-        dir = hashDir app hash
+    let dir = hashDir app (fileHash file)
         path = getPath dir Original
         destPath = getPath dir (Display destType)
 
@@ -213,8 +212,7 @@ jobExifTags :: App -> FileId -> IO ()
 jobExifTags app fileId = do
     Just file <- runDBIO app $ get fileId
 
-    let hash = T.unpack $! fileHash file
-        path = getPath (hashDir app hash) Original
+    let path = getPath (hashDir app (fileHash file)) Original
 
     tags <- exifTags path
 

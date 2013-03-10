@@ -5,6 +5,8 @@
 
         <h1 title=#{uploadName upload}>
             #{wrappedName}
+            <img .qrcode alt="QR Code to this page"
+                  src="http://chart.googleapis.com/chart?cht=qr&chs=150x150&chl=@{ViewR hmac}"/>
 
         $if fileType file == Audio
             <div .audio_player>

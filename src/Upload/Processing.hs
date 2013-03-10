@@ -67,19 +67,18 @@ processFile adminKey f public = do
         -- Checks if the file has been already uploaded by computing its hash.
         liftIO $ putStrLn "Hash file:"
         hash <- liftIO $ timeIt $ hashFile tmpPath
-        let hashText = T.pack hash
-            ext = T.toLower $ T.pack $ takeExtension $ T.unpack $ fileName f
+        let ext = T.toLower $ T.pack $ takeExtension $ T.unpack $ fileName f
 
         let path = getPath (hashDir app hash) Original
 
         -- Checks if the file exists.
         -- eithFileId gets a Right value if its a new file which file needs
         -- to be processed.
-        -- Inserts the file before knowing its type to lock and prevent others 
+        -- Inserts the file before knowing its type to lock and prevent others
         -- uploads to insert the same file during the processing.
         (upload, new) <- EitherT $ runDB $ runEitherT $ do
             let file = File {
-                      fileHash = hashText, fileType = UnknownType
+                      fileHash = hash, fileType = UnknownType
                     , fileSize = size, fileCompressed = Nothing
                     , fileCreated = time, fileCount = 1
                     }
@@ -103,7 +102,7 @@ processFile adminKey f public = do
                     -- FileId and increments the file's counter.
                     liftIO $ removeFile tmpPath
                     liftIO $ putStrLn "Existing file"
-                    Just existingFile <- lift $ getBy (UniqueFileHash hashText)
+                    Just existingFile <- lift $ getBy (UniqueFileHash hash)
                     let fileId = entityKey existingFile
                     lift $ update fileId [FileCount +=. 1]
                     return $! (fileId, False)
@@ -143,7 +142,7 @@ processFile adminKey f public = do
                   "SELECT COUNT(*), COALESCE(SUM(f.size), 0)"
                 , "FROM Upload AS u"
                 , "INNER JOIN File AS f ON f.id = u.file_id"
-                , "WHERE u.hostname = ? and u.uploaded >= ?;"
+                , "WHERE u.hostname = ? and u.created >= ?;"
                 ]
         [(Single n, Single size)] <- rawSql sql [
                   PersistText clientHost
@@ -186,10 +185,10 @@ moveToTmp f = do
     return path
 
 -- | Computes the digest of a file.
-hashFile :: FilePath -> IO String
+hashFile :: FilePath -> IO Text
 hashFile path = do
     c <- B.readFile path
-    return $! showDigest $ sha1 c
+    return $! T.pack $ showDigest $ sha1 c
 
 -- | Move a file to the given path.
 -- Create the parent directories if they don't exist.

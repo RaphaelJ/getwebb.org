@@ -3,7 +3,8 @@ $with headersHeight <- if' (isJust links) 67 37
     <div #full_screen style="top: #{headersHeight}px">
         <div #position_relative>
             <div #title>
-                <h1 title=#{uploadName upload}>#{wrappedName}
+                <h1 title=#{uploadName upload}>
+                    #{wrappedName}
 
                 $with ImageExtras attrs tags <- extras
                     <div #size>
@@ -22,9 +23,13 @@ $with headersHeight <- if' (isJust links) 67 37
                                             <th>#{title}
                                             <td>#{val}
 
+
             <div #left_pane>
                 <a href=@{DownloadR hmac} title="View image in full resolution">
                     <img #image src=#{fromJust $ image} alt=#{uploadName upload}>
+
+                <img .qrcode alt="QR Code to this page"
+                    src="http://chart.googleapis.com/chart?cht=qr&chs=150x150&chl=@{ViewR hmac}"/>
 
             ^{right_pane}
 

@@ -11,7 +11,10 @@ import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Data.Word
 
+import Database.Persist.GenericSql (Migration)
 import Database.Persist.GenericSql.Raw (SqlPersist)
+
+import Account.Foundation (Avatar (..))
 
 -- | File types recognized.
 data FileType = Image | Audio | Video | Archive | UnknownType
@@ -58,7 +61,7 @@ User
     password Text -- SHA1 hash of the password.
     salt Text -- Salt used to hash the password.
     created UTCTime
-    avatar Bool
+    avatar AvatarId
     isAdmin Bool
     public Bool -- True if the user want new files to be public.
     UniqueUserEmail email
@@ -67,7 +70,7 @@ User
 
 AdminKey
     count Int
-    userId UserId Maybe
+    user UserId Maybe
     deriving Show
 
 -- Tracks HMACs allocations for uploads, archive files and comments.
@@ -90,7 +93,7 @@ File
 
 Upload
     hmac Hmac
-    fileId FileId
+    file FileId
     name Text
     description Text Maybe
     public Bool
@@ -105,8 +108,8 @@ Upload
 
 Comment
     hmac Text
-    userId UserId
-    uploadId UploadId
+    user UserId
+    upload UploadId
     message Text
     created UTCTime
     score Double
@@ -116,42 +119,42 @@ Comment
     deriving Show
 
 CommentVote
-    commentId CommentId
-    userId UserId
+    comment CommentId
+    user UserId
     type VoteType
-    UniqueCommentVoteUser commentId userId
+    UniqueCommentVoteUser comment user
     deriving Show
 
 -- Saves the attributes of an image.
 ImageAttrs
-    fileId FileId
+    file FileId
     width  Word32
     height Word32
     displayable DisplayType Maybe -- If Just, displays this object instead of
                                   -- the original image in the browser.
-    UniqueImageAttrs fileId
+    UniqueImageAttrs file
     deriving Show
 
 -- Saves EXIF tags from an image.
 ExifTag
-    fileId FileId
+    file FileId
     title Text
     value Text
-    UniqueExifTag fileId title
+    UniqueExifTag file title
     deriving Show
 
 -- Saves the attributes of a media.
 MediaAttrs
-    fileId FileId
+    file FileId
     duration Word64 -- Duration in centisecond.
     transcoded Bool -- True if the media has been re-encoded to be displayed
                     -- in the browser (HTML5 audio/video).
-    UniqueMediaAttrs fileId
+    UniqueMediaAttrs file
     deriving Show
 
 -- Saves the attributes and tags of an MP3 track.
 AudioAttrs
-    fileId FileId
+    file FileId
     album Text Maybe
     artist Text Maybe
     comment Text Maybe
@@ -161,42 +164,41 @@ AudioAttrs
     year Int Maybe
     lastFmUrl Text Maybe
     miniature Bool
-    UniqueAudioAttrs fileId
+    UniqueAudioAttrs file
     deriving Show
 
 -- Saves the contained files of an archive.
 ArchiveFile
     hmac Hmac -- An unique identifier of the file generated from its ID.
-    fileId FileId
+    file FileId
     path Text
     size Word64 Maybe -- Uncompressed size if not a directory.
-    UniqueArchiveFile fileId path
+    UniqueArchiveFile file path
     UniqueArchiveFileHmac hmac
     deriving Show
 
 -- Saves the status of the background jobs queue.
 Job
-    fileId FileId
+    file FileId
     type JobType
     created UTCTime
     completed Bool
     cpuTime Double Maybe -- CPU time in seconds used by the job to complete.
     exception Text Maybe -- The exception text if the process has failed.
-    UniqueJob fileId type
+    UniqueJob file type
     deriving Show
 
 -- Each background job execution can depend on the termination of one or more
 -- other jobs.
 JobDependency
-    jobId JobId
+    job JobId
     dependency JobId
-    UniqueJobDependency jobId dependency
+    UniqueJobDependency job dependency
     deriving Show
 |]
 
 -- | Creates each entities and their indexes.
-migrateAll :: (MonadIO m, MonadBaseControl IO m) =>
-              WriterT [Text] (WriterT [(Bool, Text)] (SqlPersist m)) ()
+migrateAll :: (MonadIO m, MonadBaseControl IO m) => Migration (SqlPersist m)
 migrateAll = do
     migrateEnts
     lift $ tell [

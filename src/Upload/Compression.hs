@@ -29,8 +29,7 @@ compressFile :: App -> FileId -> IO ()
 compressFile app fileId = do
     Just file <- runDBIO app $ get fileId
 
-    let hash = T.unpack $! fileHash file
-        path = getPath (hashDir app hash) Original
+    let path = getPath (hashDir app (fileHash file)) Original
 
     h <- liftIO $ openFile path ReadMode
 

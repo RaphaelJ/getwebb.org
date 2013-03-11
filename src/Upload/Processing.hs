@@ -76,7 +76,7 @@ processFile adminKey f public = do
         -- to be processed.
         -- Inserts the file before knowing its type to lock and prevent others
         -- uploads to insert the same file during the processing.
-        (upload, new) <- right $ runDB $ runEitherT $ do
+        (upload, new) <- EitherT $ runDB $ runEitherT $ do
             -- Checks again if the user hasn't reach the upload limit.
             allowed' <- lift $ checksIpLimits extras clientHost yesterday size
             when (not allowed') $ do
@@ -85,7 +85,7 @@ processFile adminKey f public = do
 
             mFileId <- lift $ getBy $ UniqueFileHash hash
             (fileId, new) <- case mFileId of
-                Just (Entity fileId file) -> do
+                Just (Entity fileId _) -> do
                     -- Existing file: removes the temporary file and increments
                     -- the file's counter.
                     liftIO $ removeFile tmpPath
@@ -95,7 +95,7 @@ processFile adminKey f public = do
                 Nothing -> do
                     -- New file: moves the temporary file to its final
                     -- destination and adds the information to the database.
-                    (key, hmac) <- lift $ newHmac HmacFile
+                    (key, _) <- lift $ newHmac HmacFile
                     let file = File {
                           fileHash = hash, fileType = UnknownType
                         , fileSize = size, fileCompressed = Nothing

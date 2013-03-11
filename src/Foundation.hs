@@ -24,6 +24,7 @@ import qualified Settings
 import Settings (widgetFile, Extra (..))
 import Settings.Development (development)
 import Settings.StaticFiles as Import
+import System.Log.FastLogger (Logger)
 import Text.Blaze.Renderer.Text (renderMarkup)
 import Text.Jasmine (minifym)
 import Text.Hamlet (shamlet, hamletFile)
@@ -60,6 +61,7 @@ data App = App {
     , connPool :: Database.Persist.Store.PersistConfigPool Settings.PersistConfig -- ^ Database connection pool.
     , httpManager :: Manager
     , persistConfig :: Settings.PersistConfig
+    , appLogger :: Logger
     , encryptKey :: B.ByteString
     , jobsQueue :: JobsQueue
     , viewsBuffer :: (MVar (M.Map UploadId (Word64, Maybe UTCTime, Word64)), MVar ())

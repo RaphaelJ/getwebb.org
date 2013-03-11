@@ -79,15 +79,13 @@ UniqueHmac
     deriving Show
 
 File
-    hmac Hmac
     hash Text -- SHA1 hash of the file
     type FileType
     size Word64
     compressed Word64 Maybe -- The compressed size if the file is compressed.
     created UTCTime
     count Int -- Number of uploads which point to this file
-    -- Each file is identified by its HMAC and its hash :
-    UniqueFileHmac hmac
+    -- Each file is identified by its hash :
     UniqueFileHash hash
     deriving Show
 
@@ -212,6 +210,6 @@ migrateAll = do
           ("upload_hostname", "\"upload\"(\"hostname\")")
         , ("upload_admin_key", "\"upload\"(\"admin_key\")")
         , ("upload_last_view", "\"upload\"(\"viewed\")")
-        , ("comment_score", "\"comment\"(\"upload_id\", \"score\" DESC)")
+        , ("comment_score", "\"comment\"(\"upload\", \"score\" DESC)")
         , ("job_completed", "\"job\"(\"completed\")")
         ]

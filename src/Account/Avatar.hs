@@ -80,5 +80,13 @@ genIdenticon str = do
     colorize color 255 = color
     colorize _     _   = I.RGBPixel 0 0 0
 
+avatarPath :: YesodAccount master =>
+              AccountUser master -> GHandler sub master FilePath
+avatarPath app email = 
+    app <- getYesod
+    
+    let hash = T.pack $ showDigest $ sha1 $ C.pack $ T.unpack email
+    avatarDir app </> hashDir' hash
+
 int :: Integral a => a -> Int
 int = fromIntegral

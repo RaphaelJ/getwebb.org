@@ -1,5 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
 module Handler.Comment (
       maxNComments, defaultNComments, maxCommentLength
     , getCommentR, postCommentR, putCommentUpR, putCommentDownR

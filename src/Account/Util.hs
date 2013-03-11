@@ -16,7 +16,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Digest.Pure.SHA (sha1, showDigest)
 import System.FilePath ((</>))
-import System.IO (hClose)
 import System.Random (randomRIO)
 
 import Yesod
@@ -24,7 +23,7 @@ import qualified Vision.Image as I
 
 import Account.Avatar (genIdenticon)
 import Account.Foundation
-import Util.Path (hashDir', newTmpFile)
+import Util.Path (hashDir')
 
 -- | Creates a new user. Returns the ID of the created entity. Doesn't set the
 -- session value.
@@ -45,7 +44,7 @@ registerUser email name pass = do
         app <- getYesod
 
         let hash = T.pack $ showDigest $ sha1 $ C.pack $ T.unpack email
-        liftIO $ I.save img (avatarDir app </> hashDir' hash)
+        liftIO $ I.save img (avatarPath app email)
 
 -- | Checks the given credentials without setting the session value.
 -- Returns the user ID if succeed. Tries with the username then the email.

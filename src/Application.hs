@@ -13,12 +13,15 @@ import qualified Data.ByteString.Lazy as L
 import Yesod.Default.Config
 import Yesod.Default.Main
 import Yesod.Default.Handlers
+import Control.Monad.Logger (runLoggingT)
 import Database.Persist.GenericSql (runMigration)
 import qualified Database.Persist.Store
 import Network.Wai.Middleware.Autohead (autohead)
-import Network.Wai.Middleware.RequestLogger (logStdout, logStdoutDev)
+import Network.Wai.Middleware.RequestLogger
 import Network.HTTP.Conduit (newManager, def)
 import System.Directory (doesFileExist)
+import System.IO (stdout)
+import System.Log.FastLogger (mkLogger)
 import Web.ClientSession (randomKey)
 
 import qualified JobsDaemon as J
@@ -56,35 +59,50 @@ makeApplication conf = do
     let nJobsThreads = extraJobsThreads $ appExtra conf
     replicateM_ nJobsThreads (J.forkJobsDaemon foundation)
 
-    app <- autohead <$> toWaiAppPlain foundation
-    return $ logWare app
-  where
-    logWare = if development then logStdoutDev
-                             else logStdout
+    -- Initialize the logging middleware
+    logWare <- mkRequestLogger def {
+          outputFormat = if development
+                then Detailed True
+                else if extraReverseProxy $ appExtra $ settings foundation
+                        then Apache FromHeader
+                        else Apache FromSocket
+        , destination = Logger $ appLogger foundation
+        }
 
+    app <- (logWare . autohead) <$> toWaiAppPlain foundation
+    return $ logWare app
+
+-- | Loads up any necessary settings, creates your foundation datatype, and
+-- performs some initialization.
 makeFoundation :: AppConfig DefaultEnv Extra -> IO App
 makeFoundation conf = do
     manager <- newManager def
+
     s <- staticSite
+    account <- makeAccount
 
     dbconf <- withYamlEnvironment "config/sqlite.yml" (appEnv conf)
               Database.Persist.Store.loadConfig >>=
               Database.Persist.Store.applyEnv
     p <- Database.Persist.Store.createPoolConfig (dbconf :: Settings.PersistConfig)
-    Database.Persist.Store.runPool dbconf (runMigration migrateAll) p
+    logger <- mkLogger True stdout
     key <- getEncryptionKey
-
-    account <- makeAccount dbconf p
 
     -- Initialises the concurrent queues.
     jQueue <- J.newQueue
     vBuffer <- D.newBuffer
 
-    let app = App conf s account p manager dbconf key jQueue vBuffer
+    let foundation = App conf s account p manager dbconf logger key jQueue
+                         vBuffer
 
-    restoreJobQueue app
+    -- Performs database migration using our application's logging settings.
+    runLoggingT
+        (Database.Persist.Store.runPool dbconf (runMigration migrateAll) p)
+        (messageLoggerSource foundation logger)
 
-    return app
+    restoreJobQueue foundation
+
+    return foundation
 
 -- | Try to read the key file or initialize it with a random key.
 getEncryptionKey :: IO L.ByteString
@@ -101,16 +119,16 @@ getEncryptionKey = do
 restoreJobQueue :: App -> IO ()
 restoreJobQueue app =
     J.runDBIO app $ do
-        jobs <- selectList [JobCompleted ==. False] [Asc JobFileId]
+        jobs <- selectList [JobCompleted ==. False] [Asc JobFile]
         forM_ jobs $ \(Entity jobId job) -> do
             deps <- getDependencies jobId
 
-            let fileId = jobFileId job
+            let fileId = jobFile job
                 typ = jobType job
             liftIO $ J.enqueueJob app jobId deps (action fileId typ)
   where
     getDependencies jobId =
-        selectList [JobDependencyJobId ==. jobId] [] >>=
+        selectList [JobDependencyJob ==. jobId] [] >>=
         return . map (jobDependencyDependency . entityVal)
 
     action fileId Compression  = C.compressFile app fileId

@@ -62,8 +62,8 @@ getDownloadR hmacs' = do
             query <- parseQuery
             case query of
                 Just (Display _)               -> streamDisplayable hmac
-                Just (CompressedFile fileHmac) -> 
-                    streamArchiveFile hmac fileHmac
+                Just (CompressedFile archiveHmac) ->
+                    streamArchiveFile hmac archiveHmac
                 Just requestType               -> streamFile hmac requestType
                 Nothing                        -> notFound
         (_:_) -> streamFiles
@@ -74,7 +74,7 @@ getDownloadR hmacs' = do
     streamFile hmac requestType = do
         (file, uploadId, upload, h) <- runDB $ do
             Entity uploadId upload <- getBy404 $ UniqueUploadHmac hmac
-            Just file <- get $ uploadFileId upload
+            Just file <- get $ uploadFile upload
 
             -- Opens the file inside the transaction to ensure data consistency.
             h <- lift $ safeOpenFile file requestType
@@ -109,7 +109,7 @@ getDownloadR hmacs' = do
         (uploadId, upload, h, displayType) <- runDB $ do
             Entity uploadId upload <- getBy404 $ UniqueUploadHmac hmac
 
-            let fileId = uploadFileId upload
+            let fileId = uploadFile upload
             Just file <- get fileId
             when (fileType file /= Image) $
                 lift notFound
@@ -134,15 +134,15 @@ getDownloadR hmacs' = do
         streamByteString [h] bs mime (Just size)
 
     -- Decompresses and streams a file inside an archive to the client.
-    streamArchiveFile hmac fileHmac = do
+    streamArchiveFile hmac archiveHmac = do
         (file, uploadId, archiveFile, h) <- runDB $ do
             Entity uploadId upload <- getBy404 $ UniqueUploadHmac hmac
-            Entity _ archiveFile <- getBy404 $ UniqueArchiveFileHmac fileHmac
+            Entity _ archiveFile <- getBy404 $ UniqueArchiveFileHmac archiveHmac
 
-            when (archiveFileFileId archiveFile /= uploadFileId upload) $
+            when (archiveFileFile archiveFile /= uploadFile upload) $
                 lift notFound
 
-            Just file <- get $ uploadFileId upload
+            Just file <- get $ uploadFile upload
 
             -- Opens the file inside the transaction to ensure data consistency.
             h <- lift $ safeOpenFile file Original
@@ -175,7 +175,7 @@ getDownloadR hmacs' = do
                 mUpload <- getBy $ UniqueUploadHmac hmac
                 case mUpload of
                     Just entity@(Entity _ upload) -> do
-                        Just file <- get $ uploadFileId upload
+                        Just file <- get $ uploadFile upload
 
                         -- Adds a suffix to duplicates filenames.
                         names <- liftIO $ readIORef ioNames
@@ -241,8 +241,8 @@ getDownloadR hmacs' = do
     parseQuery = do
         mArchive <- lookupGetParam "archive"
         case mArchive of
-            Just fileHmac -> return $! Just (CompressedFile fileHmac)
-            Nothing       -> parseType <$> lookupGetParam "type"
+            Just archiveHmac -> return $! Just (CompressedFile archiveHmac)
+            Nothing          -> parseType <$> lookupGetParam "type"
 
     -- Parses the file type from the URL parameter.
     parseType Nothing            = Just Original

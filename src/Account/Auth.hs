@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 -- | The handlers in this modules manage the sign in and the register of new
 -- accounts.
 module Account.Auth (
@@ -8,6 +8,7 @@ module Account.Auth (
 
 import Prelude
 import Control.Applicative  as Import ((<$>), (<*>))
+import Control.Monad.Trans.Either (runEitherT, left, right)
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -37,44 +38,51 @@ getRegisterR = getAuthR
 postSignInR :: YesodAccount master => GHandler Account master RepHtml
 postSignInR = do
     redirectNoAuth
-    ((signInRes, signInWidget), signInEnctype) <- runFormPost signInForm
+    ((res, widget), enctype) <- runFormPost signInForm
     register <- generateFormPost registerForm
 
-    case signInRes of
+    case res of
         FormSuccess userId -> do
             setUserId userId
-            getYesod >>= redirect . signInDest 
-        _ -> showForm (signInWidget, signInEnctype) register
+            getYesod >>= redirect . signInDest
+        _ -> showForm (widget, enctype) register
 
 -- | Tries to register the user.
 postRegisterR :: YesodAccount master => GHandler Account master RepHtml
 postRegisterR = do
     redirectNoAuth
     signIn <- generateFormPost signInForm
-    ((registerRes, registerWidget), registerEnctype) <- runFormPost registerForm
+    ((res, widget), enctype) <- runFormPost registerForm
 
-    case registerRes of
+    case res of
         FormSuccess (email, name, pass) -> do
-            runDB $ do
+            eUserId <- runDB $ runEitherT $ do
                 checkExists usernameLookup name
                             "This username is already used by another user."
                 checkExists emailLookup email
                             "This email is already used by another user."
-                userId <- registerUser email name pass
-            
-            setUserId userId
-            getYesod >>= redirect . signInDest
-            
-        _ -> showForm signIn (registerWidget, registerEnctype)
+                lift $ registerUser email name pass
+
+            case eUserId of
+                Right userId -> do
+                    setUserId userId
+                    getYesod >>= redirect . signInDest
+                Left (msg :: Text) ->
+                    let widget' = [whamlet|
+                            <p .errors>#{msg}
+                            ^{widget}
+                        |]
+                    in showForm signIn (widget', enctype)
+        _ -> showForm signIn (widget, enctype)
   where
-    -- Returns the error message if the user already exists in the database 
+    -- Returns the error message if the user already exists in the database
     -- for the given unique lookup key and field value.
     checkExists unique value errMsg = do
-        key <- unique value
-        mUser <- runDB $ getBy key
-        return $! case mUser of
-            Just _  -> Left  errMsg
-            Nothing -> Right value
+        key <- lift $ lift $ unique value
+        mUser <- lift $ getBy key
+        case mUser of
+            Just _  -> left  errMsg
+            Nothing -> right ()
 
 -- | Removes the session value so the user is then signed out. Then redirects.
 getSignOutR :: YesodAccount master => GHandler Account master ()
@@ -140,7 +148,7 @@ registerForm :: YesodAccount master => Html
              -> MForm Account master (FormResult (Text, Text, Text)
                                      , GWidget Account master ())
 registerForm html = do
-    let form = RegisterRes <$> areq emailField'    emailSettings    Nothing
+    let form = RegisterRes <$> areq emailField     emailSettings    Nothing
                            <*> areq usernameField  usernameSettings Nothing
                            <*> areq passwordField' passwordSettings Nothing
                            <*> areq passwordField  confirmSettings  Nothing
@@ -160,7 +168,6 @@ registerForm html = do
         FormFailure errs -> (FormFailure errs, widget)
         FormMissing -> (FormMissing, widget)
   where
-    emailField' = checkM checkEmail emailField
     emailSettings =
         let name = Just "email"
         in FieldSettings {
@@ -168,7 +175,7 @@ registerForm html = do
             , fsId = name, fsName = name, fsAttrs = []
             }
 
-    usernameField = check checkUsername $ checkM checkUsernameExists textField
+    usernameField = check checkUsername textField
     usernameSettings =
         let name = Just "username"
         in FieldSettings {

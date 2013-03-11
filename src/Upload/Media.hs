@@ -272,8 +272,7 @@ transcodeFile :: App -> FileId -> IO ()
 transcodeFile app fileId = do
     Just file <- runDBIO app $ get fileId
 
-    let hash = T.unpack $ fileHash file
-        dir = hashDir app hash
+    let dir = hashDir app (fileHash file)
         getPath' = getPath dir
         path = getPath' Original
 
@@ -302,8 +301,7 @@ transcodeFile app fileId = do
             _             -> return ()
 
     updateHtml5Encoded = runDBIO app $
-        updateWhere [MediaAttrsFileId ==. fileId]
-                    [MediaAttrsTranscoded =. True]
+        updateWhere [MediaAttrsFile ==. fileId] [MediaAttrsTranscoded =. True]
 
 -- | Adds a file to a background transcoding queue.
 putFile :: App -> FileId -> IO JobId

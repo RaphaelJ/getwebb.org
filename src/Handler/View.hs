@@ -52,7 +52,7 @@ getViewR hmacs' = do
 
         case mUpload of
             Just entity@(Entity _ upload) -> do
-                let fileId = uploadFileId upload
+                let fileId = uploadFile upload
                 Just file <- get fileId
 
                 extras <- getFileExtras (Entity fileId file)

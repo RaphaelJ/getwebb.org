@@ -40,7 +40,7 @@ settingsForm :: YesodAccount master => AccountUser master -> Html
 settingsForm user extra = do
     personalAvatar <- lift $ accountAvatar user
 
-    (avatarRes, avatarWidget) <- renderDivs' $ areq checkboxField avatarSettings
+    (avatarRes, avatarWidget) <- renderDivs' $ areq checkBoxField avatarSettings
                                                     (Just personalAvatar)
     (fileRes, fileWidget) <- renderDivs' $ aopt fileField fileSettings Nothing
 
@@ -55,7 +55,8 @@ settingsForm user extra = do
             ^{setsWidget}
         |]
 
-    return ((,) <$> fileRes <*> setsRes, widget)
+    return ((,) <$> (AvatarResult <$> avatarRes <*> fileRes) 
+                <*> setsRes, widget)
   where
     renderDivs' :: AForm sub master a -> 
                    MForm sub master (FormResult a, GWidget sub master ())

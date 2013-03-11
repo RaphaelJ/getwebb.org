@@ -25,7 +25,7 @@ getHistoryR = do
                                       [Desc UploadId]
 
                 forM uploads $ \(Entity _ upload) -> do
-                    let fileId = uploadFileId upload
+                    let fileId = uploadFile upload
                     Just file <- get fileId
                     extras <- getFileExtras (Entity fileId file)
                     return (upload, file, getIcon rdr upload extras)

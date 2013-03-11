@@ -6,14 +6,13 @@ module Upload.Remove (removeUpload)
 import Import
 
 import Control.Monad
-import qualified Data.Text as T
 import System.Directory (removeDirectoryRecursive)
 
 import Util.Path (hashDir)
 
 removeUpload :: Entity Upload -> YesodDB App App ()
 removeUpload (Entity uploadId upload) = do
-    let fileId = uploadFileId upload
+    let fileId = uploadFile upload
     delete uploadId
 
     -- Removes the corresponding file if it was the last upload.
@@ -22,15 +21,15 @@ removeUpload (Entity uploadId upload) = do
         -- Removes attributes
         case fileType file of
             Image   -> do
-                deleteWhere [ImageAttrsFileId ==. fileId]
-                deleteWhere [ExifTagFileId ==. fileId]
+                deleteWhere [ImageAttrsFile ==. fileId]
+                deleteWhere [ExifTagFile ==. fileId]
             Audio   -> do
-                deleteWhere [MediaAttrsFileId ==. fileId]
-                deleteWhere [AudioAttrsFileId ==. fileId]
+                deleteWhere [MediaAttrsFile ==. fileId]
+                deleteWhere [AudioAttrsFile ==. fileId]
             Video   ->
-                deleteWhere [MediaAttrsFileId ==. fileId]
+                deleteWhere [MediaAttrsFile ==. fileId]
             Archive ->
-                deleteWhere [ArchiveFileFileId ==. fileId]
+                deleteWhere [ArchiveFileFile ==. fileId]
             _       -> return ()
 
         -- Doesn't remove the jobs as they are kept as a log.

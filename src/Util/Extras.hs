@@ -32,7 +32,7 @@ getFileExtras (Entity fileId file) =
     case fileType file of
         Image -> do
             Just attrs <- getBy $ UniqueImageAttrs fileId
-            tags <- selectList [ExifTagFileId ==. fileId] []
+            tags <- selectList [ExifTagFile ==. fileId] []
             return $ ImageExtras (entityVal attrs)
                                  (map entityVal tags)
         Audio -> do
@@ -44,7 +44,7 @@ getFileExtras (Entity fileId file) =
             Just attrs <- getBy $ UniqueMediaAttrs fileId
             return $ VideoExtras (entityVal attrs)
         Archive -> do
-            files <- selectList [ArchiveFileFileId ==. fileId] []
+            files <- selectList [ArchiveFileFile ==. fileId] []
             return $ ArchiveExtras (map entityVal files)
         _ -> return None
 
@@ -154,6 +154,6 @@ getAudioSources _   _      _                 = []
 getArchive :: (Route App -> [(Text, Text)] -> Text) -> Upload -> Extras
            -> Maybe Html
 getArchive rdr upload (ArchiveExtras files) =
-    let rdr' fileHmac = routeType rdr upload (CompressedFile fileHmac)
+    let rdr' archiveHmac = routeType rdr upload (CompressedFile archiveHmac)
     in Just $ treeToHtml rdr' (archiveTree files)
 getArchive _   _      _                     = Nothing

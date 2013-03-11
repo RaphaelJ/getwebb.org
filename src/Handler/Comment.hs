@@ -18,7 +18,7 @@ import Network.HTTP.Types.Status (created201, badRequest400)
 
 import Account (requireAuth)
 import Util.Hmac (newHmac)
-import Util.Json (CommentUser (..))
+import Util.Json ()
 
 -- | Maximum number of comments which will be fetched in one request.
 maxNComments :: Int
@@ -46,7 +46,7 @@ getCommentR hmac = do
         Entity uploadId _ <- getBy404 $ UniqueUploadHmac hmac
         retrieveComments uploadId nComments maxScore
 
-    jsonToRepJson $ array $ map (uncurry CommentUser) comments
+    jsonToRepJson $ array comments
 
 -- | Posts a new comment.
 postCommentR :: Hmac -> Handler ()
@@ -110,10 +110,10 @@ retrieveComments :: UploadId -> Int -> Maybe Double
 retrieveComments uploadId nComments maxScore = do
     let restrict = maybeToList ((CommentScore <.) <$> maxScore)
 
-    cs <- selectList ((CommentUploadId ==. uploadId) : restrict)
+    cs <- selectList ((CommentUpload ==. uploadId) : restrict)
                      [Desc CommentScore, LimitTo nComments]
     forM cs $ \(Entity _ c) -> do
-        u <- getJust $ commentUserId c
+        u <- getJust $ commentUser c
         return (c, u)
 
 -- | Creates a form to post a new comment.

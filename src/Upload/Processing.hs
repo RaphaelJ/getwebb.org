@@ -76,14 +76,14 @@ processFile adminKey f public = do
         -- to be processed.
         -- Inserts the file before knowing its type to lock and prevent others
         -- uploads to insert the same file during the processing.
-        (upload, new) <- EitherT $ runDB $ runEitherT $ do
+        (upload, new) <- right $ runDB $ runEitherT $ do
             -- Checks again if the user hasn't reach the upload limit.
             allowed' <- lift $ checksIpLimits extras clientHost yesterday size
             when (not allowed') $ do
                 liftIO $ removeFile tmpPath
                 left DailyIPLimitReached
 
-            mFileId <- lift $ getBy $ UniqueFileHash hash file
+            mFileId <- lift $ getBy $ UniqueFileHash hash
             (fileId, new) <- case mFileId of
                 Just (Entity fileId file) -> do
                     -- Existing file: removes the temporary file and increments
@@ -122,9 +122,10 @@ processFile adminKey f public = do
             lift $ update adminKey [AdminKeyCount +=. 1]
 
             return (upload, new)
-        -- Process the special feature depending on the file type if it's a new
-        -- file and puts it on the compressing queue afterward.
-        let fileId = uploadFileId $ upload
+
+        -- Processes the special feature depending on the file type if it's a
+        -- new file and puts it on the compressing queue afterward.
+        let fileId = uploadFile upload
         when new $
             lift (processImage path ext fileId)   .||.
             lift (processArchive path ext fileId) .||.

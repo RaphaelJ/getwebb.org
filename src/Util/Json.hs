@@ -1,7 +1,7 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Defines 'ToJSON' instances to transform models and types in json objects.
-module Util.Json (CommentUser (..)) where
+module Util.Json () where
 
 import Import
 
@@ -14,10 +14,8 @@ instance ToJSON User where
           "name"          .= userName u
         ]
 
-data CommentUser = CommentUser Comment User
-
-instance ToJSON CommentUser where
-    toJSON (CommentUser c u) = object [
+instance ToJSON (Comment, User) where
+    toJSON (c, u) = object [
           "id"          .= commentHmac c
         , "user"        .= u
         , "message"     .= commentMessage c

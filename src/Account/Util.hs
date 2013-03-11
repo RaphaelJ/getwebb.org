@@ -30,16 +30,17 @@ import Util.Path (hashDir', newTmpFile)
 -- session value.
 registerUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)
                  ~ PersistMonadBackend (YesodDB sub master)
-                , PersistStore (YesodDB sub master)) =>
+                , PersistStore (YesodDB sub master)
+                , MonadLift (GHandler Account master) (YesodDB sub master)) =>
                 Text -> Text -> Text
-             -> GHandler sub master (Key (AccountUser master))
+             -> YesodDB sub master (Key (AccountUser master))
 registerUser email name pass = do
     salt <- randomSalt
 
-    lift (initUser email name (saltedHash salt pass) salt False) >>= insert
     lift $ newAvatar
+    lift (initUser email name (saltedHash salt pass) salt False) >>= insert
   where
-    newAvatar = do
+    newAvatar = do -- Put this out of the transaction ?
         img <- genIdenticon email
         app <- getYesod
 

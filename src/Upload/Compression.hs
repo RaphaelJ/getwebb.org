@@ -12,7 +12,6 @@ module Upload.Compression (
 import Import
 
 import qualified Data.ByteString.Lazy as L
-import qualified Data.Text as T
 import System.Directory (renameFile, removeFile)
 import System.IO (IOMode (..), openFile, hFileSize, hClose)
 

@@ -53,6 +53,8 @@ class (Yesod master, YesodPersist master, RenderMessage master FormMessage
     accountEmail, accountUsername, accountPassword, accountSalt ::
         AccountUser master -> GHandler sub master Text
 
+    accountAvatar :: AccountUser master -> GHandler sub master Bool
+
     -- | Form used on the settings page and which is added to the avatar form.
     accountSettingsForm :: AccountUser master
                         -> AForm sub master (AccountSettings master)

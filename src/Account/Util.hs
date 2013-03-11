@@ -15,13 +15,16 @@ import qualified Data.ByteString.Lazy.Char8 as C
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Digest.Pure.SHA (sha1, showDigest)
-import System.Random (randomRIO)
+import System.FilePath ((</>))
 import System.IO (hClose)
+import System.Random (randomRIO)
 
 import Yesod
+import qualified Vision.Image as I
 
+import Account.Avatar (genIdenticon)
 import Account.Foundation
-import Util.Path (newTmpFile, hashDir')
+import Util.Path (hashDir', newTmpFile)
 
 -- | Creates a new user. Returns the ID of the created entity. Doesn't set the
 -- session value.
@@ -33,13 +36,15 @@ registerUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)
 registerUser email name pass = do
     salt <- randomSalt
 
-    initUser email name (saltedHash salt pass) salt False >>= runDB . insert
+    lift (initUser email name (saltedHash salt pass) salt False) >>= insert
+    lift $ newAvatar
   where
     newAvatar = do
         img <- genIdenticon email
+        app <- getYesod
 
-        let hash = T.pack $ showDigest $ sha1 $ C.pack email
-        I.save path (avatarDir </> hashDir 
+        let hash = T.pack $ showDigest $ sha1 $ C.pack $ T.unpack email
+        liftIO $ I.save img (avatarDir app </> hashDir' hash)
 
 -- | Checks the given credentials without setting the session value.
 -- Returns the user ID if succeed. Tries with the username then the email.
@@ -68,7 +73,7 @@ validateUser name pass = do
 -- | Sets the session value to the given user ID.
 setUserId :: YesodAccount master => Key (AccountUser master)
           -> GHandler sub master ()
-setUserId userId = sessionKey `setSession` (pack $ show userId)
+setUserId userId = sessionKey `setSession` (T.pack $ show userId)
 
 -- | Returns the user's key from the user's session. Does NOT check if the key
 -- exists in the database.
@@ -76,7 +81,7 @@ getUserId :: YesodAccount master =>
              GHandler sub master (Maybe (Key (AccountUser master)))
 getUserId = runMaybeT $ do
     userIdTxt <- MaybeT $ lookupSession sessionKey
-    return $ read $ unpack userIdTxt
+    return $ read $ T.unpack userIdTxt
 
 -- | Returns the user entity if the user is authenticated, 'Nothing' otherwise.
 getUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)

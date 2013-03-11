@@ -241,6 +241,7 @@ instance YesodAccount App where
     accountUsername = return . userName
     accountPassword = return . userPassword
     accountSalt     = return . userSalt
+    accountAvatar   = return . userAvatar
 
     accountSettingsForm _ = areq checkBoxField "Default privacy" Nothing
 

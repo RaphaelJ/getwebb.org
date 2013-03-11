@@ -13,6 +13,10 @@ import Account.Foundation
 import Account.Util (redirectAuth)
 import Settings (widgetFile)
 
+data AvatarResult = AvatarResult {
+      arPersonalAvatar :: Bool, arFile :: Maybe FileInfo
+    }
+
 -- | Displays the sign in and the register forms in the default layout.
 getSettingsR :: YesodAccount master => GHandler Account master RepHtml
 getSettingsR = do
@@ -30,17 +34,21 @@ postSettingsR = getSettingsR
 
 -- | Generates a form which returns the username and the password.
 settingsForm :: YesodAccount master => AccountUser master -> Html
-             -> MForm Account master (FormResult (Maybe FileInfo
+             -> MForm Account master (FormResult (AvatarResult
                                                  , AccountSettings master)
                                      , GWidget Account master ())
 settingsForm user extra = do
-    avatarId <- lift $ accountAvatar user
+    personalAvatar <- lift $ accountAvatar user
 
+    (avatarRes, avatarWidget) <- renderDivs' $ areq checkboxField avatarSettings
+                                                    (Just personalAvatar)
     (fileRes, fileWidget) <- renderDivs' $ aopt fileField fileSettings Nothing
+
     (setsRes, setsWidget) <- renderDivs' $ accountSettingsForm user
 
     let widget = [whamlet|
             #{extra}
+            ^{avatarWidget}
             <div style="margin-left: 30px">
                 ^{fileWidget}
 

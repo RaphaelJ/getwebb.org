@@ -21,6 +21,7 @@ import Control.Concurrent (
     )
 import qualified Control.Exception as E
 import Control.Monad
+import Control.Monad.Logger (NoLoggingT, runNoLoggingT)
 import Data.List (foldl')
 import qualified Data.Map as M
 import qualified Data.Text as T
@@ -55,7 +56,7 @@ registerJob app fileId typ deps action = do
     -- Commits the job and its dependencies graph to the database
     time <- getCurrentTime
     let job = Job {
-              jobFileId = fileId, jobType = typ, jobCreated = time
+              jobFile = fileId, jobType = typ, jobCreated = time
             , jobCompleted = False, jobCpuTime = Nothing, jobException = Nothing
             }
     jobId <- runDBIO app $ do
@@ -135,5 +136,6 @@ forkJobsDaemon :: App -> IO ThreadId
 forkJobsDaemon = forkIO . jobsDaemon
 
 -- | Runs a transaction inside the IO monad.
-runDBIO :: App -> YesodPersistBackend App (ResourceT IO) a -> IO a
-runDBIO app f = runResourceT $ runPool (persistConfig app) f (connPool app)
+runDBIO :: App -> YesodPersistBackend App (NoLoggingT (ResourceT IO)) a -> IO a
+runDBIO app f =
+    runResourceT $ runNoLoggingT $ runPool (persistConfig app) f (connPool app)

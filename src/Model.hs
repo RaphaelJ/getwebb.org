@@ -14,8 +14,6 @@ import Data.Word
 import Database.Persist.GenericSql (Migration)
 import Database.Persist.GenericSql.Raw (SqlPersist)
 
-import Account.Foundation (Avatar (..))
-
 -- | File types recognized.
 data FileType = Image | Audio | Video | Archive | UnknownType
     deriving (Show, Read, Eq)
@@ -61,7 +59,7 @@ User
     password Text -- SHA1 hash of the password.
     salt Text -- Salt used to hash the password.
     created UTCTime
-    avatar AvatarId
+    avatar Bool
     isAdmin Bool
     public Bool -- True if the user want new files to be public.
     UniqueUserEmail email
@@ -81,13 +79,15 @@ UniqueHmac
     deriving Show
 
 File
+    hmac Hmac
     hash Text -- SHA1 hash of the file
     type FileType
     size Word64
     compressed Word64 Maybe -- The compressed size if the file is compressed.
     created UTCTime
     count Int -- Number of uploads which point to this file
-    -- Each file is identified by its hash:
+    -- Each file is identified by its HMAC and its hash :
+    UniqueFileHmac hmac
     UniqueFileHash hash
     deriving Show
 

@@ -55,9 +55,26 @@ postRegisterR = do
 
     case registerRes of
         FormSuccess (email, name, pass) -> do
-            registerUser email name pass >>= setUserId
+            runDB $ do
+                checkExists usernameLookup name
+                            "This username is already used by another user."
+                checkExists emailLookup email
+                            "This email is already used by another user."
+                userId <- registerUser email name pass
+            
+            setUserId userId
             getYesod >>= redirect . signInDest
+            
         _ -> showForm signIn (registerWidget, registerEnctype)
+  where
+    -- Returns the error message if the user already exists in the database 
+    -- for the given unique lookup key and field value.
+    checkExists unique value errMsg = do
+        key <- unique value
+        mUser <- runDB $ getBy key
+        return $! case mUser of
+            Just _  -> Left  errMsg
+            Nothing -> Right value
 
 -- | Removes the session value so the user is then signed out. Then redirects.
 getSignOutR :: YesodAccount master => GHandler Account master ()
@@ -150,9 +167,6 @@ registerForm html = do
               fsLabel = "Email address", fsTooltip = Nothing
             , fsId = name, fsName = name, fsAttrs = []
             }
-    checkEmail email =
-        checkExists emailLookup email
-                    ("This email is already used by another user." :: Text)
 
     usernameField = check checkUsername $ checkM checkUsernameExists textField
     usernameSettings =
@@ -165,9 +179,6 @@ registerForm html = do
     checkUsername name | T.all (`S.member` validChars) name = Right name
                        | otherwise                          =
         Left ("Username must only contain alphanumeric characters." :: Text)
-    checkUsernameExists name =
-        checkExists usernameLookup name
-                    ("This username is already used by another user." :: Text)
     validChars = S.fromList $ ['A'..'Z'] ++ ['a'..'z'] ++ ['0'..'9']
 
     passwordField' = check checkPassword passwordField
@@ -189,12 +200,3 @@ registerForm html = do
             , fsTooltip = Just "Repeat your password."
             , fsId = name, fsName = name, fsAttrs = []
             }
-
-    -- Returns the error message if the user already exists in the database 
-    -- for the given unique lookup key and field value.
-    checkExists unique value errMsg = do
-        key <- unique value
-        mUser <- runDB $ getBy key
-        return $! case mUser of
-            Just _  -> Left  errMsg
-            Nothing -> Right value

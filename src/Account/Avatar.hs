@@ -10,9 +10,8 @@ import Control.Applicative
 import Control.Monad
 import qualified Data.Array as A
 import qualified Data.Binary.Get as G
-import qualified Data.ByteString.Lazy as B
 import qualified Data.ByteString.Lazy.Char8 as C
-import Data.Digest.Pure.SHA (SHA1Digest, sha1, bytestringDigest)
+import Data.Digest.Pure.SHA (sha1, bytestringDigest)
 import Data.Text (Text)
 import qualified Data.Text as T
 import System.FilePath ((</>), (<.>))

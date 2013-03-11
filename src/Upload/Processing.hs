@@ -77,39 +77,38 @@ processFile adminKey f public = do
         -- Inserts the file before knowing its type to lock and prevent others
         -- uploads to insert the same file during the processing.
         (upload, new) <- EitherT $ runDB $ runEitherT $ do
-            let file = File {
-                      fileHash = hash, fileType = UnknownType
-                    , fileSize = size, fileCompressed = Nothing
-                    , fileCreated = time, fileCount = 1
-                    }
-
             -- Checks again if the user hasn't reach the upload limit.
             allowed' <- lift $ checksIpLimits extras clientHost yesterday size
             when (not allowed') $ do
                 liftIO $ removeFile tmpPath
                 left DailyIPLimitReached
 
-            mFileId <- lift $ insertUnique file
+            mFileId <- lift $ getBy $ UniqueFileHash hash file
             (fileId, new) <- case mFileId of
-                Just insertedFileId -> do
-                    -- New file: moves the temporary file to its final
-                    -- destination and adds the information to the database.
-                    liftIO $ moveToUpload tmpPath path
-                    liftIO $ putStrLn $ "New file " ++ path
-                    return $! (insertedFileId, True)
-                Nothing -> do
-                    -- Existing file: remove the temporary file, retrieves the 
-                    -- FileId and increments the file's counter.
+                Just (Entity fileId file) -> do
+                    -- Existing file: removes the temporary file and increments
+                    -- the file's counter.
                     liftIO $ removeFile tmpPath
                     liftIO $ putStrLn "Existing file"
-                    Just existingFile <- lift $ getBy (UniqueFileHash hash)
-                    let fileId = entityKey existingFile
                     lift $ update fileId [FileCount +=. 1]
-                    return $! (fileId, False)
+                    return (fileId, False)
+                Nothing -> do
+                    -- New file: moves the temporary file to its final
+                    -- destination and adds the information to the database.
+                    (key, hmac) <- lift $ newHmac HmacFile
+                    let file = File {
+                          fileHash = hash, fileType = UnknownType
+                        , fileSize = size, fileCompressed = Nothing
+                        , fileCreated = time, fileCount = 1
+                        }
+                    lift $ insertKey key file
+                    liftIO $ moveToUpload tmpPath path
+                    liftIO $ putStrLn $ "New file " ++ path
+                    return (key, True)
 
             (key, hmac) <- lift $ newHmac HmacUpload
             let upload = Upload {
-                  uploadHmac = hmac,  uploadFileId = fileId
+                  uploadHmac = hmac,  uploadFile = fileId
                 , uploadName = fileName f, uploadDescription = Nothing
                 , uploadPublic = public, uploadCreated = time
                 , uploadHostname = clientHost, uploadAdminKey = adminKey
@@ -141,7 +140,7 @@ processFile adminKey f public = do
         let sql = T.pack $ unlines [
                   "SELECT COUNT(*), COALESCE(SUM(f.size), 0)"
                 , "FROM Upload AS u"
-                , "INNER JOIN File AS f ON f.id = u.file_id"
+                , "INNER JOIN File AS f ON f.id = u.file"
                 , "WHERE u.hostname = ? and u.created >= ?;"
                 ]
         [(Single n, Single size)] <- rawSql sql [

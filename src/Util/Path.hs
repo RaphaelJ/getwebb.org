@@ -22,7 +22,7 @@ uploadDir app = extraUploadDir $ appExtra $ settings app
 -- | Splits the hash of the file in four parts and constucts a four level
 -- directory path in the upload directory.
 hashDir :: App -> Text -> FilePath
-hashDir app hash = uploadDir app </> hashDir hash
+hashDir app hash = uploadDir app </> hashDir' hash
 
 -- | Splits the hash of the file in four parts and constucts a four level
 -- directory path.

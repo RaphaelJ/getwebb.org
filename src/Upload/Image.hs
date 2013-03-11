@@ -86,7 +86,7 @@ processImage path ext fileId = do
                         update fileId [FileType =. Image]
 
                         insert $ ImageAttrs {
-                              imageAttrsFileId = fileId
+                              imageAttrsFile = fileId
                             , imageAttrsWidth = word32 w
                             , imageAttrsHeight = word32 h
                             , imageAttrsDisplayable = displayType
@@ -203,7 +203,7 @@ jobResize destType app fileId = do
 
     if newSize < fileSize file
         then runDBIO app $
-                updateWhere [ImageAttrsFileId ==. fileId]
+                updateWhere [ImageAttrsFile ==. fileId]
                             [ImageAttrsDisplayable =. Just destType]
         else removeFile destPath
 

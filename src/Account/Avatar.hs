@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedString #-}
 -- | The functions in this modules defines an identicon algorithm which
 -- generates random avatar from a string (eg. the user email).
 module Account.Avatar (
@@ -22,7 +23,7 @@ import qualified Vision.Primitive as I
 import Yesod
 
 import Account.Foundation
-import Util.Path (hashDir')
+import Util.Path (hashDir, hashDir')
 
 avatarSize, tileSize :: Int
 avatarSize = 60
@@ -84,15 +85,20 @@ genIdenticon str = do
 
 -- | Returns the path to the avatar file of an user.
 avatarPath :: YesodAccount master => master -> Text -> FilePath
-avatarPath app hash = avatarDir app </> hashDir' hash <.> "png"
+avatarPath app hash = avatarsDir app </> hashDir hash <.> "png"
 
 -- | Returns the master\'s route to the avatar file of an user.
-avatarRoute :: YesodAccount master => 
-               master -> AvatarId -> YesodDB sub master Route
-avatarRoute app hash =
-    let hash = T.pack $ showDigest $ sha1 $ C.pack $ T.unpack email
-    in avatarDir app </> hashDir' hash <.> "png"
-    StaticR $ StaticRoute ["pictures", pack $ picName picId picType] []
+avatarRoute :: YesodAccount master =>
+               AvatarId -> YesodDB sub master (Route master)
+avatarRoute avatarId = do
+    mAvatar <- get avatarId
+    case mAvatar of
+        Just avatar -> do
+            app <- lift $ getYesod
+            let path = hashDir' avatarHash avatar
+                file = init path ++ [last path `T.append` ".png"]
+            avatarsDirRoute app file
+        Nothing     -> error "Unable to find a corresponding avatar."
 
 -- | Returns the SHA1 of the pixels values of the image.
 hashImage :: I.RGBImage -> Text

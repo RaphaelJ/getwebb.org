@@ -20,7 +20,7 @@ import Codec.Compression.GZip (
     )
 
 import JobsDaemon (registerJob, runDBIO)
-import Util.Path (hashDir, newTmpFile, getPath)
+import Util.Path (uploadDir, newTmpFile, getPath)
 
 -- | Tries to compress a file. Replaces the original file and updates the
 -- database if the compressed file is smaller.
@@ -28,7 +28,7 @@ compressFile :: App -> FileId -> IO ()
 compressFile app fileId = do
     Just file <- runDBIO app $ get fileId
 
-    let path = getPath (hashDir app (fileHash file)) Original
+    let path = getPath (uploadDir app (fileHash file)) Original
 
     h <- liftIO $ openFile path ReadMode
 

@@ -45,7 +45,7 @@ import Upload.FFmpeg (
     )
 import qualified Upload.Compression as C
 import Upload.Image (miniature)
-import Util.Path (hashDir, getPath, newTmpFile)
+import Util.Path (uploadDir, getPath, newTmpFile)
 
 import Debug.Trace
 
@@ -272,7 +272,7 @@ transcodeFile :: App -> FileId -> IO ()
 transcodeFile app fileId = do
     Just file <- runDBIO app $ get fileId
 
-    let dir = hashDir app (fileHash file)
+    let dir = uploadDir app (fileHash file)
         getPath' = getPath dir
         path = getPath' Original
 

@@ -48,7 +48,7 @@ import System.IO.Unsafe (unsafeInterleaveIO)
 
 import JobsDaemon (runDBIO)
 import Util.Hmac (splitHmacs)
-import Util.Path (hashDir, getPath)
+import Util.Path (uploadDir, getPath)
 
 -- | Streams the content of a file over HTTP.
 getDownloadR :: Text -> Handler ()
@@ -258,7 +258,7 @@ getDownloadR hmacs' = do
     -- Tries to open the file. 404 Not found if doesn't exists.
     safeOpenFile file requestType = do
         app <- getYesod
-        let dir = hashDir app (fileHash file)
+        let dir = uploadDir app (fileHash file)
             path = getPath dir requestType
 
         eH <- liftIO $ E.try (openBinaryFile path ReadMode)

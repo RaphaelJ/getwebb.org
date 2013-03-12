@@ -69,7 +69,10 @@ class (Yesod master, YesodPersist master, RenderMessage master FormMessage
                         -> AForm sub master (AccountSettings master)
 
     -- | Directory where avatars will be stored.
-    avatarDir :: master -> FilePath
+    avatarsDir :: master -> FilePath
+
+   -- | How to get a root in the avatars directory.
+    avatarsDirRoot :: master -> [Text] -> Route masterFilePath
 
 mkYesodSubData "Account"
     [ ClassP ''YesodAccount [VarT $ mkName "master"] ]

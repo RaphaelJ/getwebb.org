@@ -26,7 +26,7 @@ import qualified Upload.Compression as C
 import Upload.Image (processImage)
 import Upload.Media (processMedia)
 import Util.Hmac (newHmac)
-import Util.Path (getFileSize, hashDir, newTmpFile, getPath)
+import Util.Path (getFileSize, uploadDir, newTmpFile, getPath)
 
 import System.TimeIt (timeIt)
 
@@ -69,7 +69,7 @@ processFile adminKey f public = do
         hash <- liftIO $ timeIt $ hashFile tmpPath
         let ext = T.toLower $ T.pack $ takeExtension $ T.unpack $ fileName f
 
-        let path = getPath (hashDir app hash) Original
+        let path = getPath (uploadDir app hash) Original
 
         -- Checks if the file exists.
         -- eithFileId gets a Right value if its a new file which file needs

@@ -8,7 +8,7 @@ import Import
 import Control.Monad
 import System.Directory (removeDirectoryRecursive)
 
-import Util.Path (hashDir)
+import Util.Path (uploadDir)
 
 removeUpload :: Entity Upload -> YesodDB App App ()
 removeUpload (Entity uploadId upload) = do
@@ -37,5 +37,5 @@ removeUpload (Entity uploadId upload) = do
         delete fileId
 
         app <- lift $ getYesod
-        let dir = hashDir app (fileHash file)
+        let dir = uploadDir app (fileHash file)
         liftIO $ removeDirectoryRecursive dir

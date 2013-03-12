@@ -247,7 +247,9 @@ instance YesodAccount App where
 
     accountSettingsForm _ = areq checkBoxField "Default privacy" Nothing
 
-    avatarDir _ = Settings.staticDir </> "avatar"
+    avatarsDir _ = Settings.staticDir </> "avatars"
+    avatarsDirRoute _ path =
+        StaticR $ StaticRoute (Settings.staticDir : "avatars" : path) []
 
 -- | Get the 'Extra' value, used to hold data from the settings.yml file.
 getExtra :: Handler Extra

@@ -32,7 +32,7 @@ import System.TimeIt (timeIt)
 
 import JobsDaemon (registerJob, runDBIO)
 import qualified Upload.Compression as C
-import Util.Path (hashDir, getPath, getFileSize)
+import Util.Path (uploadDir, getPath, getFileSize)
 
 -- | Files extensions which are supported by the DevIL image library.
 extensions :: S.Set Text
@@ -192,7 +192,7 @@ jobResize :: DisplayType -> App -> FileId -> IO ()
 jobResize destType app fileId = do
     Just file <- runDBIO app $ get fileId
 
-    let dir = hashDir app (fileHash file)
+    let dir = uploadDir app (fileHash file)
         path = getPath dir Original
         destPath = getPath dir (Display destType)
 
@@ -212,7 +212,7 @@ jobExifTags :: App -> FileId -> IO ()
 jobExifTags app fileId = do
     Just file <- runDBIO app $ get fileId
 
-    let path = getPath (hashDir app (fileHash file)) Original
+    let path = getPath (uploadDir app (fileHash file)) Original
 
     tags <- exifTags path
 

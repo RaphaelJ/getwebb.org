@@ -14,6 +14,8 @@ import Data.Word
 import Database.Persist.GenericSql (Migration)
 import Database.Persist.GenericSql.Raw (SqlPersist)
 
+import Account.Foundation (Avatar (..))
+
 -- | File types recognized.
 data FileType = Image | Audio | Video | Archive | UnknownType
     deriving (Show, Read, Eq)
@@ -59,7 +61,7 @@ User
     password Text -- SHA1 hash of the password.
     salt Text -- Salt used to hash the password.
     created UTCTime
-    avatar Bool
+    avatar AvatarId
     isAdmin Bool
     public Bool -- True if the user want new files to be public.
     UniqueUserEmail email

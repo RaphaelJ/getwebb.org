@@ -21,6 +21,15 @@ data Account = Account {
 sessionKey :: Text
 sessionKey = "_ACCOUNT_ID"
 
+share [mkPersist sqlOnlySettings, mkMigrate "migrateAvatar"] [persistLowerCase|
+-- Manage how many users share a same avatar.
+Avatar
+    hash Text -- SHA1 of the resized file.
+    count Int -- Number of user using this avatar.
+    UniqueAvatarHash hash
+    deriving Show
+|]
+
 -- | Defines a few parameters, getters and lookup functions to interact with the 
 -- master site routes and entities.
 class (Yesod master, YesodPersist master, RenderMessage master FormMessage
@@ -38,11 +47,11 @@ class (Yesod master, YesodPersist master, RenderMessage master FormMessage
     signInDest, signOutDest :: master -> Route master
 
     -- | Initialise a new user value (musn't add the user to the database).
-    initUser :: Text -- ^ Email
-             -> Text -- ^ Username
-             -> Text -- ^ Salted password
-             -> Text -- ^ Salt
-             -> Bool -- ^ User choosen avatar
+    initUser :: Text     -- ^ Email
+             -> Text     -- ^ Username
+             -> Text     -- ^ Salted password
+             -> Text     -- ^ Salt
+             -> AvatarId -- ^ AvatarId
              -> GHandler sub master (AccountUser master)
 
     -- | Unique keys to fetch users from the database.
@@ -53,7 +62,7 @@ class (Yesod master, YesodPersist master, RenderMessage master FormMessage
     accountEmail, accountUsername, accountPassword, accountSalt ::
         AccountUser master -> GHandler sub master Text
 
-    accountAvatar :: AccountUser master -> GHandler sub master Bool
+    accountAvatar :: AccountUser master -> GHandler sub master AvatarId
 
     -- | Form used on the settings page and which is added to the avatar form.
     accountSettingsForm :: AccountUser master

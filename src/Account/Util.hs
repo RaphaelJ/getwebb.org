@@ -14,16 +14,15 @@ import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
 import qualified Data.ByteString.Lazy.Char8 as C
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Digest.Pure.SHA (sha1, showDigest)
 import System.FilePath ((</>))
 import System.Random (randomRIO)
 
 import Yesod
 import qualified Vision.Image as I
 
-import Account.Avatar (genIdenticon)
+import Account.Avatar (genIdenticon, hashAvatar)
 import Account.Foundation
-import Util.Path (hashDir')
+import Util.Path (hashDir', newTmpFile)
 
 -- | Creates a new user. Returns the ID of the created entity. Doesn't set the
 -- session value.
@@ -36,15 +35,21 @@ registerUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)
 registerUser email name pass = do
     salt <- randomSalt
 
-    lift $ newAvatar
-    lift (initUser email name (saltedHash salt pass) salt False) >>= insert
+    avatarId <- newAvatar
+    lift (initUser email name (saltedHash salt pass) salt avatarId) >>= insert
   where
     newAvatar = do -- Put this out of the transaction ?
-        img <- genIdenticon email
-        app <- getYesod
+        img <- I.force <$> lift $ genIdenticon email
+        let hash = hashImage img
 
-        let hash = T.pack $ showDigest $ sha1 $ C.pack $ T.unpack email
-        liftIO $ I.save img (avatarPath app email)
+        mAvatar <- getBy $ UniqueAvatarHash hash
+        case mAvatar of
+            Just (Entity avatarId _) -> do
+                update avatarId [AvatarCount +=. 1]
+                return avatarId
+            Nothing                  -> do
+                liftIO $ I.save img (avatarPath app hash)
+                insert $ Avatar hash 1
 
 -- | Checks the given credentials without setting the session value.
 -- Returns the user ID if succeed. Tries with the username then the email.

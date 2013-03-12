@@ -2,7 +2,7 @@
 -- generates random avatar from a string (eg. the user email).
 module Account.Avatar (
       avatarSize, spriteFile, tileSize
-    , loadSprite, genIdenticon
+    , loadSprite, genIdenticon, avatarPath, avatarRoute, hashImage
     ) where
 
 import Prelude
@@ -10,8 +10,9 @@ import Control.Applicative
 import Control.Monad
 import qualified Data.Array as A
 import qualified Data.Binary.Get as G
+import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as C
-import Data.Digest.Pure.SHA (sha1, bytestringDigest)
+import Data.Digest.Pure.SHA (sha1, bytestringDigest, showDigest)
 import Data.Text (Text)
 import qualified Data.Text as T
 import System.FilePath ((</>), (<.>))
@@ -21,6 +22,7 @@ import qualified Vision.Primitive as I
 import Yesod
 
 import Account.Foundation
+import Util.Path (hashDir')
 
 avatarSize, tileSize :: Int
 avatarSize = 60
@@ -80,13 +82,22 @@ genIdenticon str = do
     colorize color 255 = color
     colorize _     _   = I.RGBPixel 0 0 0
 
-avatarPath :: YesodAccount master =>
-              AccountUser master -> GHandler sub master FilePath
-avatarPath app email = 
-    app <- getYesod
-    
+-- | Returns the path to the avatar file of an user.
+avatarPath :: YesodAccount master => master -> Text -> FilePath
+avatarPath app hash = avatarDir app </> hashDir' hash <.> "png"
+
+-- | Returns the master\'s route to the avatar file of an user.
+avatarRoute :: YesodAccount master => 
+               master -> AvatarId -> YesodDB sub master Route
+avatarRoute app hash =
     let hash = T.pack $ showDigest $ sha1 $ C.pack $ T.unpack email
-    avatarDir app </> hashDir' hash
+    in avatarDir app </> hashDir' hash <.> "png"
+    StaticR $ StaticRoute ["pictures", pack $ picName picId picType] []
+
+-- | Returns the SHA1 of the pixels values of the image.
+hashImage :: I.RGBImage -> Text
+hashImage =
+    T.pack . showDigest . sha1 . L.pack . concat . I.pixToValues . I.toList
 
 int :: Integral a => a -> Int
 int = fromIntegral

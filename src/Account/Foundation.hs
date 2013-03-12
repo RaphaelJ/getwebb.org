@@ -51,18 +51,17 @@ class (Yesod master, YesodPersist master, RenderMessage master FormMessage
              -> Text     -- ^ Username
              -> Text     -- ^ Salted password
              -> Text     -- ^ Salt
-             -> AvatarId -- ^ AvatarId
+             -> AvatarId
              -> GHandler sub master (AccountUser master)
 
     -- | Unique keys to fetch users from the database.
-    emailLookup, usernameLookup ::
-        Text -> GHandler sub master (Unique (AccountUser master))
+    emailLookup, usernameLookup :: master -> Text -> Unique (AccountUser master)
 
     -- | Accesses data from the user account data type.
     accountEmail, accountUsername, accountPassword, accountSalt ::
-        AccountUser master -> GHandler sub master Text
+        master -> AccountUser master -> Text
 
-    accountAvatar :: AccountUser master -> GHandler sub master AvatarId
+    accountAvatar :: master -> AccountUser master -> AvatarId
 
     -- | Form used on the settings page and which is added to the avatar form.
     accountSettingsForm :: AccountUser master
@@ -71,8 +70,8 @@ class (Yesod master, YesodPersist master, RenderMessage master FormMessage
     -- | Directory where avatars will be stored.
     avatarsDir :: master -> FilePath
 
-   -- | How to get a root in the avatars directory.
-    avatarsDirRoot :: master -> [Text] -> Route masterFilePath
+   -- | How to get a route in the avatars directory.
+    avatarsDirRoute :: master -> [Text] -> Route master
 
 mkYesodSubData "Account"
     [ ClassP ''YesodAccount [VarT $ mkName "master"] ]

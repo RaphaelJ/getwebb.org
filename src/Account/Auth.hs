@@ -78,8 +78,9 @@ postRegisterR = do
     -- Returns the error message if the user already exists in the database
     -- for the given unique lookup key and field value.
     checkExists unique value errMsg = do
+        app <- lift $ lift getYesod
         key <- lift $ lift $ unique value
-        mUser <- lift $ getBy key
+        mUser <- lift $ getBy $ unique app key
         case mUser of
             Just _  -> left  errMsg
             Nothing -> right ()

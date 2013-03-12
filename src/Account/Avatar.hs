@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedString #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- | The functions in this modules defines an identicon algorithm which
 -- generates random avatar from a string (eg. the user email).
 module Account.Avatar (
@@ -95,9 +95,9 @@ avatarRoute avatarId = do
     case mAvatar of
         Just avatar -> do
             app <- lift $ getYesod
-            let path = hashDir' avatarHash avatar
+            let path = hashDir' $ avatarHash avatar
                 file = init path ++ [last path `T.append` ".png"]
-            avatarsDirRoute app file
+            return $ avatarsDirRoute app file
         Nothing     -> error "Unable to find a corresponding avatar."
 
 -- | Returns the SHA1 of the pixels values of the image.

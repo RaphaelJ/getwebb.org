@@ -20,7 +20,7 @@ import System.Random (randomRIO)
 import Yesod
 import qualified Vision.Image as I
 
-import Account.Avatar (genIdenticon, hashAvatar)
+import Account.Avatar (genIdenticon, hashImage)
 import Account.Foundation
 import Util.Path (hashDir', newTmpFile)
 
@@ -122,8 +122,8 @@ requireAuth = do
 -- the login page.
 redirectAuth :: (YesodAccount master, PersistEntityBackend (AccountUser master)
                 ~ PersistMonadBackend (YesodDB sub master)
-               , PersistStore (YesodDB sub master)) =>
-               GHandler sub master (Entity (AccountUser master))
+                , PersistStore (YesodDB sub master)) =>
+                GHandler sub master (Entity (AccountUser master))
 redirectAuth = do
     mUser <- getUser
 
@@ -137,10 +137,10 @@ redirectAuth = do
                 Nothing  -> permissionDenied "Please configure authRoute"
 
 -- | Redirects to 'signInDest' if the user is authenticated.
-redirectNoAuth :: (YesodAccount master, PersistEntityBackend (AccountUser master)
-                  ~ PersistMonadBackend (YesodDB sub master)
+redirectNoAuth :: (YesodAccount master, PersistMonadBackend (YesodDB sub master)
+                  ~ PersistEntityBackend (AccountUser master)
                   , PersistStore (YesodDB sub master)) =>
-                 GHandler sub master ()
+                  GHandler sub master ()
 redirectNoAuth = do
     mUser <- getUser
     case mUser of

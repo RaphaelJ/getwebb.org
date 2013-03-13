@@ -88,7 +88,9 @@ avatarPath :: YesodAccount master => master -> Text -> FilePath
 avatarPath app hash = avatarsDir app </> hashDir hash <.> "png"
 
 -- | Returns the master\'s route to the avatar file of an user.
-avatarRoute :: YesodAccount master =>
+avatarRoute :: (YesodAccount master, PersistMonadBackend (YesodDB sub master)
+               ~ PersistEntityBackend Avatar
+               , PersistStore (YesodDB sub master)) =>
                AvatarId -> YesodDB sub master (Route master)
 avatarRoute avatarId = do
     mAvatar <- get avatarId
@@ -103,7 +105,7 @@ avatarRoute avatarId = do
 -- | Returns the SHA1 of the pixels values of the image.
 hashImage :: I.RGBImage -> Text
 hashImage =
-    T.pack . showDigest . sha1 . L.pack . concat . I.pixToValues . I.toList
+    T.pack . showDigest . sha1 . L.pack . concat . map I.pixToValues . I.toList
 
 int :: Integral a => a -> Int
 int = fromIntegral

@@ -9,26 +9,27 @@ import Prelude
 import Control.Applicative
 import Control.Monad
 import Control.Monad.IO.Class
-import Control.Monad.Trans (MonadTrans)
 import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
 import qualified Data.ByteString.Lazy.Char8 as C
+import Data.Digest.Pure.SHA (sha1, showDigest)
 import Data.Text (Text)
 import qualified Data.Text as T
-import System.FilePath ((</>))
 import System.Random (randomRIO)
 
 import Yesod
 import qualified Vision.Image as I
 
-import Account.Avatar (genIdenticon, hashImage)
+import Account.Avatar (genIdenticon, avatarPath, hashImage)
 import Account.Foundation
-import Util.Path (hashDir', newTmpFile)
 
 -- | Creates a new user. Returns the ID of the created entity. Doesn't set the
 -- session value.
 registerUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)
                  ~ PersistMonadBackend (YesodDB sub master)
-                , PersistStore (YesodDB sub master)
+                , PersistEntityBackend Avatar
+                 ~ PersistMonadBackend (YesodDB sub master)
+                , PersistQuery (YesodDB sub master)
+                , PersistUnique (YesodDB sub master)
                 , MonadLift (GHandler Account master) (YesodDB sub master)) =>
                 Text -> Text -> Text
              -> YesodDB sub master (Key (AccountUser master))
@@ -39,7 +40,7 @@ registerUser email name pass = do
     lift (initUser email name (saltedHash salt pass) salt avatarId) >>= insert
   where
     newAvatar = do -- Put this out of the transaction ?
-        img <- I.force <$> lift $ genIdenticon email
+        img <- I.force `liftM` lift (genIdenticon email)
         let hash = hashImage img
 
         mAvatar <- getBy $ UniqueAvatarHash hash
@@ -48,6 +49,7 @@ registerUser email name pass = do
                 update avatarId [AvatarCount +=. 1]
                 return avatarId
             Nothing                  -> do
+                app <- lift $ getYesod
                 liftIO $ I.save img (avatarPath app hash)
                 insert $ Avatar hash 1
 
@@ -55,8 +57,7 @@ registerUser email name pass = do
 -- Returns the user ID if succeed. Tries with the username then the email.
 validateUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)
                  ~ PersistMonadBackend (YesodDB sub master)
-                , Functor (YesodDB sub master), Monad (YesodDB sub master)
-                , MonadTrans (YesodPersistBackend master)
+                , Functor (YesodDB sub master)
                 , PersistUnique (YesodDB sub master)) =>
                 Text -> Text
              -> YesodDB sub master (Maybe (Key (AccountUser master)))
@@ -73,7 +74,7 @@ validateUser name pass = do
             then Just userId
             else Nothing
   where
-    getValidUser unique = MaybeT . getBy . unique name
+    getValidUser unique = MaybeT $ getBy $ unique name
 
 -- | Sets the session value to the given user ID.
 setUserId :: YesodAccount master => Key (AccountUser master)
@@ -91,14 +92,16 @@ getUserId = runMaybeT $ do
 -- | Returns the user entity if the user is authenticated, 'Nothing' otherwise.
 getUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)
             ~ PersistMonadBackend (YesodDB sub master)
+           , PersistEntityBackend Avatar
+            ~ PersistMonadBackend (YesodDB sub master)
            , PersistStore (YesodDB sub master)) =>
            GHandler sub master (Maybe (Entity (AccountUser master), Avatar))
 getUser = runMaybeT $ do
     userId <- MaybeT $ getUserId
     MaybeT $ runDB $ runMaybeT $ do
-        user     <- MaybeT $ lift $ get userId
-        avatarId <- lift $ lift $ lift $ accountAvatar user
-        avatar   <- MaybeT $ lift $ get avatarId
+        user     <- MaybeT $ get userId
+        app      <- lift $ lift getYesod
+        avatar   <- MaybeT $ get (accountAvatar app user)
         return (Entity userId user, avatar)
 
 -- | Resets the session value so the user is now no more connected.
@@ -109,8 +112,10 @@ unsetUserId = deleteSession sessionKey
 -- isn't authenticated.
 requireAuth :: (YesodAccount master, PersistEntityBackend (AccountUser master)
                 ~ PersistMonadBackend (YesodDB sub master)
+               , PersistEntityBackend Avatar
+                ~ PersistMonadBackend (YesodDB sub master)
                , PersistStore (YesodDB sub master)) =>
-               GHandler sub master (Entity (AccountUser master))
+               GHandler sub master (Entity (AccountUser master), Avatar)
 requireAuth = do
     mUser <- getUser
 
@@ -121,9 +126,11 @@ requireAuth = do
 -- | Returns the user entity. If the user is not authenticated, redirects to
 -- the login page.
 redirectAuth :: (YesodAccount master, PersistEntityBackend (AccountUser master)
-                ~ PersistMonadBackend (YesodDB sub master)
+                 ~ PersistMonadBackend (YesodDB sub master)
+                , PersistEntityBackend Avatar
+                 ~ PersistMonadBackend (YesodDB sub master)
                 , PersistStore (YesodDB sub master)) =>
-                GHandler sub master (Entity (AccountUser master))
+                GHandler sub master (Entity (AccountUser master), Avatar)
 redirectAuth = do
     mUser <- getUser
 
@@ -138,7 +145,9 @@ redirectAuth = do
 
 -- | Redirects to 'signInDest' if the user is authenticated.
 redirectNoAuth :: (YesodAccount master, PersistMonadBackend (YesodDB sub master)
-                  ~ PersistEntityBackend (AccountUser master)
+                   ~ PersistEntityBackend (AccountUser master)
+                  , PersistEntityBackend Avatar
+                   ~ PersistMonadBackend (YesodDB sub master)
                   , PersistStore (YesodDB sub master)) =>
                   GHandler sub master ()
 redirectNoAuth = do

@@ -10,6 +10,7 @@ import Control.Applicative
 import Data.Monoid
 
 import Account.Foundation
+import Account.Avatar (avatarRoute)
 import Account.Util (redirectAuth)
 import Settings (widgetFile)
 
@@ -20,7 +21,8 @@ data AvatarResult = AvatarResult {
 -- | Displays the sign in and the register forms in the default layout.
 getSettingsR :: YesodAccount master => GHandler Account master RepHtml
 getSettingsR = do
-    Entity _ user <- redirectAuth
+    (Entity _ user, _) <- redirectAuth
+    avatarRoute 
 
     (widget, enctype) <- generateFormPost $ settingsForm user
 
@@ -33,11 +35,12 @@ postSettingsR :: YesodAccount master => GHandler Account master RepHtml
 postSettingsR = getSettingsR
 
 -- | Generates a form which returns the username and the password.
-settingsForm :: YesodAccount master => AccountUser master -> Html
+settingsForm :: YesodAccount master =>
+                AccountUser master -> Route master -> Html
              -> MForm Account master (FormResult (AvatarResult
                                                  , AccountSettings master)
                                      , GWidget Account master ())
-settingsForm user extra = do
+settingsForm user avatarRte extra = do
     personalAvatar <- lift $ accountAvatar user
 
     (avatarRes, avatarWidget) <- renderDivs' $ areq checkBoxField avatarSettings
@@ -50,6 +53,7 @@ settingsForm user extra = do
             #{extra}
             ^{avatarWidget}
             <div style="margin-left: 30px">
+                <img alt="Your avatar" src=@{avatarRte} />
                 ^{fileWidget}
 
             ^{setsWidget}

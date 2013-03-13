@@ -22,8 +22,11 @@ import Account.Util (
 import Settings (widgetFile)
 
 -- | Displays the sign in and the register forms in the default layout.
-getAuthR, getSignInR, getRegisterR :: YesodAccount master =>
-                                      GHandler Account master RepHtml
+getAuthR, getSignInR, getRegisterR :: 
+    (YesodAccount master, PersistEntityBackend (AccountUser master)
+     ~ PersistMonadBackend (YesodDB sub master)
+    , PersistEntityBackend Avatar ~ PersistMonadBackend (YesodDB sub master)) =>
+    GHandler Account master RepHtml
 getAuthR = do
     redirectNoAuth
     signIn <- generateFormPost signInForm

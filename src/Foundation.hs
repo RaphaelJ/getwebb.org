@@ -225,7 +225,7 @@ instance YesodAccount App where
     type AccountUser     App = User
     type AccountSettings App = Bool
 
-    signInDest _  = HistoryR
+    signInDest  _ = HistoryR
     signOutDest _ = HistoryR
 
     initUser email name pass salt avatar = do
@@ -236,20 +236,20 @@ instance YesodAccount App where
         , userIsAdmin = False, userPublic = True
         }
 
-    emailLookup    = return . UniqueUserEmail
-    usernameLookup = return . UniqueUserName
+    emailLookup    _ = UniqueUserEmail
+    usernameLookup _ = UniqueUserName
 
-    accountEmail    = return . userEmail
-    accountUsername = return . userName
-    accountPassword = return . userPassword
-    accountSalt     = return . userSalt
-    accountAvatar   = return . userAvatar
+    accountEmail    _ = userEmail
+    accountUsername _ = userName
+    accountPassword _ = userPassword
+    accountSalt     _ = userSalt
+    accountAvatar   _ = userAvatar
 
     accountSettingsForm _ = areq checkBoxField "Default privacy" Nothing
 
     avatarsDir _ = Settings.staticDir </> "avatars"
     avatarsDirRoute _ path =
-        StaticR $ StaticRoute (Settings.staticDir : "avatars" : path) []
+        StaticR $ StaticRoute (pack Settings.staticDir : "avatars" : path) []
 
 -- | Get the 'Extra' value, used to hold data from the settings.yml file.
 getExtra :: Handler Extra

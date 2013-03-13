@@ -59,26 +59,26 @@ validateUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)
                 , MonadTrans (YesodPersistBackend master)
                 , PersistUnique (YesodDB sub master)) =>
                 Text -> Text
-             -> GHandler sub master (Maybe (Key (AccountUser master)))
+             -> YesodDB sub master (Maybe (Key (AccountUser master)))
 validateUser name pass = do
+    app <- lift getYesod
     -- Tries by username, then by email.
-    runDB $ runMaybeT $
-        MaybeT (getValidUser usernameLookup) <|>
-        MaybeT (getValidUser emailLookup)
+    runMaybeT $ do
+        Entity userId user  <-     getValidUser (usernameLookup app)
+                               <|> getValidUser (emailLookup    app)
+
+        let salt   = accountSalt     app user
+            salted = accountPassword app user
+        MaybeT $ return $ if saltedHash salt pass == salted
+            then Just userId
+            else Nothing
   where
-    getValidUser unique = runMaybeT $ do
-        Entity userId user <- MaybeT $ lift (unique name) >>= getBy
-        MaybeT $ lift $ do
-            salt   <- accountSalt     user
-            salted <- accountPassword user
-            if saltedHash salt pass == salted
-                then return $! Just userId
-                else return Nothing
+    getValidUser unique = MaybeT . getBy . unique name
 
 -- | Sets the session value to the given user ID.
 setUserId :: YesodAccount master => Key (AccountUser master)
           -> GHandler sub master ()
-setUserId userId = sessionKey `setSession` (T.pack $ show userId)
+setUserId = (sessionKey `setSession`) . T.pack . show
 
 -- | Returns the user's key from the user's session. Does NOT check if the key
 -- exists in the database.
@@ -92,11 +92,14 @@ getUserId = runMaybeT $ do
 getUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)
             ~ PersistMonadBackend (YesodDB sub master)
            , PersistStore (YesodDB sub master)) =>
-        GHandler sub master (Maybe (Entity (AccountUser master)))
+           GHandler sub master (Maybe (Entity (AccountUser master), Avatar))
 getUser = runMaybeT $ do
     userId <- MaybeT $ getUserId
-    user   <- MaybeT $ runDB $ get userId
-    return $! Entity userId user
+    MaybeT $ runDB $ runMaybeT $ do
+        user     <- MaybeT $ lift $ get userId
+        avatarId <- lift $ lift $ lift $ accountAvatar user
+        avatar   <- MaybeT $ lift $ get avatarId
+        return (Entity userId user, avatar)
 
 -- | Resets the session value so the user is now no more connected.
 unsetUserId :: YesodAccount master => GHandler sub master ()

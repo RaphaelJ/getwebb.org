@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedString #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- | The functions in this modules defines an identicon algorithm which
 -- generates random avatar from a string (eg. the user email).
 module Account.Avatar (

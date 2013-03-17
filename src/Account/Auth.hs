@@ -22,11 +22,8 @@ import Account.Util (
 import Settings (widgetFile)
 
 -- | Displays the sign in and the register forms in the default layout.
-getAuthR, getSignInR, getRegisterR :: 
-    (YesodAccount master, PersistEntityBackend (AccountUser master)
-     ~ PersistMonadBackend (YesodDB sub master)
-    , PersistEntityBackend Avatar ~ PersistMonadBackend (YesodDB sub master)) =>
-    GHandler Account master RepHtml
+getAuthR, getSignInR, getRegisterR :: YesodAccount master => 
+                                      GHandler Account master RepHtml
 getAuthR = do
     redirectNoAuth
     signIn <- generateFormPost signInForm
@@ -82,8 +79,7 @@ postRegisterR = do
     -- for the given unique lookup key and field value.
     checkExists unique value errMsg = do
         app <- lift $ lift getYesod
-        key <- lift $ lift $ unique value
-        mUser <- lift $ getBy $ unique app key
+        mUser <- lift $ getBy $ unique app value
         case mUser of
             Just _  -> left  errMsg
             Nothing -> right ()
@@ -117,7 +113,7 @@ signInForm html = do
     -- Checks the validity of the credentials.
     case res of
         FormSuccess (name, pass) -> do
-            mUserId <- lift $ validateUser name pass
+            mUserId <- lift $ runDB $ validateUser name pass
             return $! case mUserId of
                 Just userId -> (FormSuccess userId, widget)
                 Nothing ->

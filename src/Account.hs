@@ -1,5 +1,4 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE FlexibleInstances, UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Provides a sub-site which manages registration, authentication and
 -- user accounts.
@@ -12,11 +11,6 @@ import Prelude
 import Language.Haskell.TH (Pred (..), Type (..), mkName)
 
 import Yesod
-import Database.Persist.GenericSql (SqlPersist, runMigration)
-import Database.Persist.Store (
-      PersistConfig, PersistConfigBackend, PersistConfigPool, runPool
-    )
-
 import Account.Foundation as Account
 import Account.Util as Account
 
@@ -29,10 +23,8 @@ mkYesodSubDispatch "Account"
     resourcesAccount
 
 -- | Initialize a new 'Account' foundation type.
-makeAccount :: (PersistConfig c, PersistConfigBackend c ~ SqlPersist) =>
-               c -> PersistConfigPool c -> IO Account
-makeAccount conf pool = do
+makeAccount :: IO Account
+makeAccount = do
     reCaptachaKeys <- read `fmap` readFile "config/recaptcha"
     sprite <- loadSprite
-    runPool conf (runMigration migrateAvatar) pool
     return $! Account reCaptachaKeys sprite

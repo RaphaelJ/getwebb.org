@@ -50,7 +50,7 @@ getCommentR hmac = do
 -- | Posts a new comment.
 postCommentR :: Hmac -> Handler ()
 postCommentR hmac = do
-    Entity userId _ <- requireAuth
+    (Entity userId _, _) <- requireAuth
     ((res, _), _) <- runFormPostNoToken commentForm
 
     case res of
@@ -80,7 +80,7 @@ putCommentDownR = voteComment Downvote
 -- | Votes for or against a comment.
 voteComment :: VoteType -> Hmac -> Handler ()
 voteComment voteType hmac = do
-    Entity userId _ <- requireAuth
+    (Entity userId _, _) <- requireAuth
     runDB $ do
         Entity commentId Comment { .. } <- getBy404 $ UniqueCommentHmac hmac
 

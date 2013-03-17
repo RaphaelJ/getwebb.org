@@ -21,10 +21,11 @@ data AvatarResult = AvatarResult {
 -- | Displays the sign in and the register forms in the default layout.
 getSettingsR :: YesodAccount master => GHandler Account master RepHtml
 getSettingsR = do
-    (Entity _ user, _) <- redirectAuth
-    avatarRoute 
+    (Entity _ user, avatar) <- redirectAuth
 
-    (widget, enctype) <- generateFormPost $ settingsForm user
+    app <- getYesod
+    let avatarRte = avatarRoute app avatar
+    (widget, enctype) <- generateFormPost $ settingsForm user avatarRte
 
     toMaster <- getRouteToMaster
     defaultLayout $ do
@@ -41,10 +42,8 @@ settingsForm :: YesodAccount master =>
                                                  , AccountSettings master)
                                      , GWidget Account master ())
 settingsForm user avatarRte extra = do
-    personalAvatar <- lift $ accountAvatar user
-
     (avatarRes, avatarWidget) <- renderDivs' $ areq checkBoxField avatarSettings
-                                                    (Just personalAvatar)
+                                                    Nothing
     (fileRes, fileWidget) <- renderDivs' $ aopt fileField fileSettings Nothing
 
     (setsRes, setsWidget) <- renderDivs' $ accountSettingsForm user

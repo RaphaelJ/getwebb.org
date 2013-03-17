@@ -1,7 +1,7 @@
 <div #page>
     <h1>Upload history
 
-    $maybe Entity _ user <- mUser
+    $maybe (Entity _ user, _) <- mUser
         <a href=@{AccountR SignOutR}>Sign out
         (<a href="@{AccountR SettingsR}">#{userName user}</a>)
     $nothing

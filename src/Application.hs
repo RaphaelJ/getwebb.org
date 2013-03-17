@@ -14,7 +14,7 @@ import Yesod.Default.Config
 import Yesod.Default.Main
 import Yesod.Default.Handlers
 import Control.Monad.Logger (runLoggingT)
-import Database.Persist.GenericSql (runMigration)
+import Database.Persist.GenericSql (printMigration, runMigration)
 import qualified Database.Persist.Store
 import Network.Wai.Middleware.Autohead (autohead)
 import Network.Wai.Middleware.RequestLogger
@@ -95,9 +95,10 @@ makeFoundation conf = do
     let foundation = App conf s account p manager dbconf logger key jQueue
                          vBuffer
 
-    -- Performs database migration using our application's logging settings.
+    -- Performs database migrations using our application's logging settings.
+    let migrations = migrateAccount >> migrateAll
     runLoggingT
-        (Database.Persist.Store.runPool dbconf (runMigration migrateAll) p)
+        (Database.Persist.Store.runPool dbconf (printMigration migrations) p)
         (messageLoggerSource foundation logger)
 
     restoreJobQueue foundation

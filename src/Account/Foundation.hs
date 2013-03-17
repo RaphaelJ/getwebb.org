@@ -21,7 +21,7 @@ data Account = Account {
 sessionKey :: Text
 sessionKey = "_ACCOUNT_ID"
 
-share [mkPersist sqlOnlySettings, mkMigrate "migrateAvatar"] [persistLowerCase|
+share [mkPersist sqlOnlySettings, mkMigrate "migrateAccount"] [persistLowerCase|
 -- Manage how many users share a same avatar.
 Avatar
     hash Text -- SHA1 of the resized file.
@@ -36,7 +36,9 @@ class (Yesod master, YesodPersist master, RenderMessage master FormMessage
       , PersistEntity (AccountUser master)
       , PersistEntityBackend (AccountUser master)
         ~ PersistMonadBackend (YesodDB Account master)
-      , PersistStore (YesodDB Account master)
+      , PersistEntityBackend Avatar
+        ~ PersistMonadBackend (YesodDB Account master)
+      , PersistQuery (YesodDB Account master)
       , PersistUnique (YesodDB Account master)
       , MonadTrans (YesodPersistBackend master)
       , Functor (YesodDB Account master)) => YesodAccount master where

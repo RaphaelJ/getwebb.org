@@ -88,19 +88,11 @@ avatarPath :: YesodAccount master => master -> Text -> FilePath
 avatarPath app hash = avatarsDir app </> hashDir hash <.> "png"
 
 -- | Returns the master\'s route to the avatar file of an user.
-avatarRoute :: (YesodAccount master, PersistMonadBackend (YesodDB sub master)
-               ~ PersistEntityBackend Avatar
-               , PersistStore (YesodDB sub master)) =>
-               AvatarId -> YesodDB sub master (Route master)
-avatarRoute avatarId = do
-    mAvatar <- get avatarId
-    case mAvatar of
-        Just avatar -> do
-            app <- lift $ getYesod
-            let path = hashDir' $ avatarHash avatar
-                file = init path ++ [last path `T.append` ".png"]
-            return $ avatarsDirRoute app file
-        Nothing     -> error "Unable to find a corresponding avatar."
+avatarRoute :: YesodAccount master => master -> Avatar -> Route master
+avatarRoute app avatar = 
+    let path = hashDir' $ avatarHash avatar
+        file = init path ++ [last path `T.append` ".png"]
+    in avatarsDirRoute app file
 
 -- | Returns the SHA1 of the pixels values of the image.
 hashImage :: I.RGBImage -> Text

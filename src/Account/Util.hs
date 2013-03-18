@@ -14,9 +14,12 @@ import qualified Data.ByteString.Lazy.Char8 as C
 import Data.Digest.Pure.SHA (sha1, showDigest)
 import Data.Text (Text)
 import qualified Data.Text as T
+import System.Directory (createDirectoryIfMissing)
+import System.FilePath (takeDirectory)
 import System.Random (randomRIO)
 
 import Yesod
+import Database.Persist.Store (PersistValue (..))
 import qualified Vision.Image as I
 
 import Account.Avatar (genIdenticon, avatarPath, hashImage)
@@ -36,7 +39,7 @@ registerUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)
 registerUser email name pass = do
     salt <- randomSalt
 
-    avatarId <- newAvatar
+    Key (PersistInt64 avatarId) <- newAvatar
     lift (initUser email name (saltedHash salt pass) salt avatarId) >>= insert
   where
     newAvatar = do -- Put this out of the transaction ?
@@ -50,8 +53,10 @@ registerUser email name pass = do
                 return avatarId
             Nothing                  -> do
                 app <- lift $ getYesod
-                liftIO $ I.save img (avatarPath app hash)
-                insert $ Avatar hash 1
+                let path = (avatarPath app hash)
+                liftIO $ createDirectoryIfMissing True (takeDirectory path)
+                liftIO $ I.save img path
+                insert $ Avatar hash True 1
 
 -- | Checks the given credentials without setting the session value.
 -- Returns the user ID if succeed. Tries with the username then the email.
@@ -101,7 +106,7 @@ getUser = runMaybeT $ do
     MaybeT $ runDB $ runMaybeT $ do
         user     <- MaybeT $ get userId
         app      <- lift $ lift getYesod
-        avatar   <- MaybeT $ get (accountAvatar app user)
+        avatar   <- MaybeT $ get $ Key $ PersistInt64 $ accountAvatar app user
         return (Entity userId user, avatar)
 
 -- | Resets the session value so the user is now no more connected.

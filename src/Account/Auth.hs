@@ -99,7 +99,7 @@ showForm (signInWidget, signInEnctype) (registerWidget, registerEnctype) = do
     toMaster <- getRouteToMaster
     defaultLayout $ do
         setTitle "Authentication - getwebb"
-        $(widgetFile "auth")
+        $(widgetFile "account-auth")
 
 -- | Generates a form which returns the username and the password.
 signInForm :: YesodAccount master => Html

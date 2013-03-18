@@ -4,6 +4,7 @@ module Account.Foundation where
 
 import Prelude
 import Control.Monad.Trans (MonadTrans)
+import Data.Int
 import qualified Data.Array as A
 import Data.Text (Text)
 import Language.Haskell.TH (Pred (..), Type (..), mkName)
@@ -25,7 +26,8 @@ share [mkPersist sqlOnlySettings, mkMigrate "migrateAccount"] [persistLowerCase|
 -- Manage how many users share a same avatar.
 Avatar
     hash Text -- SHA1 of the resized file.
-    count Int -- Number of user using this avatar.
+    generated Bool
+    count Int -- Number of users using this avatar.
     UniqueAvatarHash hash
     deriving Show
 |]
@@ -53,7 +55,7 @@ class (Yesod master, YesodPersist master, RenderMessage master FormMessage
              -> Text     -- ^ Username
              -> Text     -- ^ Salted password
              -> Text     -- ^ Salt
-             -> AvatarId
+             -> Int64    -- ^ Avatar\'s ID
              -> GHandler sub master (AccountUser master)
 
     -- | Unique keys to fetch users from the database.
@@ -63,7 +65,7 @@ class (Yesod master, YesodPersist master, RenderMessage master FormMessage
     accountEmail, accountUsername, accountPassword, accountSalt ::
         master -> AccountUser master -> Text
 
-    accountAvatar :: master -> AccountUser master -> AvatarId
+    accountAvatar :: master -> AccountUser master -> Int64
 
     -- | Form used on the settings page and which is added to the avatar form.
     accountSettingsForm :: AccountUser master

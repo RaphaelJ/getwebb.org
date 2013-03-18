@@ -18,7 +18,6 @@ $("#options_toggle").click(function ()
     $("#options").slideToggle(100);
 });
 
-
 // Maximum size of images in bytes for the thumbnail.
 var maxPreviewSize = 5 * 1024 * 1024; // 5 Mio
 

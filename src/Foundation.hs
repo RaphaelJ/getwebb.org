@@ -249,7 +249,7 @@ instance YesodAccount App where
 
     avatarsDir _ = Settings.staticDir </> "avatars"
     avatarsDirRoute _ path =
-        StaticR $ StaticRoute (pack Settings.staticDir : "avatars" : path) []
+        StaticR $ StaticRoute ("avatars" : path) []
 
 -- | Get the 'Extra' value, used to hold data from the settings.yml file.
 getExtra :: Handler Extra

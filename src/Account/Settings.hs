@@ -30,7 +30,7 @@ getSettingsR = do
     toMaster <- getRouteToMaster
     defaultLayout $ do
         setTitle "Account settings - getwebb"
-        $(widgetFile "settings")
+        $(widgetFile "account-settings")
 
 postSettingsR :: YesodAccount master => GHandler Account master RepHtml
 postSettingsR = getSettingsR
@@ -50,12 +50,15 @@ settingsForm user avatarRte extra = do
 
     let widget = [whamlet|
             #{extra}
-            ^{avatarWidget}
-            <div style="margin-left: 30px">
+            <div .avatar_settings>
                 <img alt="Your avatar" src=@{avatarRte} />
-                ^{fileWidget}
+                ^{avatarWidget}
 
-            ^{setsWidget}
+                <div #avatar_file_widget>
+                    ^{fileWidget}
+
+            <div .settings>
+                ^{setsWidget}
         |]
 
     return ((,) <$> (AvatarResult <$> avatarRes <*> fileRes) 
@@ -66,7 +69,7 @@ settingsForm user avatarRte extra = do
     renderDivs' aform = renderDivs aform mempty
 
     avatarSettings =
-        let name = Just "avatar"
+        let name = Just "avatar_personal"
         in FieldSettings {
               fsLabel = "Use a personalized avatar", fsTooltip = Nothing
             , fsId = name, fsName = name, fsAttrs = []

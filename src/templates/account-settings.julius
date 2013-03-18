@@ -1,0 +1,9 @@
+// Shows/Hides the avatar upload form.
+$("#avatar_personal").change(function ()
+{
+    if ($("#avatar_personal")[0].checked)
+        $("#avatar_file_widget").fadeIn(100);
+    else
+        $("#avatar_file_widget").fadeOut(100);
+});
+$("#avatar_file_widget").toggle($("#avatar_personal")[0].checked);

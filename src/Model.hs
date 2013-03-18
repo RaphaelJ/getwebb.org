@@ -6,6 +6,7 @@ import Yesod
 
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Writer
+import Data.Int
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
@@ -13,8 +14,6 @@ import Data.Word
 
 import Database.Persist.GenericSql (Migration)
 import Database.Persist.GenericSql.Raw (SqlPersist)
-
-import Account.Foundation (Avatar (..))
 
 -- | File types recognized.
 data FileType = Image | Audio | Video | Archive | UnknownType
@@ -61,7 +60,7 @@ User
     password Text -- SHA1 hash of the password.
     salt Text -- Salt used to hash the password.
     created UTCTime
-    avatar AvatarId
+    avatar Int64
     isAdmin Bool
     public Bool -- True if the user want new files to be public.
     UniqueUserEmail email

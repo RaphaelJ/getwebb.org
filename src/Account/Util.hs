@@ -39,24 +39,47 @@ registerUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)
 registerUser email name pass = do
     salt <- randomSalt
 
-    Key (PersistInt64 avatarId) <- newAvatar
-    lift (initUser email name (saltedHash salt pass) salt avatarId) >>= insert
-  where
-    newAvatar = do -- Put this out of the transaction ?
-        img <- I.force `liftM` lift (genIdenticon email)
-        let hash = hashImage img
+    img <- I.force `liftM` lift (genIdenticon email)
+    Key (PersistInt64 avatarId) <- newAvatar img
 
-        mAvatar <- getBy $ UniqueAvatarHash hash
-        case mAvatar of
-            Just (Entity avatarId _) -> do
-                update avatarId [AvatarCount +=. 1]
-                return avatarId
-            Nothing                  -> do
-                app <- lift $ getYesod
-                let path = (avatarPath app hash)
-                liftIO $ createDirectoryIfMissing True (takeDirectory path)
-                liftIO $ I.save img path
-                insert $ Avatar hash True 1
+    lift (initUser email name (saltedHash salt pass) salt avatarId) >>= insert
+
+removeAvatar :: (YesodAccount master, PersistEntityBackend Avatar
+                 ~ PersistMonadBackend (YesodDB sub master)
+                , PersistQuery (YesodDB sub master)
+                , PersistUnique (YesodDB sub master)) =>
+                AccountUser master -> YesodDB sub master ()
+removeAvatar user = do
+    Just avatar <- getUserAvatar user
+    let fileId = avatarUniqueFile avatar
+    Just file   <- get fileId
+
+    if avatarFileCount <= 1
+        then do
+            delete fileId
+            
+        else update fileId [AvatarFileCount -=. 1]
+
+newAvatar :: (YesodAccount master, PersistEntityBackend Avatar
+              ~ PersistMonadBackend (YesodDB sub master)
+             , PersistQuery (YesodDB sub master)
+             , PersistUnique (YesodDB sub master)) =>
+             I.RGBAImage -> Bool -> YesodDB sub master AvatarId
+newAvatar img generated = do
+    let hash = hashImage img
+
+    mFile <- getBy $ UniqueAvatarFileHash hash
+    fileId <- case mAvatar of
+        Just (Entity fileId _) -> do
+            update fileId [AvatarFileCount +=. 1]
+            return fileId
+        Nothing                  -> do
+            app <- lift $ getYesod
+            let path = avatarPath app hash
+            liftIO $ createDirectoryIfMissing True (takeDirectory path)
+            liftIO $ I.save img path
+            insert $ AvatarFile hash 1
+    insert $ Avatar generated fileId
 
 -- | Checks the given credentials without setting the session value.
 -- Returns the user ID if succeed. Tries with the username then the email.
@@ -106,7 +129,7 @@ getUser = runMaybeT $ do
     MaybeT $ runDB $ runMaybeT $ do
         user     <- MaybeT $ get userId
         app      <- lift $ lift getYesod
-        avatar   <- MaybeT $ get $ Key $ PersistInt64 $ accountAvatar app user
+        avatar   <- MaybeT $ getUserAvatar user
         return (Entity userId user, avatar)
 
 -- | Resets the session value so the user is now no more connected.

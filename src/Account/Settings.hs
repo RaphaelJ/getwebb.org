@@ -5,12 +5,17 @@ module Account.Settings (getSettingsR, postSettingsR) where
 
 import Prelude
 
-import Yesod
 import Control.Applicative
 import Data.Monoid
+import System.IO (hClose, openTempFile)
+import System.FilePath ((</>))
+
+import Yesod
+import qualified Vision.Image as I
+import qualified Vision.Primitive as I
 
 import Account.Foundation
-import Account.Avatar (avatarRoute)
+import Account.Avatar (avatarRoute, hashImage)
 import Account.Util (redirectAuth)
 import Settings (widgetFile)
 
@@ -22,28 +27,56 @@ data AvatarResult = AvatarResult {
 getSettingsR :: YesodAccount master => GHandler Account master RepHtml
 getSettingsR = do
     (Entity _ user, avatar) <- redirectAuth
+    (widget, enctype) <- generateFormPost $ settingsForm user avatar
+    displaySettings widget enctype
 
-    app <- getYesod
-    let avatarRte = avatarRoute app avatar
-    (widget, enctype) <- generateFormPost $ settingsForm user avatarRte
+postSettingsR :: YesodAccount master => GHandler Account master RepHtml
+postSettingsR = do
+    (Entity _ user, avatar) <- redirectAuth
+    ((res, widget), enctype) <- runFormPost $ settingsForm user avatar
 
+    case res of
+        FormSuccess (aRes, setts) -> do
+            case aRes of
+                AvatarResult True  (Just f) -> do
+                    tmpDir <- getYesod >>= avatarsDir >>= return . (</> "tmp")
+                    (h, tmpPath) <- liftIO $ openTempFile tmpDir ""
+                    liftIO $ hClose h
+                    liftIO $ fileMove f tmpPath
+
+                    img <- liftIO $ I.load tmpPath
+                    
+                AvatarResult True  Nothing  ->
+                    
+                AvatarResult False _
+                AvatarResult _     Nothing
+            
+            getYesod >>= redirect . signInDest
+        _ -> return ()
+
+    displaySettings widget enctype
+
+displaySettings :: YesodAccount master => GWidget Account master () -> Enctype
+                -> GHandler Account master RepHtml
+displaySettings widget enctype = do
     toMaster <- getRouteToMaster
     defaultLayout $ do
         setTitle "Account settings - getwebb"
         $(widgetFile "account-settings")
 
-postSettingsR :: YesodAccount master => GHandler Account master RepHtml
-postSettingsR = getSettingsR
-
 -- | Generates a form which returns the username and the password.
 settingsForm :: YesodAccount master =>
-                AccountUser master -> Route master -> Html
+                AccountUser master -> (Avatar, AvatarFile) -> Html
              -> MForm Account master (FormResult (AvatarResult
                                                  , AccountSettings master)
                                      , GWidget Account master ())
-settingsForm user avatarRte extra = do
+settingsForm user avatar extra = do
+    app <- lift getYesod
+    let avatarRte = avatarRoute app (snd avatar)
+        generated = avatarGenerated (fst avatar)
+
     (avatarRes, avatarWidget) <- renderDivs' $ areq checkBoxField avatarSettings
-                                                    Nothing
+                                                    (Just $ not generated)
     (fileRes, fileWidget) <- renderDivs' $ aopt fileField fileSettings Nothing
 
     (setsRes, setsWidget) <- renderDivs' $ accountSettingsForm user
@@ -79,6 +112,6 @@ settingsForm user avatarRte extra = do
         let name = Just "avatar_file"
         in FieldSettings {
               fsLabel = "Avatar file"
-            , fsTooltip = Just "The image will be resized to 60x60 pixels."
+            , fsTooltip = Just "The image will be scaled down to 80x80 pixels."
             , fsId = name, fsName = name, fsAttrs = []
             }

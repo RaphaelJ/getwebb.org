@@ -23,12 +23,16 @@ sessionKey :: Text
 sessionKey = "_ACCOUNT_ID"
 
 share [mkPersist sqlOnlySettings, mkMigrate "migrateAccount"] [persistLowerCase|
--- Manage how many users share a same avatar.
-Avatar
+-- Manages how many users share a same avatar.
+AvatarFile
     hash Text -- SHA1 of the resized file.
+    count Int -- Number of users sharing this avatar.
+    UniqueAvatarFileHash hash
+    deriving Show
+
+Avatar
     generated Bool
-    count Int -- Number of users using this avatar.
-    UniqueAvatarHash hash
+    uniqueFile AvatarFileId
     deriving Show
 |]
 

@@ -3,7 +3,8 @@
 -- generates random avatar from a string (eg. the user email).
 module Account.Avatar (
       avatarSize, spriteFile, tileSize
-    , loadSprite, genIdenticon, avatarPath, avatarRoute, hashImage
+    , loadSprite, genIdenticon, getUserAvatar, avatarPath, avatarRoute
+    , hashImage
     ) where
 
 import Prelude
@@ -100,11 +101,13 @@ genIdenticon str = do
 
         return (color, arr)
 
--- | Returns the path to the avatar file of an user.
+getUserAvatar user = do
+    app <- lift getYesod
+    get $ Key $ PersistInt64 $ accountAvatar app user
+
 avatarPath :: YesodAccount master => master -> Text -> FilePath
 avatarPath app hash = avatarsDir app </> hashDir hash <.> "png"
 
--- | Returns the master\'s route to the avatar file of an user.
 avatarRoute :: YesodAccount master => master -> Avatar -> Route master
 avatarRoute app avatar = 
     let path = hashDir' $ avatarHash avatar

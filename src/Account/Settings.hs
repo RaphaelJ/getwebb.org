@@ -7,8 +7,9 @@ import Prelude
 
 import Control.Applicative
 import Data.Monoid
-import System.IO (hClose, openTempFile)
+import System.Directory (removeFile)
 import System.FilePath ((</>))
+import System.IO (hClose, openTempFile)
 
 import Yesod
 import qualified Vision.Image as I
@@ -45,6 +46,8 @@ postSettingsR = do
                     liftIO $ fileMove f tmpPath
 
                     img <- liftIO $ I.load tmpPath
+                    liftIO $ removeFile tmpPath
+
                     
                 AvatarResult True  Nothing  ->
                     

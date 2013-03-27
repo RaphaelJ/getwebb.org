@@ -19,6 +19,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import System.FilePath ((</>), (<.>))
 
+import Database.Persist.Store (PersistValue (..))
 import qualified Vision.Image as I
 import qualified Vision.Primitive as I
 import Yesod
@@ -109,7 +110,7 @@ avatarPath :: YesodAccount master => master -> Text -> FilePath
 avatarPath app hash = avatarsDir app </> hashDir hash <.> "png"
 
 avatarRoute :: YesodAccount master => master -> Avatar -> Route master
-avatarRoute app avatar = 
+avatarRoute app avatar =
     let path = hashDir' $ avatarHash avatar
         file = init path ++ [last path `T.append` ".png"]
     in avatarsDirRoute app file

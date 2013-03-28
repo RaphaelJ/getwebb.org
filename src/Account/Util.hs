@@ -1,5 +1,5 @@
 module Account.Util (
-      registerUser, validateUser, setUserId, getUserId, getUser, unsetUserId
+      newUser, validateUser, setUserId, getUserId, getUser, unsetUserId
     , requireAuth, redirectAuth, redirectNoAuth
     , randomSalt, saltedHash
     ) where
@@ -14,72 +14,33 @@ import qualified Data.ByteString.Lazy.Char8 as C
 import Data.Digest.Pure.SHA (sha1, showDigest)
 import Data.Text (Text)
 import qualified Data.Text as T
-import System.Directory (createDirectoryIfMissing)
-import System.FilePath (takeDirectory)
 import System.Random (randomRIO)
 
 import Yesod
 import Database.Persist.Store (PersistValue (..))
 import qualified Vision.Image as I
 
-import Account.Avatar (genIdenticon, avatarPath, hashImage)
+import Account.Avatar (genIdenticon, newAvatar, getUserAvatar)
 import Account.Foundation
 
 -- | Creates a new user. Returns the ID of the created entity. Doesn't set the
 -- session value.
-registerUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)
-                 ~ PersistMonadBackend (YesodDB sub master)
-                , PersistEntityBackend Avatar
-                 ~ PersistMonadBackend (YesodDB sub master)
-                , PersistQuery (YesodDB sub master)
-                , PersistUnique (YesodDB sub master)
-                , MonadLift (GHandler Account master) (YesodDB sub master)) =>
-                Text -> Text -> Text
-             -> YesodDB sub master (Key (AccountUser master))
-registerUser email name pass = do
+newUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)
+            ~ PersistMonadBackend (YesodDB sub master)
+           , PersistEntityBackend Avatar
+            ~ PersistMonadBackend (YesodDB sub master)
+           , PersistQuery (YesodDB sub master)
+           , PersistUnique (YesodDB sub master)
+           , MonadLift (GHandler Account master) (YesodDB sub master)) =>
+           Text -> Text -> Text
+        -> YesodDB sub master (Key (AccountUser master))
+newUser email name pass = do
     salt <- randomSalt
 
     img <- I.force `liftM` lift (genIdenticon email)
-    Key (PersistInt64 avatarId) <- newAvatar img
+    Key (PersistInt64 avatarId) <- newAvatar img True
 
     lift (initUser email name (saltedHash salt pass) salt avatarId) >>= insert
-
-removeAvatar :: (YesodAccount master, PersistEntityBackend Avatar
-                 ~ PersistMonadBackend (YesodDB sub master)
-                , PersistQuery (YesodDB sub master)
-                , PersistUnique (YesodDB sub master)) =>
-                AccountUser master -> YesodDB sub master ()
-removeAvatar user = do
-    Just avatar <- getUserAvatar user
-    let fileId = avatarUniqueFile avatar
-    Just file   <- get fileId
-
-    if avatarFileCount <= 1
-        then do
-            delete fileId
-            
-        else update fileId [AvatarFileCount -=. 1]
-
-newAvatar :: (YesodAccount master, PersistEntityBackend Avatar
-              ~ PersistMonadBackend (YesodDB sub master)
-             , PersistQuery (YesodDB sub master)
-             , PersistUnique (YesodDB sub master)) =>
-             I.RGBAImage -> Bool -> YesodDB sub master AvatarId
-newAvatar img generated = do
-    let hash = hashImage img
-
-    mFile <- getBy $ UniqueAvatarFileHash hash
-    fileId <- case mAvatar of
-        Just (Entity fileId _) -> do
-            update fileId [AvatarFileCount +=. 1]
-            return fileId
-        Nothing                  -> do
-            app <- lift $ getYesod
-            let path = avatarPath app hash
-            liftIO $ createDirectoryIfMissing True (takeDirectory path)
-            liftIO $ I.save img path
-            insert $ AvatarFile hash 1
-    insert $ Avatar generated fileId
 
 -- | Checks the given credentials without setting the session value.
 -- Returns the user ID if succeed. Tries with the username then the email.
@@ -117,7 +78,7 @@ getUserId = runMaybeT $ do
     userIdTxt <- MaybeT $ lookupSession sessionKey
     return $ read $ T.unpack userIdTxt
 
--- | Returns the user entity if the user is authenticated, 'Nothing' otherwise.
+-- | Returns the user entity if the user is authenticated.
 getUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)
             ~ PersistMonadBackend (YesodDB sub master)
            , PersistEntityBackend Avatar
@@ -128,7 +89,6 @@ getUser = runMaybeT $ do
     userId <- MaybeT $ getUserId
     MaybeT $ runDB $ runMaybeT $ do
         user     <- MaybeT $ get userId
-        app      <- lift $ lift getYesod
         avatar   <- MaybeT $ getUserAvatar user
         return (Entity userId user, avatar)
 

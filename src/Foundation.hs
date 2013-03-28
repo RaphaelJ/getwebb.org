@@ -243,7 +243,7 @@ instance YesodAccount App where
     accountUsername _ = userName
     accountPassword _ = userPassword
     accountSalt     _ = userSalt
-    accountAvatar   _ = userAvatar
+    accountAvatarId _ = userAvatar
 
     accountSettingsForm _ = areq checkBoxField "Default privacy" Nothing
 

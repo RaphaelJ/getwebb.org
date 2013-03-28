@@ -17,7 +17,7 @@ import Yesod
 
 import Account.Foundation
 import Account.Util (
-      registerUser, validateUser, setUserId, unsetUserId, redirectNoAuth
+      newUser, validateUser, setUserId, unsetUserId, redirectNoAuth
     )
 import Settings (widgetFile)
 
@@ -61,7 +61,7 @@ postRegisterR = do
                             "This username is already used by another user."
                 checkExists emailLookup email
                             "This email is already used by another user."
-                lift $ registerUser email name pass
+                lift $ newUser email name pass
 
             case eUserId of
                 Right userId -> do

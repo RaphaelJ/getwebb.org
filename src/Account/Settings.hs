@@ -42,13 +42,13 @@ postSettingsR = do
                 AvatarResult True  (Just f) -> do
                     tmpDir <- getYesod >>= avatarsDir >>= return . (</> "tmp")
                     (h, tmpPath) <- liftIO $ openTempFile tmpDir ""
+                    _ <- register (removeFile tmpPath)
                     liftIO $ hClose h
                     liftIO $ fileMove f tmpPath
 
                     img <- liftIO $ I.load tmpPath
-                    liftIO $ removeFile tmpPath
 
-                    
+                    newAvatar img False
                 AvatarResult True  Nothing  ->
                     
                 AvatarResult False _

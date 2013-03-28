@@ -32,7 +32,7 @@ AvatarFile
 
 Avatar
     generated Bool
-    uniqueFile AvatarFileId
+    hash Text
     deriving Show
 |]
 
@@ -69,7 +69,7 @@ class (Yesod master, YesodPersist master, RenderMessage master FormMessage
     accountEmail, accountUsername, accountPassword, accountSalt ::
         master -> AccountUser master -> Text
 
-    accountAvatar :: master -> AccountUser master -> Int64
+    accountAvatarId :: master -> AccountUser master -> Int64
 
     -- | Form used on the settings page and which is added to the avatar form.
     accountSettingsForm :: AccountUser master

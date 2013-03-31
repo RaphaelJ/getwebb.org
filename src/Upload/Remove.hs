@@ -14,6 +14,7 @@ removeUpload :: Entity Upload -> YesodDB App App ()
 removeUpload (Entity uploadId upload) = do
     let fileId = uploadFile upload
     delete uploadId
+    update (uploadAdminKey upload) [AdminKeyCount -=. 1]
 
     -- Removes the corresponding file if it was the last upload.
     file <- updateGet fileId [FileCount -=. 1]

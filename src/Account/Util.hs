@@ -1,3 +1,4 @@
+-- | Provides functions to create and authenticate users.
 module Account.Util (
       newUser, validateUser, setUserId, getUserId, getUser, unsetUserId
     , requireAuth, redirectAuth, redirectNoAuth
@@ -17,11 +18,11 @@ import qualified Data.Text as T
 import System.Random (randomRIO)
 
 import Yesod
-import Database.Persist.Store (PersistValue (..))
-import qualified Vision.Image as I
 
-import Account.Avatar (genIdenticon, newAvatar, getUserAvatar)
+import Account.Avatar (genIdenticon, newAvatar, getAvatar)
 import Account.Foundation
+
+
 
 -- | Creates a new user. Returns the ID of the created entity. Doesn't set the
 -- session value.
@@ -37,8 +38,8 @@ newUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)
 newUser email name pass = do
     salt <- randomSalt
 
-    img <- I.force `liftM` lift (genIdenticon email)
-    Key (PersistInt64 avatarId) <- newAvatar img True
+    img <- lift $ genIdenticon email
+    avatarId <- newAvatar img
 
     lift (initUser email name (saltedHash salt pass) salt avatarId) >>= insert
 
@@ -86,11 +87,18 @@ getUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)
            , PersistStore (YesodDB sub master)) =>
            GHandler sub master (Maybe (Entity (AccountUser master), Avatar))
 getUser = runMaybeT $ do
-    userId <- MaybeT $ getUserId
-    MaybeT $ runDB $ runMaybeT $ do
-        user     <- MaybeT $ get userId
-        avatar   <- MaybeT $ getUserAvatar user
-        return (Entity userId user, avatar)
+        MaybeT (cacheLookup userCacheKey)
+    <|> do
+        userId <- MaybeT $ getUserId
+        info   <- MaybeT $ runDB $ runMaybeT $ do
+            user     <- MaybeT $ get userId
+            avatar   <- MaybeT $ getAvatar user
+            return (Entity userId user, avatar)
+        lift $ userCacheKey `cacheInsert` info
+        return info
+  where
+    -- Used to avoid to query multiple times the DB for the user information.
+    userCacheKey = $(mkCacheKey)
 
 -- | Resets the session value so the user is now no more connected.
 unsetUserId :: YesodAccount master => GHandler sub master ()

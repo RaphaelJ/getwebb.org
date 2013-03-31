@@ -200,6 +200,8 @@ function uploadFiles(loaded, total, files_info, uploaded, errors)
 
         if (status == 201) { // 201 created
             info.changeStatus("uploaded", 100, uploadUrl([res.id]));
+            // TODO: Pretty print large number
+            $("#count_history").html(++countHistory);
             uploaded.push(res.id);
         } else {
             info.changeStatus("error", 100, null);

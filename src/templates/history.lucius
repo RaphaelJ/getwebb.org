@@ -13,11 +13,11 @@ ul#uploads {
         .icon {
             display: block;
             float: left;
-            margin-left: 5px;
+            margin: 5px;
         }
 
         .info {
-            margin: 0 15px 0 140px;
+            margin: 0 15px 0 115px;
 
             .title {
                 display: block;

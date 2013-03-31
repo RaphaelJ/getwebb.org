@@ -4,6 +4,7 @@
 module Foundation where
 
 import Prelude
+import Control.Applicative ((<$>))
 import Control.Concurrent (Chan, MVar)
 import qualified Data.ByteString.Lazy as B
 import qualified Data.ByteString.Char8 as S8
@@ -216,14 +217,14 @@ instance YesodPersist App where
             f
             (connPool master)
 
--- This instance is required to use forms. You can modify renderMessage to
--- achieve customized and internationalized form validation messages.
 instance RenderMessage App FormMessage where
     renderMessage _ _ = defaultFormMessage
 
+data UserSettings = UserSettings { usDefaultPublic :: Bool }
+
 instance YesodAccount App where
     type AccountUser     App = User
-    type AccountSettings App = Bool
+    type AccountSettings App = UserSettings
 
     signInDest  _ = HistoryR
     signOutDest _ = HistoryR
@@ -233,7 +234,7 @@ instance YesodAccount App where
         return User {
           userEmail = email, userName = name, userPassword = pass
         , userSalt = salt, userCreated = time, userAvatar = avatar
-        , userIsAdmin = False, userPublic = True
+        , userIsAdmin = False, userDefaultPublic = True
         }
 
     emailLookup    _ = UniqueUserEmail
@@ -245,7 +246,15 @@ instance YesodAccount App where
     accountSalt     _ = userSalt
     accountAvatarId _ = userAvatar
 
-    accountSettingsForm _ = areq checkBoxField "Default privacy" Nothing
+    accountAvatarIdField _ = UserAvatar
+
+    accountSettingsForm user =
+        UserSettings <$> areq checkBoxField 
+                              "Set uploads as public by default"
+                              (Just (userDefaultPublic user))
+
+    accountSettingsSave userId (UserSettings defaultPublic) =
+        update userId [UserDefaultPublic =. defaultPublic]
 
     avatarsDir _ = Settings.staticDir </> "avatars"
     avatarsDirRoute _ path =

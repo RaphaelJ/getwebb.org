@@ -21,7 +21,7 @@
 
                     <div .info>
                         <a .title href=@{ViewR hmac} title=#{name}>
-                            #{wrappedText name 50}
+                            #{wrappedText name 40}
 
                         <div .buttons>
                             <a .big_button href=@{DownloadR hmac}

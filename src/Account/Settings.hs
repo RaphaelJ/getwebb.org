@@ -1,22 +1,26 @@
-{-# LANGUAGE OverloadedStrings #-}
--- | The handlers in this modules privides view for users to manager their
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
+-- | The handlers in this modules privide a way for users to manager their
 -- settings.
 module Account.Settings (getSettingsR, postSettingsR) where
 
 import Prelude
 
 import Control.Applicative
+import qualified Control.Exception as E
 import Data.Monoid
+import Data.Text (Text)
 import System.Directory (removeFile)
 import System.FilePath ((</>))
 import System.IO (hClose, openTempFile)
 
 import Yesod
+import Control.Monad.Trans.Resource (register)
 import qualified Vision.Image as I
-import qualified Vision.Primitive as I
 
 import Account.Foundation
-import Account.Avatar (avatarRoute, hashImage)
+import Account.Avatar (
+      genIdenticon, genAvatar, newAvatar, removeAvatar, getAvatarId, avatarRoute
+    )
 import Account.Util (redirectAuth)
 import Settings (widgetFile)
 
@@ -33,31 +37,59 @@ getSettingsR = do
 
 postSettingsR :: YesodAccount master => GHandler Account master RepHtml
 postSettingsR = do
-    (Entity _ user, avatar) <- redirectAuth
+    (Entity userId user, avatar) <- redirectAuth
     ((res, widget), enctype) <- runFormPost $ settingsForm user avatar
 
-    case res of
-        FormSuccess (aRes, setts) -> do
-            case aRes of
-                AvatarResult True  (Just f) -> do
-                    tmpDir <- getYesod >>= avatarsDir >>= return . (</> "tmp")
-                    (h, tmpPath) <- liftIO $ openTempFile tmpDir ""
+    widget' <- case res of
+        FormSuccess (ar, setts) -> do
+            case ar of
+                AvatarResult True (Just f) -> do
+                    -- New user uploaded avatar.
+                    tmpDir <- getYesod >>= return . (</> "tmp") . avatarsDir
+                    (tmpPath, h) <- liftIO $ openTempFile tmpDir ""
                     _ <- register (removeFile tmpPath)
                     liftIO $ hClose h
                     liftIO $ fileMove f tmpPath
 
-                    img <- liftIO $ I.load tmpPath
+                    eImg <- liftIO $ E.try (I.load tmpPath)
 
-                    newAvatar img False
-                AvatarResult True  Nothing  ->
-                    
-                AvatarResult False _
-                AvatarResult _     Nothing
-            
-            getYesod >>= redirect . signInDest
-        _ -> return ()
+                    case eImg of
+                        Right img -> do
+                            runDB $ do
+                                replaceAvatar userId user avatar (genAvatar img)
+                                accountSettingsSave userId setts
+                            redirectSignIn
+                        Left (_ :: E.SomeException) ->
+                            let msg = "Invalid image." :: Text
+                            in return [whamlet|
+                                <p .errors>#{msg}
+                                ^{widget}
+                            |]
+                AvatarResult False _ | not (avatarGenerated avatar) -> do
+                    -- Restores the generated avatar.
+                    app <- getYesod
+                    avatarId <- getAvatarId user
+                    img <- genIdenticon (accountEmail app user)
+                    runDB $ do
+                        replaceAvatar userId user avatar img
+                        accountSettingsSave userId setts
+                    redirectSignIn
+                _ -> do
+                    runDB $ accountSettingsSave userId setts
+                    redirectSignIn
+        _ -> return widget
 
-    displaySettings widget enctype
+    displaySettings widget' enctype
+  where
+    replaceAvatar userId user oldAvatar img = do
+        oldAvatarId <- lift $ getAvatarId user
+        removeAvatar oldAvatarId oldAvatar
+
+        app <- lift getYesod
+        avatarId <- newAvatar img
+        update userId [ accountAvatarIdField app =. avatarId ]
+
+    redirectSignIn = getYesod >>= redirect . signInDest
 
 displaySettings :: YesodAccount master => GWidget Account master () -> Enctype
                 -> GHandler Account master RepHtml
@@ -69,14 +101,14 @@ displaySettings widget enctype = do
 
 -- | Generates a form which returns the username and the password.
 settingsForm :: YesodAccount master =>
-                AccountUser master -> (Avatar, AvatarFile) -> Html
+                AccountUser master -> Avatar -> Html
              -> MForm Account master (FormResult (AvatarResult
                                                  , AccountSettings master)
                                      , GWidget Account master ())
 settingsForm user avatar extra = do
     app <- lift getYesod
-    let avatarRte = avatarRoute app (snd avatar)
-        generated = avatarGenerated (fst avatar)
+    let avatarRte = avatarRoute app avatar
+        generated = avatarGenerated avatar
 
     (avatarRes, avatarWidget) <- renderDivs' $ areq checkBoxField avatarSettings
                                                     (Just $ not generated)

@@ -4,13 +4,14 @@ module Handler.Upload (Options (..), postUploadR, uploadForm)
 
 import Import
 
-import Control.Monad.Writer
+import Control.Monad.Writer hiding (lift)
 import Data.Map (elems)
 
 import Network.HTTP.Types.Status (
       created201, badRequest400, forbidden403, requestEntityTooLarge413
     )
 
+import Account (getUser)
 import Upload.Processing (UploadError (..), processFile)
 
 data Options = Options {
@@ -78,14 +79,14 @@ uploadForm extra = do
                 -> FormFailure ["Send at least one file to upload."]
 
     -- Options.
+    defPriv <- maybe True (userDefaultPublic . entityVal . fst) <$> lift getUser
     let publicId = Just "public"
         publicSettings = FieldSettings {
               fsLabel = "Share this file"
             , fsTooltip = Just "Publish this file in the public gallery."
             , fsId = publicId, fsName = publicId, fsAttrs = []
             }
-    (publicRes, publicView) <- mreq checkBoxField publicSettings (Just True)
-    liftIO $ print publicRes
+    (publicRes, publicView) <- mreq checkBoxField publicSettings (Just defPriv)
 
     let emailId = Just "email"
         emailSettings = FieldSettings {

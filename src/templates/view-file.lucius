@@ -9,17 +9,12 @@
 
         .icon {
             float: left;
-            width: 125px;
-            height: 125px;
-            /*box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
-            background-color: white;*/
-
-            transition-property: all;
-            transition-duration: 0.1s;
+            width: 100px;
+            height: 100px;
         }
 
         h1 {
-            margin-left: 140px;
+            margin-left: 115px;
             position: relative;
 
             img.qrcode {
@@ -30,7 +25,7 @@
         }
 
         .audio_player {
-            margin: 10px 0 10px 140px;
+            margin: 10px 0 10px 115px;
 
             .transcoding {
                 padding-left: 35px;

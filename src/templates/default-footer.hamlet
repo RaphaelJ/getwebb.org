@@ -1,12 +1,19 @@
 <footer>
-    Icons by P.J. Onori, O. Frolov, J. Wieser, M. Zlatar, A. Ramadan, D. Ullrich
-    &amp; A. Whitcroft
-    -
-    <a href="@{HomeR}">
-        API
-    -
-    <a href="https://github.com/RaphaelJ/getwebb.org">
-        Sources
-    -
-    <a href="mailto:#{extraAuthorMail $ appExtra $ settings app}">
-        Report a file
+    <div #footer_content>
+        <p #copyright>
+            © 2013&nbsp;
+            <span .getwebb>
+                getwebb
+
+        <p #info>
+            Icons by P.J. Onori, O. Frolov, J. Wieser, M. Zlatar, A. Ramadan, D. Ullrich
+            &amp; A. Whitcroft
+            &nbsp;•&nbsp;
+            <a href="@{HomeR}">
+                API
+            &nbsp;•&nbsp;
+            <a href="https://github.com/RaphaelJ/getwebb.org">
+                Sources
+            &nbsp;•&nbsp;
+            <a href="mailto:#{extraAuthorMail $ appExtra $ settings app}">
+                Report a file

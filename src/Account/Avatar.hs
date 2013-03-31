@@ -1,11 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | The functions in this modules defines an identicon algorithm which
--- generates random avatar from a string (eg. the user email).
+-- | The functions in this modules defines are used to generate user avatars,
+-- to resize uploaded images, to add and remove avatars in the database and to
+-- get paths and routes to avatar files.
 module Account.Avatar (
-      AvatarImage, avatarSize, spriteFile, tileSize
-    , loadSprite, genIdenticon
-    , newAvatar, removeAvatar, getUserAvatar, avatarPath, avatarRoute
-    , hashImage
+      AvatarImage, aiImage, aiGenerated, aiHash
+    , avatarSize, spriteFile, tileSize, loadSprite
+    , genIdenticon, genAvatar
+    , newAvatar, removeAvatar, getAvatarId, getAvatar, getAvatarFile
+    , avatarPath, avatarRoute, hashImage
     ) where
 
 import Prelude
@@ -31,7 +33,9 @@ import Util.Path (hashDir, hashDir')
 
 -- | Abstract data type used to enforce images to be resized before database
 -- insertion.
-data AvatarImage = AvatarImage { aiImage :: I.RGBAImage, aiGenerated :: !Bool }
+data AvatarImage = AvatarImage {
+      aiImage :: I.RGBAImage, aiGenerated :: !Bool, aiHash :: !Text
+    }
 
 avatarSize, tileSize :: Int
 avatarSize = 4 * tileSize -- Must be a multiple of 2 * tileSize
@@ -60,14 +64,15 @@ genIdenticon str = do
     let (color, tiles) = G.runGet (getVals sprite) hash
         regionsArr = regions color tiles
 
-    -- Combines regions in a single image.
+    -- Combines regions into a single image.
     let img = I.fromFunction (I.Size avatarSize avatarSize) $ \(I.Point x y) ->
-        let (xQuot, xRem) = x `quotRem` regionSide
-            (yQuot, yRem) = y `quotRem` regionSide
-            region = regionsArr A.! (xQuot + yQuot * 2)
-        in region `I.getPixel` I.Point xRem yRem
+            let (xQuot, xRem) = x `quotRem` regionSide
+                (yQuot, yRem) = y `quotRem` regionSide
+                region = regionsArr A.! (xQuot + yQuot * 2)
+            in region `I.getPixel` I.Point xRem yRem
+        img' = I.force img
 
-    return $ AvatarImage img True
+    return $ AvatarImage img' True (hashImage img')
   where
     -- Generates an infinite hash by repeating the application of the SHA1
     -- function.
@@ -110,15 +115,19 @@ genIdenticon str = do
 
         return (color, arr)
 
+-- | Resizes and adapts an uploaded image to be used as an avatar.
+genAvatar :: I.RGBAImage -> AvatarImage
+genAvatar img =
+    let img' = I.force $ I.resize I.Bilinear img (I.Size avatarSize avatarSize)
+    in AvatarImage img' False (hashImage img')
+
 -- | Registers and saves a new avatar.
 newAvatar :: (YesodAccount master, PersistEntityBackend Avatar
               ~ PersistMonadBackend (YesodDB sub master)
              , PersistQuery (YesodDB sub master)
              , PersistUnique (YesodDB sub master)) =>
-             I.RGBAImage -> Bool -> YesodDB sub master AvatarId
-newAvatar img generated = do
-    let hash = hashImage img
-
+             AvatarImage -> YesodDB sub master AvatarNum
+newAvatar (AvatarImage img generated hash) = do
     mFile <- getBy $ UniqueAvatarFileHash hash
     case mFile of
         Just (Entity fileId _) -> do
@@ -129,20 +138,22 @@ newAvatar img generated = do
             liftIO $ createDirectoryIfMissing True (takeDirectory path)
             liftIO $ I.save img path
             insert_ $ AvatarFile hash 1
-    insert $ Avatar generated hash
+    Key (PersistInt64 avatarId) <- insert $ Avatar generated hash
+    return avatarId
 
 -- | Removes a user\'s avatar from the database and from the filesystem if it
--- is not used by other users.
+-- is not shared by other users.
 removeAvatar :: (YesodAccount master, PersistEntityBackend Avatar
                  ~ PersistMonadBackend (YesodDB sub master)
                 , PersistQuery (YesodDB sub master)
                 , PersistUnique (YesodDB sub master)
                 , MonadLift (GHandler Account master) (YesodDB sub master)) =>
-                AccountUser master -> YesodDB sub master ()
-removeAvatar user = do
-    Just avatar <- getUserAvatar user
+                AvatarId -> Avatar -> YesodDB sub master ()
+removeAvatar avatarId avatar = do
+    delete avatarId
+
     let hash = avatarHash avatar
-    Just (Entity fileId file) <- getBy $ UniqueAvatarFileHash hash
+    Just (Entity fileId file) <- getAvatarFile avatar
 
     if avatarFileCount file <= 1
         then do
@@ -151,14 +162,24 @@ removeAvatar user = do
             liftIO $ removeFile $ avatarPath app hash
         else update fileId [AvatarFileCount -=. 1]
 
-getUserAvatar :: (YesodAccount master, PersistEntityBackend Avatar
-                  ~ PersistMonadBackend (YesodDB sub master)
-                 , PersistStore (YesodDB sub master)
-                 , MonadLift (GHandler sub master) (YesodDB sub master)) =>
-                 AccountUser master -> YesodDB sub master (Maybe Avatar)
-getUserAvatar user = do
-    app <- lift getYesod
-    get $ Key $ PersistInt64 $ accountAvatarId app user
+getAvatarId :: YesodAccount master =>
+               AccountUser master -> GHandler sub master AvatarId
+getAvatarId user = do
+    app <- getYesod
+    return $ Key $ PersistInt64 $ accountAvatarId app user
+
+getAvatar :: (YesodAccount master, PersistEntityBackend Avatar
+              ~ PersistMonadBackend (YesodDB sub master)
+             , PersistStore (YesodDB sub master)
+             , MonadLift (GHandler sub master) (YesodDB sub master)) =>
+             AccountUser master -> YesodDB sub master (Maybe Avatar)
+getAvatar user = lift (getAvatarId user) >>= get
+
+getAvatarFile :: (PersistEntityBackend Avatar
+                 ~ PersistMonadBackend (YesodDB sub master)
+                , PersistUnique (YesodDB sub master)) =>
+                Avatar -> YesodDB sub master (Maybe (Entity AvatarFile))
+getAvatarFile avatar = getBy $ UniqueAvatarFileHash $ avatarHash avatar
 
 avatarPath :: YesodAccount master => master -> Text -> FilePath
 avatarPath app hash = avatarsDir app </> hashDir hash <.> "png"

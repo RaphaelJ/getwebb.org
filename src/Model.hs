@@ -62,7 +62,7 @@ User
     created UTCTime
     avatar Int64
     isAdmin Bool
-    public Bool -- True if the user want new files to be public.
+    defaultPublic Bool -- True if the user want new files to be public.
     UniqueUserEmail email
     UniqueUserName name
     deriving Show

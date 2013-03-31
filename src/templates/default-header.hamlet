@@ -15,22 +15,28 @@
                                 <a href=@{HomeR}>New upload
                             <li>
                                 <a href=@{HistoryR}>Upload history
-                                    <span .count>#{PrettyNumber countHistory}
+                                    <span .count #count_history>
+                                        #{PrettyNumber countHistory}
                         $of HistoryR
                             <li>
                                 <a href=@{HomeR}>New upload
                             <li .active>
                                 <a href=@{HistoryR}>Upload history
-                                    <span .count>#{PrettyNumber countHistory}
+                                    <span .count #count_history>
+                                        #{PrettyNumber countHistory}
                         $of _
                             <li>
                                 <a href=@{HomeR}>New upload
                             <li>
                                 <a href=@{HistoryR}>Upload history
-                                    <span .count>#{PrettyNumber countHistory}
+                                    <span .count #count_history>
+                                        #{PrettyNumber countHistory}
                 $of _
                     <li>
                         <a href=@{HomeR}>New upload
                     <li>
                         <a href=@{HistoryR}>Upload history
-                            <span .count>#{PrettyNumber countHistory}
+                            <span .count #count_history>#{PrettyNumber countHistory}
+
+            <script type="text/javascript">
+                countHistory = #{countHistory};

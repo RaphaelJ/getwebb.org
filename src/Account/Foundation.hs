@@ -36,6 +36,8 @@ Avatar
     deriving Show
 |]
 
+type AvatarNum = Int64
+
 -- | Defines a few parameters, getters and lookup functions to interact with the 
 -- master site routes and entities.
 class (Yesod master, YesodPersist master, RenderMessage master FormMessage
@@ -55,11 +57,11 @@ class (Yesod master, YesodPersist master, RenderMessage master FormMessage
     signInDest, signOutDest :: master -> Route master
 
     -- | Initialise a new user value (musn't add the user to the database).
-    initUser :: Text     -- ^ Email
-             -> Text     -- ^ Username
-             -> Text     -- ^ Salted password
-             -> Text     -- ^ Salt
-             -> Int64    -- ^ Avatar\'s ID
+    initUser :: Text      -- ^ Email
+             -> Text      -- ^ Username
+             -> Text      -- ^ Salted password
+             -> Text      -- ^ Salt
+             -> AvatarNum
              -> GHandler sub master (AccountUser master)
 
     -- | Unique keys to fetch users from the database.
@@ -69,11 +71,18 @@ class (Yesod master, YesodPersist master, RenderMessage master FormMessage
     accountEmail, accountUsername, accountPassword, accountSalt ::
         master -> AccountUser master -> Text
 
-    accountAvatarId :: master -> AccountUser master -> Int64
+    accountAvatarId :: master -> AccountUser master -> AvatarNum
+
+    -- | Used to change the avatar\' ID of the user.
+    accountAvatarIdField :: master -> EntityField (AccountUser master) AvatarNum
 
     -- | Form used on the settings page and which is added to the avatar form.
     accountSettingsForm :: AccountUser master
                         -> AForm sub master (AccountSettings master)
+
+    -- | Saves the new user settings to the database.
+    accountSettingsSave :: Key (AccountUser master) -> (AccountSettings master)
+                        -> YesodDB sub master ()
 
     -- | Directory where avatars will be stored.
     avatarsDir :: master -> FilePath

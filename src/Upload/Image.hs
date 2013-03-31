@@ -45,7 +45,7 @@ extensions = S.fromDistinctAscList [
 
 -- | The size of miniatures in pixels (both in width and height).
 miniatureSize :: Int
-miniatureSize = 125
+miniatureSize = 100
 
 -- | The maximum size of an image to be displayed in the viewer.
 maxImageSize :: I.Size
@@ -158,12 +158,13 @@ miniature img =
     {-# INLINE drawBorder #-}
     drawBorderStep img' p@(I.Point x y)
         | x == 0 || y == 0 || x == (miniatureSize-1) || y == (miniatureSize-1) =
-            pix `I.pixApply` const 0
+            pix `I.pixApply` darker
         | x == 1 || y == 1 || x == (miniatureSize-2) || y == (miniatureSize-2) =
             pix `I.pixApply` brighter
         | otherwise = pix
       where
         pix = img' `I.getPixel` p
+        darker val = fromIntegral $ max 0 $ int val - 50
         brighter val = fromIntegral $ min 255 $ int val + 50
     {-# INLINE drawBorderStep #-}
 

@@ -1,14 +1,12 @@
 .avatar_settings {
     img {
         float: left;
-        margin: 0 15px 15px 0;
+        margin: 0 10px 15px 0;
+        border-radius: 2px;
     }
 
     #avatar_file_widget {
-        margin-left: 130px;
-    }
-
-    #avatar_file.enabled {
+        margin-left: 125px;
     }
 }
 

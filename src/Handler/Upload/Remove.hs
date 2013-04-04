@@ -1,6 +1,6 @@
 -- | This module defines functions which remove files from the database and the
 -- file repository.
-module Upload.Remove (removeUpload)
+module Handler.Upload.Remove (removeUpload)
     where
 
 import Import

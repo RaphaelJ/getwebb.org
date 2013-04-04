@@ -7,36 +7,28 @@
             free file sharing
 
         <ul #links>
-            $case currentRoute
-                $of Just route
-                    $case route
-                        $of HomeR
-                            <li .active>
-                                <a href=@{HomeR}>New upload
-                            <li>
-                                <a href=@{HistoryR}>Upload history
-                                    <span .count #count_history>
-                                        #{PrettyNumber countHistory}
-                        $of HistoryR
-                            <li>
-                                <a href=@{HomeR}>New upload
-                            <li .active>
-                                <a href=@{HistoryR}>Upload history
-                                    <span .count #count_history>
-                                        #{PrettyNumber countHistory}
-                        $of _
-                            <li>
-                                <a href=@{HomeR}>New upload
-                            <li>
-                                <a href=@{HistoryR}>Upload history
-                                    <span .count #count_history>
-                                        #{PrettyNumber countHistory}
+            $case currentPage
+                $of NewUpload 
+                    <li .active>
+                        <a href=@{HomeR}>New upload
+                    <li>
+                        <a href=@{HistoryR}>Upload history
+                            <span .count #count_history>
+                                #{PrettyNumber countHistory}
+                $of History
+                    <li>
+                        <a href=@{HomeR}>New upload
+                    <li .active>
+                        <a href=@{HistoryR}>Upload history
+                            <span .count #count_history>
+                                #{PrettyNumber countHistory}
                 $of _
                     <li>
                         <a href=@{HomeR}>New upload
                     <li>
                         <a href=@{HistoryR}>Upload history
-                            <span .count #count_history>#{PrettyNumber countHistory}
+                            <span .count #count_history>
+                                #{PrettyNumber countHistory}
 
             <script type="text/javascript">
                 countHistory = #{countHistory};

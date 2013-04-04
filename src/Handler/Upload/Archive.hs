@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 -- | Recognises zip archives and adds their content to the database.
-module Upload.Archive (
+module Handler.Upload.Archive (
       ArchiveTree (..), extensions, processArchive, archiveTree, treeToHtml
     ) where
 
@@ -19,7 +19,7 @@ import System.FilePath (splitDirectories, hasTrailingPathSeparator)
 import qualified Codec.Archive.Zip as Z
 import Text.Hamlet (shamlet)
 
-import qualified Upload.Compression as C
+import qualified Handler.Upload.Compression as C
 import Util.Hmac (newHmac)
 import Util.Pretty (PrettyFileSize (..), wrappedText)
 
@@ -33,38 +33,40 @@ extensions = S.fromDistinctAscList [".apk", ".jar", ".zip"]
 
 -- | Try to read the content of a zip archive.
 processArchive :: FilePath -> Text -> FileId -> Handler Bool
-processArchive path ext fileId = do
-    if not (ext `S.member` extensions)
-        then return False
-        else do
-            eEntries <- liftIO $ E.try (readArchiveFiles >>= E.evaluate)
+processArchive path ext fileId | not (ext `S.member` extensions) = return False
+                               | otherwise = do
+    eEntries <- liftIO $ E.try (readArchiveFiles >>= E.evaluate)
 
-            case eEntries of
-                Right entries -> do
-                    app <- getYesod
-                    runDB $ do
-                        update fileId [FileType =. Archive]
+    case eEntries of
+        Right entries -> do
+            app <- getYesod
+            runDB $ do
+                update fileId [FileType =. Archive]
 
-                        -- Appends the files of the archive to the database.
-                        forM_ entries $ \e -> do
-                            let ePath = Z.eRelativePath e
-                                ePathText = T.pack ePath
+                -- Appends the files of the archive to the database.
+                forM_ entries $ \e -> do
+                    let ePath = Z.eRelativePath e
+                        ePathText = T.pack ePath
 
-                            exists <- getBy $ UniqueArchiveFile fileId ePathText
+                    exists <- getBy $ UniqueArchiveFile fileId ePathText
 
-                            whenJust exists $ \_ -> do
-                                (key, hmac) <- newHmac HmacArchiveFile
-                                let eSize = if hasTrailingPathSeparator ePath
-                                        then Nothing
-                                        else let size = Z.eUncompressedSize e
-                                             in Just $ word64 size
+                    case exists of
+                        Just _ -> return ()
+                        Nothing -> do
+                            (key, hmac) <- newHmac HmacArchiveFile
 
-                                insertKey key $ ArchiveFile hmac fileId
-                                                            ePathText eSize
+                            let eSize | hasTrailingPathSeparator ePath =
+                                        Nothing
+                                      | otherwise =
+                                        let size = Z.eUncompressedSize e
+                                        in Just $ word64 size
 
-                    _ <- liftIO $ C.putFile app fileId []
-                    return True
-                Left (_ :: E.SomeException) -> return False
+                            insertKey key $ ArchiveFile hmac fileId ePathText
+                                                        eSize
+
+            _ <- liftIO $ C.putFile app fileId []
+            return True
+        Left (_ :: E.SomeException) -> return False
   where
     -- Try to read the archive index of a zip file.
     readArchiveFiles =

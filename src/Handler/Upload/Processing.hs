@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | This module handles the processing of an uploaded file.
-module Upload.Processing (
+module Handler.Upload.Processing (
       UploadError (..), processFile, moveToTmp, hashFile, moveToUpload
     ) where
 

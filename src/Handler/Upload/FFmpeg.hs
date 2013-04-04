@@ -1,5 +1,5 @@
 -- | Functions which are useful to communicate with the FFmpeg command.
-module Upload.FFmpeg (
+module Handler.Upload.FFmpeg (
       MediaInfo (..), MediaDuration (..), FFmpegArgs
     , ffmpeg, ffprobe, argsProbe, argsWebM, argsH264, argsWebMAudio, argsMP3
     , withExec, encode, getInfo

@@ -1,3 +1,23 @@
+#page {
+    position: relative;
+}
+
+#user_bar {
+    position: absolute;
+    right: 15px;
+    top: 15px;
+
+    .toggle_button, .toggle_button_left, .toggle_button_central,
+    .toggle_button_right {
+    }
+    a img {
+        height: 15px;
+        width: 15px;
+        border-radius: 1px;
+        color: rgba(0, 0, 0, 0.5);
+    }
+}
+
 ul#uploads {
     padding: 0;
     margin: 0;

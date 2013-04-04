@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 -- | Recognises medias (audio and video), collects information and create
 -- HTML 5 audio/videos in a separate thread.
-module Upload.Media (
+module Handler.Upload.Media (
     -- * Processing uploads
       processMedia
     -- * Transcoding
@@ -88,44 +88,42 @@ extensions = S.fromDistinctAscList [
 
 -- | Try to open the file as a media. Enqueue the file for re-encoding.
 processMedia :: FilePath -> Text -> FileId -> Handler Bool
-processMedia path ext fileId = do
-    if not (ext `S.member` extensions)
-        then return False
-        else do
-            mInfo <- liftIO $ getInfo path
-            liftIO $ print mInfo
+processMedia path ext fileId | not (ext `S.member` extensions) = return False
+                             | otherwise = do
+    mInfo <- liftIO $ getInfo path
+    liftIO $ print mInfo
 
-            case mInfo of
-                Just (MediaInfo mediaType duration) -> do
-                    let durationCenti = toCentisec duration
-                        attrs = case mediaType of
-                            Audio  -> MediaAttrs fileId durationCenti False
-                            ~Video -> MediaAttrs fileId durationCenti False
+    case mInfo of
+        Just (MediaInfo mediaType duration) -> do
+            let durationCenti = toCentisec duration
+                attrs = case mediaType of
+                    Audio  -> MediaAttrs fileId durationCenti False
+                    ~Video -> MediaAttrs fileId durationCenti False
 
-                    mAudioAttrs <- mp3Tags
+            mAudioAttrs <- mp3Tags
 
-                    runDB $ do
-                        update fileId [FileType =. mediaType]
+            runDB $ do
+                update fileId [FileType =. mediaType]
 
-                        _ <- insert attrs
+                _ <- insert attrs
 
-                        whenJust mAudioAttrs $ \audioAttrs -> do
-                            _ <- insert audioAttrs
-                            return ()
+                whenJust mAudioAttrs $ \audioAttrs -> do
+                    _ <- insert audioAttrs
+                    return ()
 
-                    -- Adds the media to the media transcoding queue and then
-                    -- to the compression queue.
-                    app <- getYesod
-                    _ <- if mediaType == Audio || encodeVideos
-                        then do -- Doesn't always transcode videos
-                            jobId <- liftIO $ putFile app fileId
-                            liftIO $ C.putFile app fileId [jobId]
-                        else 
-                            liftIO $ C.putFile app fileId []
+            -- Adds the media to the media transcoding queue and then
+            -- to the compression queue.
+            app <- getYesod
+            _ <- if mediaType == Audio || encodeVideos
+                then do -- Doesn't always transcode videos
+                    jobId <- liftIO $ putFile app fileId
+                    liftIO $ C.putFile app fileId [jobId]
+                else 
+                    liftIO $ C.putFile app fileId []
 
-                    return True
-                Nothing -> do
-                    return False
+            return True
+        Nothing -> do
+            return False
   where
     toCentisec (MediaDuration h m s c) =
         word64 c + word64 s * 100 + word64 m * 60 * 100 + word64 h * 3600 * 100

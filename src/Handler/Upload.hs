@@ -12,7 +12,7 @@ import Network.HTTP.Types.Status (
     )
 
 import Account (getUser)
-import Upload.Processing (UploadError (..), processFile)
+import Handler.Upload.Processing (UploadError (..), processFile)
 
 data Options = Options {
       optPublic :: Bool

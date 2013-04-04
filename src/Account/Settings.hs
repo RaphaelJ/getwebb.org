@@ -68,7 +68,6 @@ postSettingsR = do
                 AvatarResult False _ | not (avatarGenerated avatar) -> do
                     -- Restores the generated avatar.
                     app <- getYesod
-                    avatarId <- getAvatarId user
                     img <- genIdenticon (accountEmail app user)
                     runDB $ do
                         replaceAvatar userId user avatar img

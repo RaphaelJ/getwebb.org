@@ -31,6 +31,7 @@ getHistoryR = do
                     return (upload, file, getIcon rdr upload extras)
         Nothing -> return []
 
+    app <- getYesod
     currentTime <- liftIO $ getCurrentTime
     defaultLayout $ do
         setTitle "Upload history - getwebb"

@@ -2,7 +2,7 @@
 -- concurrent queue. Try to compress the file using the GZip algorithm and
 -- update the database entry if the compressed file is smaller than the original
 -- file.
-module Upload.Compression (
+module Handler.Upload.Compression (
     -- * Compression
       compressFile
     -- * Background compression queue management

@@ -1,11 +1,15 @@
 <div #page>
     <h1>Upload history
 
-    $maybe (Entity _ user, _) <- mUser
-        <a href=@{AccountR SignOutR}>Sign out
-        (<a href="@{AccountR SettingsR}">#{userName user}</a>)
-    $nothing
-        <a href=@{AccountR AuthR}>Sign in
+    <div #user_bar>
+        $maybe (Entity _ user, avatar) <- mUser
+            <a href=@{AccountR SettingsR} .toggle_button_left>
+                <img src=@{avatarRoute app avatar} />
+                #{userName user}
+            <a href=@{AccountR SignOutR} .toggle_button_right>Sign out
+        $nothing
+            <a href=@{AccountR AuthR} .toggle_button_left>Sign in
+            <a href=@{AccountR AuthR} .toggle_button_right>Register
 
     $if null uploads
         <div align=center>

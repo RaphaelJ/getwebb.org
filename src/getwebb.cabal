@@ -39,19 +39,18 @@ library
                      Handler.History
                      Handler.Home
                      Handler.Upload
+                     Handler.Upload.Archive
+                     Handler.Upload.Compression
+                     Handler.Upload.FFmpeg
+                     Handler.Upload.Image
+                     Handler.Upload.Media
+                     Handler.Upload.Processing
+                     Handler.Upload.Remove
                      Handler.View
 
                      Settings
                      Settings.StaticFiles
                      Settings.Development
-
-                     Upload.Archive
-                     Upload.Compression
-                     Upload.FFmpeg
-                     Upload.Image
-                     Upload.Media
-                     Upload.Processing
-                     Upload.Remove
 
                      Util.Date
                      Util.Extras

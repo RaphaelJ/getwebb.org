@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 -- | Recognises images and create miniature for them.
-module Upload.Image (
+module Handler.Upload.Image (
     -- * Constants
       extensions, miniatureSize, maxImageSize
     -- * Upload processing
@@ -54,51 +54,49 @@ maxImageSize@(I.Size maxW maxH) = I.Size 2048 1200
 
 -- | Try to open the image and to generate a miniature.
 processImage :: FilePath -> Text -> FileId -> Handler Bool
-processImage path ext fileId = do
-    if not (ext `S.member` extensions)
-        then return False
-        else do
-            app <- getYesod
+processImage path ext fileId | not (ext `S.member` extensions) = return False
+                             | otherwise = do
+    app <- getYesod
 
-            -- Tries to open the file as an image.
-            liftIO $ putStrLn "Load original image:"
-            eImg <- liftIO $ timeIt $ E.try (I.load path)
+    -- Tries to open the file as an image.
+    liftIO $ putStrLn "Load original image:"
+    eImg <- liftIO $ timeIt $ E.try (I.load path)
 
-            case eImg of
-                Right img -> do
-                    -- Creates the miniature and saves it.
-                    let dir = takeDirectory path
-                        size@(I.Size w h) = I.getSize img
-                    liftIO $ putStrLn "Miniature: "
-                    liftIO $ timeIt $ do
-                        let miniImg = miniature img
-                        I.save miniImg (getPath dir Miniature)
+    case eImg of
+        Right img -> do
+            -- Creates the miniature and saves it.
+            let dir = takeDirectory path
+                size@(I.Size w h) = I.getSize img
+            liftIO $ putStrLn "Miniature: "
+            liftIO $ timeIt $ do
+                let miniImg = miniature img
+                I.save miniImg (getPath dir Miniature)
 
-                    (displayType, displayJobId) <- genDisplayable dir size img
+            (displayType, displayJobId) <- genDisplayable dir size img
 
-                    -- Starts a background job to seek the EXIF tags of the
-                    -- image.
-                    let exifJob = jobExifTags app fileId
-                    exifJobId <- liftIO $
-                        registerJob app fileId ExifTags [] exifJob
+            -- Starts a background job to seek the EXIF tags of the
+            -- image.
+            let exifJob = jobExifTags app fileId
+            exifJobId <- liftIO $
+                registerJob app fileId ExifTags [] exifJob
 
-                    _ <- runDB $ do
-                        update fileId [FileType =. Image]
+            _ <- runDB $ do
+                update fileId [FileType =. Image]
 
-                        insert $ ImageAttrs {
-                              imageAttrsFile = fileId
-                            , imageAttrsWidth = word32 w
-                            , imageAttrsHeight = word32 h
-                            , imageAttrsDisplayable = displayType
-                            }
+                insert $ ImageAttrs {
+                      imageAttrsFile = fileId
+                    , imageAttrsWidth = word32 w
+                    , imageAttrsHeight = word32 h
+                    , imageAttrsDisplayable = displayType
+                    }
 
-                    -- Compresses the file after the EXIF tags and the
-                    -- displayable image processes have been executed.
-                    let compressDeps = exifJobId : maybeToList displayJobId
-                    _ <- liftIO $ C.putFile app fileId compressDeps
+            -- Compresses the file after the EXIF tags and the
+            -- displayable image processes have been executed.
+            let compressDeps = exifJobId : maybeToList displayJobId
+            _ <- liftIO $ C.putFile app fileId compressDeps
 
-                    return True
-                Left (_ :: E.SomeException) -> return False
+            return True
+        Left (_ :: E.SomeException) -> return False
   where
     -- Generates displayable image immediately if the file format is not
     -- displayable in the browser or in background if the image is only too 

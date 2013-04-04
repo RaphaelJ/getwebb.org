@@ -97,6 +97,9 @@ type Form x = Html -> MForm App App (FormResult x, Widget)
 encryptKeyFile :: FilePath
 encryptKeyFile = "config/client_session_key.aes"
 
+-- | Used to change the state of the navigation bar.
+data CurrentPage = NewUpload | History | Other deriving (Eq)
+
 -- Please see the documentation for the Yesod typeclass. There are a number
 -- of settings which can be configured by overriding methods here.
 instance Yesod App where
@@ -156,7 +159,7 @@ instance Yesod App where
         mMsg <- getMessage
 
         toMaster <- getRouteToMaster
-        currentRoute <- getCurrentRoute >>= return . fmap toMaster
+        currentPage <- getCurrentPage . fmap toMaster <$> getCurrentRoute
 
         mAdminKeyId <- tryAdminKey
         countHistory <- case mAdminKeyId of
@@ -173,6 +176,10 @@ instance Yesod App where
             $(widgetFile "default-footer")
             addScriptRemote "http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"
         hamletToRepHtml $(hamletFile "templates/default-layout.hamlet")
+      where
+        getCurrentPage (Just HomeR)    = NewUpload
+        getCurrentPage (Just HistoryR) = History
+        getCurrentPage _               = Other
 
     -- This is done to provide an optimization for serving static files from
     -- a separate domain. Please see the staticRoot setting in Settings.hs

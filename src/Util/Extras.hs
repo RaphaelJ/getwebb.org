@@ -17,7 +17,7 @@ import Data.Time.Clock (UTCTime)
 import System.FilePath (takeExtension)
 
 import Handler.Download (routeType, getBufferEntry)
-import Upload.Archive (archiveTree, treeToHtml)
+import Handler.Upload.Archive (archiveTree, treeToHtml)
 
 -- | Used to retrieve the attributes about each file type from the database.
 data Extras = ImageExtras ImageAttrs [ExifTag]

@@ -39,15 +39,13 @@ import qualified Vision.Image as I
 
 import JobsDaemon (registerJob, runDBIO)
 
-import Upload.FFmpeg (
+import Handler.Upload.FFmpeg (
       MediaInfo (..), MediaDuration (..), argsWebMAudio, argsMP3
     , argsWebM, argsH264, encode, getInfo
     )
-import qualified Upload.Compression as C
-import Upload.Image (miniature)
+import qualified Handler.Upload.Compression as C
+import Handler.Upload.Image (miniature)
 import Util.Path (uploadDir, getPath, newTmpFile)
-
-import Debug.Trace
 
 encodeVideos :: Bool
 encodeVideos = False
@@ -181,7 +179,7 @@ processMedia path ext fileId | not (ext `S.member` extensions) = return False
 
     -- Returns Nothing if the tag's string is empty.
     maybeStrTag "" = Nothing
-    maybeStrTag xs = trace xs $ Just (T.pack xs)
+    maybeStrTag xs = Just (T.pack xs)
 
     -- Returns Nothing if the tag's value is zero.
     maybeIntTag 0 = Nothing

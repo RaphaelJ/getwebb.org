@@ -21,10 +21,10 @@ import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime, addUTCTime)
 import Network.Wai (remoteHost)
 
-import Upload.Archive (processArchive)
-import qualified Upload.Compression as C
-import Upload.Image (processImage)
-import Upload.Media (processMedia)
+import Handler.Upload.Archive (processArchive)
+import qualified Handler.Upload.Compression as C
+import Handler.Upload.Image (processImage)
+import Handler.Upload.Media (processMedia)
 import Util.Hmac (newHmac)
 import Util.Path (getFileSize, uploadDir, newTmpFile, getPath)
 

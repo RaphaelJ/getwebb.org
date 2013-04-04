@@ -30,8 +30,8 @@ import Graphics.Exif (fromFile, allTags)
 import Graphics.Exif.Internals (tagFromName, tagTitle)
 import System.TimeIt (timeIt)
 
+import qualified Handler.Upload.Compression as C
 import JobsDaemon (registerJob, runDBIO)
-import qualified Upload.Compression as C
 import Util.Path (uploadDir, getPath, getFileSize)
 
 -- | Files extensions which are supported by the DevIL image library.

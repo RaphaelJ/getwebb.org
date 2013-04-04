@@ -17,7 +17,7 @@ import Text.Hamlet (shamlet)
 import Text.Julius (rawJS)
 
 import Handler.Comment (maxCommentLength, commentForm)
-import Upload.Remove (removeUpload)
+import Handler.Upload.Remove (removeUpload)
 import Util.Date (getDiffTime)
 import Util.Pretty (
       PrettyNumber (..), PrettyFileSize (..), PrettyDuration (..)

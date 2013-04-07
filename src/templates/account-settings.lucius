@@ -6,10 +6,17 @@
     }
 
     #avatar_file_widget {
-        margin-left: 125px;
+        margin-left: 115px;
     }
 }
 
 .settings {
     clear: both;
+}
+
+@media (max-width: 550px) {
+    .avatar_settings #avatar_file_widget {
+        clear: both;
+        margin-left: 0;
+    }
 }

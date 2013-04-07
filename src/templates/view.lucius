@@ -10,51 +10,58 @@
 
     text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.2);
 
-    a {
-        display: block;
-        float: left;
-        color: white;
-        text-decoration: none;
-        line-height: 30px;
-    }
-
-    a:hover {
-        background-color: #609E22;
-        text-decoration: none;
-    }
-
-    a:active {
-        background: #609E22;
-    }
-
     #links {
         margin: auto;
         width: 950px;
 
+        #previous, #next {
+            width: 33%;
+        }
+
         #previous {
-            width: 294px;
-            padding-left: 15px;
+            float: left;
+
+            margin-right: -1px;
+            border-right: 1px solid rgba(0, 0, 0, 0.1);
+
+            .action {
+                padding-left: 15px;
+            }
+        }
+
+        #next {
+            float: left;
+            text-align: right;
+
+            margin-left: -1px;
+            border-left: 1px solid rgba(0, 0, 0, 0.1);
+
+            .action {
+                padding-right: 15px;
+            }
         }
 
         #download_all {
-            width: 328px;
+            display: none;
+            float: left;
+            width: 34%;
 
             text-align: center;
         }
 
-        #next {
-            width: 294px;
-            padding-right: 15px;
-
-            text-align: right;
+        a {
+            color: white;
+            text-decoration: none;
+            line-height: 30px;
         }
 
-        #previous, #download_all {
-            border-right: 1px solid rgba(0, 0, 0, 0.2);
+        a:hover {
+            background-color: #609E22;
+            text-decoration: none;
         }
 
-        #next, #download_all {
-            border-left: 1px solid rgba(255, 255, 255, 0.3);
+        a:active {
+            background: #609E22;
         }
     }
 
@@ -78,4 +85,16 @@ img.qrcode:hover {
     width: 150px;
     height: 150px;
 
+}
+
+@media (max-width: 950px) {
+    #browser #links {
+        width: 100%;
+    }
+}
+
+@media (max-width: 500px) {
+    #browser #links .action .text {
+        display: none;
+    }
 }

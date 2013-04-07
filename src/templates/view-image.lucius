@@ -94,8 +94,6 @@ body {
             right: 300px;
             top: 0;
             bottom: 0;
-            overflow:auto;
-            z-index: 0;
 
             #image {
                 position: absolute;
@@ -111,7 +109,6 @@ body {
                 background-color: #DFDFDF;
             }
 
-            
             img.qrcode {
                 position: absolute;
                 top: 0;
@@ -195,7 +192,6 @@ body {
 
         #comments {
             display: none;
-        
             position: absolute;
             z-index: 10;
             height: 550px;
@@ -382,5 +378,29 @@ footer {
 
     a, a:visited {
         color: white;
+    }
+}
+
+@media (max-width: 950px) {
+    #full_screen #position_relative {
+        #title {
+            position: static;
+            display: block;
+            border-radius: 0;
+        }
+
+        #left_pane {
+            position: static;
+            right: 0;
+
+            #image {
+                max-height: none;
+                margin: 5px auto;
+            }
+        }
+
+        #right_pane {
+            display: none;
+        }
     }
 }

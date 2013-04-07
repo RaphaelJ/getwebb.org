@@ -2,235 +2,236 @@
     background-image: url('@{StaticR img_homepage_homescreen_png}');
 
     #upload_box {
-        width: 550px;
+        width: 600px;
         margin: auto;
         background-color: rgba(255, 255, 255, 0.15);
-        padding: 5px 15px 15px 15px;
         border: 0;
         border-radius: 0 0 5px 5px;
-        position: relative;
 
-        #upload_error {
-            margin: 10px 130px 5px 0;
-            padding: 5px 10px;
-            background-color: rgba(183, 64, 57, 0.7);
-            box-shadow: 0 0 2px black;
-            border-radius: 2px;
-        }
+        #upload_box_content {
+            position: relative;
+            padding: 5px 15px 15px 15px;
 
-        h2 {
-            font-size: 20px;
-        }
-
-        #upload_button {
-            float: right;
-            display: block;
-
-            font-size: 20px;
-        }
-
-        .options_button {
-            float: left;
-            margin: 15px 0 0 0;
-
-            button {
-                padding: 7px 10px 7px 35px;
-
-                background-image: url(
-                    '@{StaticR img_homepage_more_options_png}'
-                );
-                background-color: rgba(0, 0, 0, 0.1);
-                background-repeat: no-repeat;
-                background-position: 10px center;
-
-                border-radius: 4px;
-                border: 1px solid rgba(0, 0, 0, 0.3);
-                box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
-
-                font-size: 15px;
-                color: white;
-                text-decoration: none;
-
-                transition-property: all;
-                transition-duration: 0.1s;
+            #upload_error {
+                margin: 10px 130px 5px 0;
+                padding: 5px 10px;
+                background-color: rgba(183, 64, 57, 0.7);
+                box-shadow: 0 0 2px black;
+                border-radius: 2px;
             }
-
-            button:hover {
-                background-color: rgba(0, 0, 0, 0.4);
-            }
-
-            button:active, button.enabled:active {
-                padding: 9px 10px 5px 35px;
-
-                border: 1px solid rgba(0, 0, 0, 0.5);
-                box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.5),
-                            0 1px 0 0 rgba(255, 255, 255, 0.2);
-            }
-
-            button.enabled {
-                padding: 8px 10px 6px 35px;
-
-                border: 1px solid rgba(0, 0, 0, 0.4);
-                box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4),
-                            0 1px 0 0 rgba(255, 255, 255, 0.2);
-            }
-        }
-
-        #options {
-            margin: 10px 0 10px 35px;
-
-            label {
-                margin-right: 10px;
-            }
-
-            #public_div {
-                display: none;
-            }
-
-            input[type=text], input[type=password], input[type=email] {
-                box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
-            }
-
-            input[type=text]:focus, input[type=password]:focus,
-            input[type=email]:focus {
-                border: 1px solid rgba(82, 168, 236, 0.9);
-                box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2),
-                            0 0 6px rgba(82, 168, 236, 0.6);
-            }
-        }
-
-        #public_private {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-
-            #public_button, #private_button {
-                padding-left: 9px;
-                padding-right: 9px;
-                background-color: rgba(0, 0, 0, 0.1);
-                border-color: rgba(0, 0, 0, 0.4);
-                box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
-
-                color: white;
-                text-shadow: none;
-            }
-
-            #public_button:hover, #private_button:hover {
-                background-color: rgba(0, 0, 0, 0.4);
-            }
-
-            #public_button.enabled, #private_button.enabled {
-                box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4),
-                            0 1px 0 0 rgba(255, 255, 255, 0.1);
-            }
-
-            #public_button.enabled {
-                background-color: #609E22;
-            }
-
-            #private_button.enabled {
-                background-color: #AE3737;
-            }
-        }
-
-        #upload_progress {
-            margin-top: 15px;
 
             h2 {
-                float: left;
-                margin-top: 0;
+                font-size: 20px;
             }
 
-            #upload_speed {
-                float: right;
-                line-height: 20px;
-            }
+            #public_private {
+                position: absolute;
+                top: 15px;
+                right: 15px;
 
-            .upload {
-                margin: 10px 0 0 0;
-                width: 100%;
+                #public_button, #private_button {
+                    padding-left: 9px;
+                    padding-right: 9px;
+                    background-color: rgba(0, 0, 0, 0.1);
+                    border-color: rgba(0, 0, 0, 0.4);
+                    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
 
-                .preview {
-                    float: left;
-                    width: 80px;
-
-                    text-align: center;
-
-                    .img {
-                        float: left;
-                        position: relative;
-
-                        .border {
-                            border: 1px solid rgba(255, 255, 255, 0.2);
-                            position: absolute;
-                            top: 1px;
-                            bottom: 1px;
-                            left: 1px;
-                            right: 1px;
-                        }
-
-                        img {
-                            display: block;
-                            margin: 0;
-                            padding: 0;
-                            max-width: 80px;
-                            max-height: 60px;
-
-                            border: 1px solid black;
-
-                            box-shadow: 0 0 2px black;
-                        }
-                    }
+                    color: white;
+                    text-shadow: none;
                 }
 
-                .status {
-                    margin-left: 95px;
-                    padding: 2px 0;
+                #public_button:hover, #private_button:hover {
+                    background-color: rgba(0, 0, 0, 0.4);
+                }
 
-                    h3 {
-                        margin: 0 0 0 0;
-                        padding: 0 0 0 25px;
+                #public_button.enabled, #private_button.enabled {
+                    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4),
+                                0 1px 0 0 rgba(255, 255, 255, 0.1);
+                }
 
-                        background-repeat: no-repeat;
-                        background-position: left center;
+                #public_button.enabled {
+                    background-color: #609E22;
+                }
 
-                        font-size: 15px;
+                #private_button.enabled {
+                    background-color: #AE3737;
+                }
+            }
 
-                        a {
-                            padding-right: 20px;
-                            background-image: url("@{StaticR img_link_new_window_png}");
-                            background-repeat: no-repeat;
-                            background-position: right center;
+            .options_button {
+                float: left;
+                margin: 15px 0 0 0;
+
+                button {
+                    padding: 7px 10px 7px 35px;
+
+                    background-image: url(
+                        '@{StaticR img_homepage_more_options_png}'
+                    );
+                    background-color: rgba(0, 0, 0, 0.1);
+                    background-repeat: no-repeat;
+                    background-position: 10px center;
+
+                    border-radius: 4px;
+                    border: 1px solid rgba(0, 0, 0, 0.3);
+                    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+
+                    font-size: 15px;
+                    color: white;
+                    text-decoration: none;
+
+                    transition-property: all;
+                    transition-duration: 0.1s;
+                }
+
+                button:hover {
+                    background-color: rgba(0, 0, 0, 0.4);
+                }
+
+                button:active, button.enabled:active {
+                    padding: 9px 10px 5px 35px;
+
+                    border: 1px solid rgba(0, 0, 0, 0.5);
+                    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.5),
+                                0 1px 0 0 rgba(255, 255, 255, 0.2);
+                }
+
+                button.enabled {
+                    padding: 8px 10px 6px 35px;
+
+                    border: 1px solid rgba(0, 0, 0, 0.4);
+                    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4),
+                                0 1px 0 0 rgba(255, 255, 255, 0.2);
+                }
+            }
+
+            #upload_button {
+                float: right;
+                display: block;
+
+                font-size: 20px;
+            }
+
+            #options {
+                margin: 10px 35px 10px 35px;
+
+                #public_div {
+                    display: none;
+                }
+
+                input[type=text], input[type=password], input[type=email] {
+                    width: 300px;
+                    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+                }
+
+                input[type=text]:focus, input[type=password]:focus,
+                input[type=email]:focus {
+                    border: 1px solid rgba(82, 168, 236, 0.9);
+                    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2),
+                                0 0 6px rgba(82, 168, 236, 0.6);
+                }
+            }
+
+            #upload_progress {
+                margin-top: 15px;
+
+                h2 {
+                    float: left;
+                    margin-top: 0;
+                }
+
+                #upload_speed {
+                    float: right;
+                    line-height: 20px;
+                }
+
+                .upload {
+                    margin: 10px 0 0 0;
+                    width: 100%;
+
+                    .preview {
+                        float: left;
+                        width: 80px;
+
+                        text-align: center;
+
+                        .img {
+                            float: left;
+                            position: relative;
+
+                            .border {
+                                border: 1px solid rgba(255, 255, 255, 0.2);
+                                position: absolute;
+                                top: 1px;
+                                bottom: 1px;
+                                left: 1px;
+                                right: 1px;
+                            }
+
+                            img {
+                                display: block;
+                                margin: 0;
+                                padding: 0;
+                                max-width: 80px;
+                                max-height: 60px;
+
+                                border: 1px solid black;
+
+                                box-shadow: 0 0 2px black;
+                            }
                         }
                     }
 
-                    h3.waiting {
-                        background-image: url(
-                            '@{StaticR img_homepage_waiting_png}'
-                        );
-                    }
+                    .status {
+                        margin-left: 95px;
+                        padding: 2px 0;
 
-                    h3.uploading {
-                        background-image: url(
-                            '@{StaticR img_homepage_uploading_png}'
-                        );
-                    }
+                        h3 {
+                            margin: 0 0 0 0;
+                            padding: 0 0 0 25px;
+                            overflow: hidden;
 
-                    h3.uploaded {
-                        background-image: url(
-                            '@{StaticR img_homepage_uploaded_png}'
-                        );
-                    }
+                            background-repeat: no-repeat;
+                            background-position: left center;
 
-                    h3.error {
-                        background-image: url(
-                            '@{StaticR img_homepage_error_png}'
-                        );
-                    }
+                            font-size: 15px;
 
-                    .progress {
-                        margin: 7px 0 0 0;
-                        width: 100%;
+                            a {
+                                padding-right: 20px;
+                                background-image: url("@{StaticR img_link_new_window_png}");
+                                background-repeat: no-repeat;
+                                background-position: right center;
+                            }
+                        }
+
+                        h3.waiting {
+                            background-image: url(
+                                '@{StaticR img_homepage_waiting_png}'
+                            );
+                        }
+
+                        h3.uploading {
+                            background-image: url(
+                                '@{StaticR img_homepage_uploading_png}'
+                            );
+                        }
+
+                        h3.uploaded {
+                            background-image: url(
+                                '@{StaticR img_homepage_uploaded_png}'
+                            );
+                        }
+
+                        h3.error {
+                            background-image: url(
+                                '@{StaticR img_homepage_error_png}'
+                            );
+                        }
+
+                        .progress {
+                            margin: 7px 0 0 0;
+                            width: 100%;
+                        }
                     }
                 }
             }
@@ -238,15 +239,15 @@
     }
 
     .progress {
-        width: 100px;
         height: 5px;
         background-color: #F2F2E2;
 
         box-shadow: 0 0 2px black;
-    }
-    .progress .complete {
-        background-color: #65A625;
-        height: 100%;
+
+        .complete {
+            background-color: #65A625;
+            height: 100%;
+        }
     }
 
     #upload_global_progress {
@@ -269,25 +270,90 @@
     ul {
         margin: auto;
         padding: 0;
-        width: 825px;
+        width: 100%;
 
         list-style-type: none;
 
         li {
-            width: 225px;
+            width: 33%;
             float: left;
-            margin: 40px 25px;
+            margin: 40px 0;
             padding: 0;
 
             text-align: center;
 
             h3 {
-                font-family: "ProximaNova-Light", "HelveticaNeue", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
                 margin: 3px 0 10px 0;
 
                 font-size: 18px;
                 font-weight: bold;
                 color: #1a1a1a;
+            }
+
+            .description {
+                display: block;
+                padding: 0 15px;
+            }
+        }
+    }
+}
+
+@media (max-width: 950px) {
+    #home_screen {
+        #upload_box {
+            width: 100%;
+
+            #upload_box_content {
+                #upload_form {
+                    h2 {
+                        text-align: center;
+                    }
+
+                    #upload_widget {
+                        margin: 20px 0;
+
+                        text-align: center;
+
+                        input {
+                            display: inline;
+                        }
+                    }
+                }
+
+                #options {
+                    input[type=text], input[type=password], input[type=email] {
+                        width: 100%;
+                    }
+                }
+            }
+        }
+    }
+}
+
+@media (max-width: 600px) {
+    #home_screen #upload_box #upload_box_content #public_private {
+        position: static;
+        margin: 15px 0;
+
+        text-align: center;
+        font-size: 0;
+
+        #public_button, #private_button {
+            float: none;
+        }
+    }
+
+    #page {
+        ul {
+            width: 100%;
+
+            li {
+                img {
+                    display: none;
+                }
+
+                width: 100%;
+                margin: 15px 0;
             }
         }
     }

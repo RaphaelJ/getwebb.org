@@ -1,12 +1,14 @@
 $maybe (previous, next) <- links
     <div #browser>
         <div #links>
-            <a #previous href=@{ViewR  previous}>← Previous file
+            <a #previous href=@{ViewR  previous}>
+                <span .action>←<span class="text"> Previous file</span>
             <a #download_all href=@{DownloadR hmacs'}
                title="Download all files in a single .zip archive."
                download="archive.zip">
-                ↓ Download all
-            <a #next href=@{ViewR  next}>Next file →
+                <span .action>↓<span class="text"> Download all</span>
+            <a #next href=@{ViewR  next}>
+                <span .action><span class="text">Next file </span>→
 
         <div .clear_float>
 

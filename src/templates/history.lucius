@@ -9,12 +9,21 @@
 
     .toggle_button, .toggle_button_left, .toggle_button_central,
     .toggle_button_right {
+        padding: 5px 8px;
+        height: 20px;
+        line-height: 20px;
     }
+
     a img {
-        height: 15px;
-        width: 15px;
+        height: 20px;
+        width: 20px;
         border-radius: 1px;
         color: rgba(0, 0, 0, 0.5);
+        vertical-align: middle;
+    }
+
+    a img.avatar {
+        border-radius: 2px;
     }
 }
 
@@ -25,10 +34,12 @@ ul#uploads {
     list-style-type: none;
 
     li {
+        display: block;
         float: left;
 
-        width: 460px;
-        margin: 15px 0;
+        width: 50%;
+        min-width: 300px;
+        margin: 15px auto;
 
         .icon {
             display: block;
@@ -41,6 +52,7 @@ ul#uploads {
 
             .title {
                 display: block;
+                overflow: hidden;
 
                 font-weight: 700;
                 font-size: 20x;
@@ -48,7 +60,10 @@ ul#uploads {
             }
 
             .buttons {
-                margin: 15px 0;
+                margin: 5px 0;
+                a {
+                    margin: 2px 0;
+                }
             }
         }
     }

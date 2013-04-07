@@ -1,34 +1,40 @@
 <div #page>
-    <form #sign_form method=post action=@{toMaster SignInR}
-                        enctype=#{signInEnctype}>
-        <h1>Sign in
-        Connect yourself using an <span class="getwebb">existing account</span>.
+    <div #page_content>
+        <div #half_screen>
+            <form #sign_form method=post action=@{toMaster SignInR}
+                             enctype=#{signInEnctype}>
+                <h1>Sign in
 
-        <table>
-            ^{signInWidget}
+                Connect yourself using an 
+                <span class="getwebb">existing account
+                .
 
-        <input .big_button type=submit value="Sign in" />
+                <table>
+                    ^{signInWidget}
 
-    <form #register_form method=post action=@{toMaster RegisterR}
-                         enctype=#{registerEnctype}>
-        <h1>Register
-        Create a new <span class="getwebb">free account</span>.
+                <input .big_button type=submit value="Sign in" />
 
-        <ul>
-            <li>
-                <span .getwebb>Track
-                each of your files whatever the computer from which they have 
-                been uploaded ;
-            <li>
-                <span .getwebb>Write comments
-                about files ;
-            <li>
-                <span .getwebb>Share
-                your public files on your public gallery.
+        <div #half_screen>
+            <form #register_form method=post action=@{toMaster RegisterR}
+                                enctype=#{registerEnctype}>
+                <h1>Register
+                Create a new <span class="getwebb">free account</span>.
 
-        <table>
-            ^{registerWidget}
+                <ul>
+                    <li>
+                        <span .getwebb>Track
+                        each of your files whatever the computer from which they have 
+                        been uploaded ;
+                    <li>
+                        <span .getwebb>Write comments
+                        about files ;
+                    <li>
+                        <span .getwebb>Share
+                        your public files on your public gallery.
 
-        <input .big_button type=submit value="Create an account" />
+                <table>
+                    ^{registerWidget}
 
-    <div .clear_float>
+                <input .big_button type=submit value="Create an account" />
+
+        <div .clear_float>

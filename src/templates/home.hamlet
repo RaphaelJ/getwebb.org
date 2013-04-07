@@ -3,47 +3,47 @@
         <div #upload_global_progress_complete .complete>
 
     <div #upload_box>
-        <div #upload_error style="display: none">
+        <div #upload_box_content>
+            <div #upload_error style="display: none">
 
-        <form #upload_form enctype="multipart/form-data"
-                           method="post" action="@{UploadR}">
-            <h2>Select some files to upload
+            <form #upload_form enctype="multipart/form-data"
+                            method="post" action="@{UploadR}">
+                <h2>Select some files to upload
 
-            ^{filesWidget}
+                <div #public_private>
+                    <button #public_button .toggle_button_left type=button
+                            title="Uploaded files will be published in the public gallery."
+                            onclick="uploadPublic(true);">
+                        Public
+                    <button #private_button .toggle_button_right type=button
+                            title="Uploaded files will NOT be published in the public gallery."
+                            onclick="uploadPublic(false);">
+                        Private
+                <div .clear_float> 
 
-            <div .clear_float>
+                <div #upload_widget>
+                    ^{filesWidget}
 
-            <p .options_button>
-                <button #options_toggle type=button tabindex=3>
-                    Show more options
+                <p .options_button>
+                    <button #options_toggle type=button tabindex=3>
+                        Show more options
 
-            <input .big_button #upload_button type=submit tabindex=2
-                                              value=Upload>
+                <input .big_button #upload_button type=submit tabindex=2
+                                                  value=Upload>
 
-            <div .clear_float>
-
-            <div #options style="display: none">
-                ^{optsWidget}
-
-            <div #public_private>
-                <button #public_button .toggle_button_left type=button
-                        title="Uploaded files will be published in the public gallery."
-                        onclick="uploadPublic(true);">
-                    Public
-                <button #private_button .toggle_button_right type=button
-                        title="Uploaded files will NOT be published in the public gallery."
-                        onclick="uploadPublic(false);">
-                    Private
                 <div .clear_float>
 
-        <div #upload_progress style="display: none">
-            <h2 #upload_status>
+                <div #options style="display: none">
+                    ^{optsWidget}
 
-            <div #upload_speed>
+            <div #upload_progress style="display: none">
+                <h2 #upload_status>
 
-            <div .clear_float>
+                <div #upload_speed>
 
-            <div #uploads>
+                <div .clear_float>
+
+                <div #uploads>
 <div #page>
     <ul>
         <li>

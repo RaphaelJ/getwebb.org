@@ -3,7 +3,6 @@
 
     #error_box {
         width: 950px;
-        min-height: 400px;
         margin: auto;
         position: relative;
 
@@ -25,6 +24,26 @@
             padding: 15px;
             border: 0;
             border-radius: 5px;
+        }
+    }
+}
+
+@media (max-width: 950px) {
+    #home_screen #error_box {
+        width: 100%;
+        background-color: rgba(255, 255, 255, 0.15);
+
+        h1, .message {
+            position: static;
+            margin: 0;
+            padding: 15px 15px 0 15px;
+        }
+
+        .message {
+            width: auto;
+            padding: 15px;
+
+            background: none;
         }
     }
 }

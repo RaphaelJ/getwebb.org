@@ -1,50 +1,58 @@
 <div #page>
-    <h1>Upload history
+    <div #page_content>
+        <h1>Upload history
 
-    <div #user_bar>
-        $maybe (Entity _ user, avatar) <- mUser
-            <a href=@{AccountR SettingsR} .toggle_button_left>
-                <img src=@{avatarRoute app avatar} />
-                #{userName user}
-            <a href=@{AccountR SignOutR} .toggle_button_right>Sign out
-        $nothing
-            <a href=@{AccountR AuthR} .toggle_button_left>Sign in
-            <a href=@{AccountR AuthR} .toggle_button_right>Register
+        <div #user_bar>
+            $maybe (Entity _ user, avatar) <- mUser
+                <a href=@{AccountR SettingsR} .toggle_button_left>
+                    <img .avatar alt="User avatar"
+                         src=@{avatarRoute app avatar} />
+                    #{wrappedText (userName user) 40}
+                <a href=@{AccountR SignOutR} .toggle_button_right>
+                    <img alt="Sign out" src=@{StaticR img_sign_out_png} />
+                    Sign out
+            $nothing
+                <a href="@{AccountR AuthR}#sign_form" .toggle_button_left>
+                    <img alt="Sign in" src=@{StaticR img_sign_in_png} />
+                    Sign in
+                <a href="@{AccountR AuthR}#register_form" .toggle_button_right>
+                    <img alt="Sign in" src=@{StaticR img_register_png} />
+                    Register
 
-    $if null uploads
-        <div align=center>
-            <strong>You don't have any uploaded file yet.
-    $else
-        <ul #uploads>
-            $forall (upload, file, icon) <- uploads
-              $with hmac <- uploadHmac upload
-               $with name <- uploadName upload
-                <li .upload>
-                    <a .icon href=@{ViewR hmac}>
-                        <img  alt="File icon" src="#{icon}" />
+        $if null uploads
+            <div align=center>
+                <strong>You don't have any uploaded file yet.
+        $else
+            <ul #uploads>
+                $forall (upload, file, icon) <- uploads
+                 $with hmac <- uploadHmac upload
+                  $with name <- uploadName upload
+                    <li .upload>
+                        <a .icon href=@{ViewR hmac}>
+                            <img  alt="File icon" src="#{icon}" />
 
-                    <div .info>
-                        <a .title href=@{ViewR hmac} title=#{name}>
-                            #{wrappedText name 40}
+                        <div .info>
+                            <a .title href=@{ViewR hmac} title=#{name}>
+                                #{wrappedText name 40}
 
-                        <div .buttons>
-                            <a .big_button href=@{DownloadR hmac}
-                               download=#{name}>
-                                Download
+                            <div .buttons>
+                                <a .big_button href=@{DownloadR hmac}
+                                download=#{name}>
+                                    Download
 
-                            <a .big_button .remove_button href="#"
-                               onclick="removeUpload('#{hmac}'); return false">
-                                Remove
+                                <a .big_button .remove_button href="#"
+                                onclick="removeUpload('#{hmac}'); return false">
+                                    Remove
 
-                        <div .size>
-                            <span .key>File size :
-                            <span .value>#{PrettyFileSize (fileSize file)}
+                            <div .size>
+                                <span .key>File size :
+                                <span .value>#{PrettyFileSize (fileSize file)}
 
-                        <div .date>
-                          $with uploaded <- uploadCreated upload
-                           $with diffTime <- diffUTCTime currentTime uploaded
-                            <span .key>Uploaded
-                            <span .value>#{PrettyDiffTime diffTime}
-                            <span .key>ago.
-                    <div .clear_float>
-        <div .clear_float>
+                            <div .date>
+                             $with uploaded <- uploadCreated upload
+                              $with diffTime <- diffUTCTime currentTime uploaded
+                                <span .key>Uploaded
+                                <span .value>#{PrettyDiffTime diffTime}
+                                <span .key>ago.
+                        <div .clear_float>
+            <div .clear_float>

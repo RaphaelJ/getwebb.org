@@ -7,7 +7,7 @@ html, body {
     font-size: 15px;
 }
 
-#container {
+#container { /* Used to push the footer to the bottom of screen or content */
     min-height: 100%;
     position: relative;
 }
@@ -81,16 +81,17 @@ form {
 }
 
 .count {
-        margin-left: 5px;
-        padding: 2px 5px;
-        background-color: rgba(255, 255, 255, 0.2);
-        border-radius: 1px;
-        box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
+    margin-left: 5px;
+    padding: 2px 5px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 1px;
+    box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
 
-        font-size: 12px;
-    }
+    font-size: 12px;
+}
 
 .big_button {
+    display: inline-block;
     padding: 8px 15px;
 
     background-color: #6AAE26;
@@ -145,6 +146,7 @@ a.big_button, a.big_button:hover {
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 1);
 
     color: rgba(0, 0, 0, 0.5);
+    line-height: 15px;
     font-size: 13px;
     font-weight: 500;
     text-align: center;
@@ -152,6 +154,11 @@ a.big_button, a.big_button:hover {
 
     transition-property: all;
     transition-duration: 0.2s;
+}
+
+a.toggle_button, a.toggle_button_left, a.toggle_button_central,
+a.toggle_button_right {
+    color: rgba(0, 0, 0, 0.5);
 }
 
 .toggle_button {
@@ -191,6 +198,7 @@ a.big_button, a.big_button:hover {
 .toggle_button_right:hover {
     background-color: rgba(0, 0, 0, 0.05);
     color: rgba(0, 0, 0, 0.7);
+    text-decoration: none;
 }
 
 .toggle_button:active, .toggle_button.enabled,
@@ -219,17 +227,21 @@ a.big_button, a.big_button:hover {
 }
 
 #page {
-    width: 920px;
-    min-height: 150px;
+    width: 950px;
     margin: 10px auto 0 auto;
-    padding: 15px;
 
     background-color: #F0F0F0;
     box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
 
+    #page_content {
+        min-height: 150px;
+        padding: 15px;
+    }
+
     h1 {
+        font-size: 23px;
         margin: 0 0 7px 0;
-        padding-bottom: 7px;
+        padding-bottom: 10px;
         border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     }
 
@@ -247,7 +259,7 @@ a.big_button, a.big_button:hover {
 }
 
 section {
-    padding-bottom: 55px;
+    padding-bottom: 55px; /* Prevents the footer to be overwritted */
 }
 
 footer {
@@ -285,5 +297,50 @@ footer {
 
     a, a:visited {
         color: rgba(255, 255, 255, 0.5);
+    }
+}
+
+@media (max-width: 950px) {
+    .no_mobile {
+        display: none;
+    }
+
+    #home_screen {
+        min-height: 0;
+    }
+
+    #page {
+        width: 100%;
+        margin: 5px 0;
+    }
+
+    footer {
+        #footer_content {
+            width: auto;
+            margin: 0;
+            padding: 0 10px;
+            text-align: center;
+
+            #copyright, #info {
+                display: inline; 
+                float: none;
+            }
+
+            #copyright {
+                margin-right: 15px;
+            }
+        }
+    }
+}
+
+@media (max-width: 750px) {
+    section {
+        padding-bottom: 70px;
+    }
+}
+
+@media (max-width: 400px) {
+    section {
+        padding-bottom: 85px;
     }
 }

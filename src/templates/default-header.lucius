@@ -10,57 +10,85 @@ header {
 
         font-family: "Chau Philomene One", sans-serif;
         color: white;
-    }
 
-    nav #logo {
-        padding: 0 3px 0 10px;
+        line-height: 37px;
 
-        color: white;
-        font-size: 25px;
-        text-decoration: none;
-        text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
-    }
+        #logo {
+            padding: 0 3px 0 10px;
 
-    nav #logo:hover {
-        text-shadow: 0 0 3px rgba(255, 255, 255, 0.4);
-    }
+            color: white;
+            font-size: 25px;
+            text-decoration: none;
+            text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
+        }
 
-    nav #free_file_sharing {
-        color: white;
-        text-align: left;
-        font-size: 10px;
-    }
+        #logo:hover {
+            text-shadow: 0 0 3px rgba(255, 255, 255, 0.4);
+        }
 
-    nav ul#links {
-        float: right;
-        margin: 0;
-        padding: 0;
+        #free_file_sharing {
+            color: white;
+            text-align: left;
+            font-size: 10px;
+        }
 
-        font-size: 15px;
-        height: 37px;
+        ul#links {
+            float: right;
+            margin: 0;
+            padding: 0;
 
-        list-style-type: none;
+            font-size: 15px;
 
-        li {
-            display: inline;
+            list-style-type: none;
 
-            a {
-                margin: 0 10px;
-                padding: 0 5px 5px 5px;
+            li {
+                display: inline-block;
+                margin: 0;
 
-                line-height: 37px;
-                text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
-                color: white;
-                text-decoration: none;
+                a {
+                    margin: 0 10px;
+                    padding: 0 5px 5px 5px;
+
+                    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
+                    color: white;
+                    text-decoration: none;
+                }
+
+                a:hover {
+                    border-bottom: 3px solid white;
+                }
             }
 
-            a:hover {
+            li.active a {
                 border-bottom: 3px solid white;
             }
         }
+    }
+}
 
-        li.active a {
-            border-bottom: 3px solid white;
+@media (max-width: 950px) {
+    header nav {
+        width: auto;
+
+
+        #free_file_sharing {
+            display: none;
+        }
+    }
+}
+
+@media (max-width: 500px) {
+    header nav {
+        .etwebb {
+            display: none;
+        }
+
+        ul#links {
+            margin: 0 5px;
+
+            li a {
+                margin: 0;
+            }
         }
     }
 }

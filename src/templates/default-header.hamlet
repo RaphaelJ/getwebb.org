@@ -1,7 +1,7 @@
 <header>
     <nav>
         <a #logo href=@{HomeR}>
-            getwebb
+            g<span class="etwebb">etwebb</span>
 
         <span #free_file_sharing>
             free file sharing
@@ -12,12 +12,16 @@
                     <li .active>
                         <a href=@{HomeR}>New upload
                     <li>
+                        <a href=@{HomeR}>Browse
+                    <li>
                         <a href=@{HistoryR}>Upload history
                             <span .count #count_history>
                                 #{PrettyNumber countHistory}
                 $of History
                     <li>
                         <a href=@{HomeR}>New upload
+                    <li>
+                        <a href=@{HomeR}>Browse
                     <li .active>
                         <a href=@{HistoryR}>Upload history
                             <span .count #count_history>
@@ -25,6 +29,8 @@
                 $of _
                     <li>
                         <a href=@{HomeR}>New upload
+                    <li>
+                        <a href=@{HomeR}>Browse
                     <li>
                         <a href=@{HistoryR}>Upload history
                             <span .count #count_history>

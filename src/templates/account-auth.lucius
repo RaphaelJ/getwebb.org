@@ -1,6 +1,6 @@
-#sign_form, #register_form {
+#half_screen {
     float: left;
-    width: 440px;
+    width: 50%;
 }
 
 #sign_form {
@@ -10,4 +10,21 @@
 #register_form {
     padding-left: 19px;
     border-left: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 800px) {
+    #half_screen {
+        float: none;
+        width: 100%;
+    }
+
+    #sign_form {
+        padding-right: 0;
+        margin-bottom: 15px;
+    }
+
+    #register_form {
+        padding-left: 0;
+        border-left: none;
+    }
 }

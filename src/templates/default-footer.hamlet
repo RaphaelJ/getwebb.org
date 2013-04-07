@@ -6,8 +6,10 @@
                 getwebb
 
         <p #info>
-            Icons by P.J. Onori, O. Frolov, J. Wieser, M. Zlatar, A. Ramadan, D. Ullrich
-            &amp; A. Whitcroft
+            <!--Icons by P.J. Onori, O. Frolov, J. Wieser, M. Zlatar, A. Ramadan, D. Ullrich
+            &amp; A. Whitcroft Graphicons-->
+            <a href="@{HomeR}">
+                Credits
             &nbsp;•&nbsp;
             <a href="@{HomeR}">
                 API

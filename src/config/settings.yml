@@ -2,7 +2,7 @@ Default: &defaults
   host: "*4" # any IPv4 host
   port: 3000
   reverseProxy: no # Used to choose the method to retrieve clients' IPs
-  approot: "http://192.168.1.112:3000"
+  approot: "http://127.0.0.1:3000"
   author: "Raphael Javaux"
   authorMail: "raphaeljavaux(at)gmail.com"
   uploadDir: "files"

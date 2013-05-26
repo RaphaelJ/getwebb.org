@@ -14,6 +14,10 @@
         margin: auto;
         width: 950px;
 
+        #previous, #download_all, #next {
+            display: block;
+        }
+
         #previous, #next {
             width: 33%;
         }
@@ -42,7 +46,6 @@
         }
 
         #download_all {
-            display: none;
             float: left;
             width: 34%;
 

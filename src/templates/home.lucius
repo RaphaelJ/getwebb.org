@@ -50,7 +50,7 @@
                 }
 
                 #public_button.enabled {
-                    background-color: #609E22;
+                    background-color: #80AE2B;
                 }
 
                 #private_button.enabled {
@@ -110,6 +110,8 @@
                 display: block;
 
                 font-size: 20px;
+                font-weight: 700;
+                text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
             }
 
             #options {
@@ -117,6 +119,10 @@
 
                 #public_div {
                     display: none;
+                }
+
+                label {
+                    font-weight: 600;
                 }
 
                 input[type=text], input[type=password], input[type=email] {
@@ -267,7 +273,40 @@
 #page {
     margin: 0 auto;
 
-    ul {
+    ul#browser {
+        background-color: black;
+        width: 950px;
+        height: 100px;
+        padding: 0;
+        margin: 0;
+        position: relative;
+
+        list-style-type: none;
+
+        li {
+            float: left;
+            padding: 0;
+            margin: 0;
+            line-height: 0;
+
+            img {
+                opacity: 0.5;
+                width: 50px;
+            }
+            img:hover {
+                opacity: 1;
+            }
+        }
+
+        .big_button {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+        }
+    }
+
+    ul#features {
+        clear: both;
         margin: auto;
         padding: 0;
         width: 100%;
@@ -287,12 +326,11 @@
 
                 font-size: 18px;
                 font-weight: bold;
-                color: #1a1a1a;
             }
 
             .description {
                 display: block;
-                padding: 0 15px;
+                padding: 0 50px;
             }
         }
     }
@@ -328,6 +366,10 @@
             }
         }
     }
+
+    #page #browser {
+        display: none;
+    }
 }
 
 @media (max-width: 600px) {
@@ -344,9 +386,7 @@
     }
 
     #page {
-        ul {
-            width: 100%;
-
+        ul#features {
             li {
                 img {
                     display: none;

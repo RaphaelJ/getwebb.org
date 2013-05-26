@@ -39,8 +39,6 @@ header {
 
             font-size: 15px;
 
-            list-style-type: none;
-
             li {
                 display: inline-block;
                 margin: 0;

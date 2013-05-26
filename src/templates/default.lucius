@@ -3,7 +3,7 @@ html, body {
     height: 100%;
 
     font-family: Arial, Helvetica, sans-serif;
-    color: #5F5F5F;
+    color: #2D2D2D;
     font-size: 15px;
 }
 
@@ -11,6 +11,12 @@ html, body {
     min-height: 100%;
     position: relative;
 }
+
+
+h1, h2, h3, h4 {
+    font-family: 'Open Sans', Arial, sans-serif;
+}
+
 
 a, a:visited {
     color: #3D94B6;
@@ -23,31 +29,34 @@ a:hover {
 
 form {
     label {
-        font-family: "Chau Philomene One", sans-serif;
-        margin: 5px 10px 5px 0;
+        display: inline-block;
+        font-family: 'Open Sans', Arial, sans-serif;
+        font-weight: 400;
+        margin-top: 5px;
+        margin-right: 10px;
     }
 
     .tooltip {
         display: inline;
         margin-right: 10px;
 
-        font-size: 0.9em;
+        font-size: 0.8em;
         color: rgba(0, 0, 0, 0.5);
         text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
-        font-style: italic;
     }
 
-    input[type=text], input[type=password], input[type=email],
-    input[type=file], input[type=submit] {
+    input[type=text], input[type=password], input[type=email], input[type=file] {
         display: block;
-        margin-top: 5px;
     }
 
     input[type=text], input[type=password], input[type=email] {
+        display: block;
+        width: 250px;
         padding: 5px;
-        border: 1px solid rgba(0, 0, 0, 0.3);
-        border-radius: 2px;
-        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2),
+        margin-bottom: 5px;
+        border: 1px solid rgba(0, 0, 0, 0.2);
+        border-radius: 1px;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.15),
                     1px 1px 0 white;
 
         transition-property: all;
@@ -62,14 +71,30 @@ form {
                     1px 1px 0 white;
     }
 
-    .errors {
-        margin: 5px 0;
-        padding: 5px 10px;
-        background-color: #C56154;
-        border-radius: 2px;
-
-        color: white;
+    input + .errors {
+        position: relative;
     }
+
+    input + .errors:before {
+        position: absolute;
+        top: -10px;
+        left: 15px;
+        content: "";
+        z-index: 100;
+
+        border: 5px solid transparent;
+        border-bottom-color: #C56154;
+    }
+}
+
+.errors {
+    margin: 5px 0;
+    padding: 5px 10px;
+    background-color: #C56154;
+    border-radius: 2px;
+    box-shadow: 2px 2px 0 0 #9A4C41;
+
+    color: white;
 }
 
 .getwebb {
@@ -93,17 +118,17 @@ form {
 .big_button {
     display: inline-block;
     padding: 8px 15px;
+    margin: 5px 5px 5px 0;
 
-    background-color: #6AAE26;
-    border: 1px solid #5F9C25;
+    background-color: #80AE2B;
+    border: 1px solid #538820;
     border-radius: 3px;
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.3);
 
     color: white;
-    font-size: 16px;
-    font-weight: 700;
+    font-size: 17px;
     text-align: center;
-    text-shadow: 0px -1px 0px rgba(0, 0, 0, 0.25);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
 
     transition-property: all;
     transition-duration: 0.2s;
@@ -115,12 +140,12 @@ a.big_button, a.big_button:hover {
 }
 
 .big_button:hover {
-    background: #609E22;
+    background: #759F27;
 }
 
 .big_button:active {
-    background: #609E22;
-    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4);
+    background: #759F27;
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 
 .big_button[disabled], .big_button[disabled]:active {
@@ -209,10 +234,60 @@ a.toggle_button_right {
     color: rgba(0, 0, 0, 0.7);
 }
 
+[hint] {
+    position: relative;
+}
+
+[hint]:after, [hint]:before {
+    visibility: hidden;
+    position: absolute;
+    opacity: 0;
+    transition: 0.2s opacity;
+}
+
+[hint]:after {
+    content: attr(hint);
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+[hint]:before {
+    content: "";
+}
+
+[hint]:hover:after, [hint]:hover:before {
+    visibility: visible;
+    opacity: 1;
+    z-index: 100;
+    top: 100%;
+    left: 15px;
+}
+
+[hint]:hover:after {
+    padding: 3px 10px;
+    margin-top: 10px;
+    margin-left: -15px;
+
+    background: #2E2E2E;
+    box-shadow: 1px 2px 3px rgba(0, 0, 0, 0.3);
+
+    color: white;
+    font-size: 14px;
+    line-height: 24px;
+    text-shadow: 0 -1px 0 black;
+    white-space: nowrap;
+}
+
+[hint]:hover:before {
+    margin-top: 0;
+
+    border: 5px solid transparent;
+    border-bottom-color: #2E2E2E;
+}
+
 #home_screen {
     margin: 0;
     width: 100%;
-    min-height: 400px;
+    min-height: 350px;
 
     background-color: black;
     background-position: top center;
@@ -239,10 +314,54 @@ a.toggle_button_right {
     }
 
     h1 {
-        font-size: 23px;
         margin: 0 0 7px 0;
         padding-bottom: 10px;
         border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+
+        font-size: 23px;
+    }
+
+    nav {
+        float: right;
+        font-family: 'Open Sans', Arial, sans-serif;
+
+        ul {
+            margin: 0;
+
+            li {
+                display: inline-block;
+
+                a {
+                    display: inline-block;
+                    height: 22px;
+                    padding: 5px 11px;
+
+                    img {
+                        height: 22px;
+                        vertical-align: middle;
+                        border-radius: 2px;
+                        margin-right: 3px;
+                    }
+                }
+
+                a:hover, a:active, a.enabled {
+                    border: 1px solid rgba(0, 0, 0, 0.1);
+                    padding: 4px 10px;
+                    border-radius: 2px;
+                }
+
+                a:hover {
+                    box-shadow: 0 0 1px rgba(0, 0, 0, 0.15);
+
+                    text-decoration: none;
+                }
+
+                a:active, a.enabled {
+                    background-color: rgba(0, 0, 0, 0.03);
+                    box-shadow: inset 0 0 1px rgba(0, 0, 0, 0.2);
+                }
+            }
+        }
     }
 
     .key, .value {

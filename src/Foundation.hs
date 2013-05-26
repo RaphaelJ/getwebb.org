@@ -187,7 +187,7 @@ instance Yesod App where
 --         Just $ uncurry (joinPath y (Settings.staticRoot $ settings y)) $ renderRoute s
 --     urlRenderOverride _ _ = Nothing
 
-    authRoute _ = Just $ AccountR AuthR
+    authRoute _ = Just $ AccountR SignInR
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows

@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+-- | Processes the upload form.
 module Handler.Upload (Options (..), postUploadR, uploadForm)
     where
 
@@ -19,8 +20,9 @@ data Options = Options {
     , optEmail  :: Maybe Text
     } deriving (Show, Read)
 
--- | Uploads files to the server. Returns a Json object which contains the
--- id and the link of the upload or the errors.
+-- | Uploads a file to the server. Returns a 201 Created with a JSON object
+-- which contains the id of the upload, or a 400/403/413 with a JSON array of
+-- errors.
 postUploadR :: Handler ()
 postUploadR = do
     admiKey <- getAdminKey
@@ -32,7 +34,7 @@ postUploadR = do
                 Right upload -> do
                     {- TODO: email -}
                     rep <- jsonToRepJson $ object [
-                              "id"            .= uploadHmac upload
+                              "id" .= uploadHmac upload
                             ]
                     sendResponseStatus created201 rep
                 Left err -> do
@@ -49,12 +51,12 @@ postUploadR = do
 -- | Creates a form for the upload and its options.
 uploadForm :: Html
            -- | Returns two widgets. The first one is for the files selector
-           -- widget and the second for the options form widget.
+           -- widget and the second for the options\' widget.
            -> MForm App App (FormResult ([FileInfo], Options), (Widget, Widget))
 uploadForm extra = do
     tell Multipart
 
-    -- File widget.
+    -- File selector
     let filesId = "files" :: Text
     let filesView = FieldView {
           fvLabel = "Select some files to upload."
@@ -78,7 +80,7 @@ uploadForm extra = do
             _
                 -> FormFailure ["Send at least one file to upload."]
 
-    -- Options.
+    -- Options form
     defPriv <- maybe True (userDefaultPublic . entityVal . fst) <$> lift getUser
     let publicId = Just "public"
         publicSettings = FieldSettings {

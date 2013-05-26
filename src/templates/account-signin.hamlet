@@ -1,0 +1,13 @@
+<div #page>
+    <div #page_content>
+        <h1>Sign in
+
+        <form method=post action=@{toMaster SignInR}
+                        enctype=#{enctype}>
+            <table>
+                ^{widget}
+
+            <input .big_button type=submit value="Sign in" />
+            or
+            <a href=@{toMaster RegisterR}>
+                create a new account

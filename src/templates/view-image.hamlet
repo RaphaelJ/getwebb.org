@@ -2,7 +2,7 @@ $with headersHeight <- if' (isJust links) 67 37
  <div #full_screen style="top: #{headersHeight}px">
     <div #position_relative>
         <div #title>
-            <h1 title=#{uploadName upload}>
+            <h1 hint=#{uploadName upload}>
                 #{wrappedName}
 
             $with ImageExtras attrs tags <- extras

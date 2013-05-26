@@ -26,8 +26,8 @@ data HmacResourceType = HmacFile | HmacUpload | HmacComment | HmacArchiveFile
     deriving (Show, Read, Eq)
 derivePersistField "HmacResourceType"
 
--- | Used to give the type of a secondary image which can be displayed in the
--- browser.
+-- | Used to give the type of the secondary resized image which generated to
+-- be displayed in the browser.
 data DisplayType = PNG | JPG | GIF
     deriving (Show, Read, Eq)
 derivePersistField "DisplayType"

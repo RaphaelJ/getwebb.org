@@ -1,0 +1,9 @@
+#page {
+    width: 450px;
+}
+
+@media (max-width: 950px) {
+    #page {
+        width: 100%;
+    }
+}

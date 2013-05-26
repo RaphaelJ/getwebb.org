@@ -3,7 +3,7 @@
         <a .icon_link href=@{DownloadR hmac}>
             <img .icon alt="File icon" src="#{icon}" />
 
-        <h1 title=#{uploadName upload}>
+        <h1 hint=#{uploadName upload}>
             #{wrappedName}
             <img .qrcode alt="QR Code to this page"
                   src="http://chart.googleapis.com/chart?cht=qr&chs=150x150&chl=@{ViewR hmac}"/>

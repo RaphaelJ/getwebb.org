@@ -1,5 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE OverloadedStrings, PatternGuards #-}
+-- | Page which displays the information about a file.
 module Handler.View (getViewR, deleteViewR)
     where
 
@@ -39,7 +39,7 @@ getViewR hmacs' = do
 
     let hmac = head hmacs
 
-    -- Redirects immediately to the download handler if the client is wget.
+    -- Redirects immediately wget clients to the download handler.
     mUserAgent <- ((hUserAgent `lookup`) . requestHeaders) <$> waiRequest
     case mUserAgent of
         Just userAgent | "Wget/" `B.isPrefixOf` userAgent ->
@@ -83,7 +83,7 @@ getViewR hmacs' = do
     uploadDiffTime <- getDiffTime $ uploadCreated upload
 
     defaultLayout $ do
-        setTitle [shamlet|#{wrappedName} - getwebb|]
+        setTitle [shamlet|#{wrappedName} | getwebb|]
         let right_pane = $(widgetFile "view-right-pane")
             page = case fileType file of
                 Image -> $(widgetFile "view-image")

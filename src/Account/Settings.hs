@@ -23,6 +23,7 @@ import Account.Avatar (
     )
 import Account.Util (redirectAuth)
 import Settings (widgetFile)
+import Util.Pretty (wrappedText)
 
 data AvatarResult = AvatarResult {
       arPersonalAvatar :: Bool, arFile :: Maybe FileInfo
@@ -33,7 +34,7 @@ getSettingsR :: YesodAccount master => GHandler Account master RepHtml
 getSettingsR = do
     (Entity _ user, avatar) <- redirectAuth
     (widget, enctype) <- generateFormPost $ settingsForm user avatar
-    displaySettings widget enctype
+    displaySettings user avatar widget enctype
 
 postSettingsR :: YesodAccount master => GHandler Account master RepHtml
 postSettingsR = do
@@ -78,7 +79,7 @@ postSettingsR = do
                     redirectSignIn
         _ -> return widget
 
-    displaySettings widget' enctype
+    displaySettings user avatar widget' enctype
   where
     replaceAvatar userId user oldAvatar img = do
         oldAvatarId <- lift $ getAvatarId user
@@ -90,12 +91,14 @@ postSettingsR = do
 
     redirectSignIn = getYesod >>= redirect . signInDest
 
-displaySettings :: YesodAccount master => GWidget Account master () -> Enctype
+displaySettings :: YesodAccount master => AccountUser master -> Avatar
+                -> GWidget Account master () -> Enctype
                 -> GHandler Account master RepHtml
-displaySettings widget enctype = do
+displaySettings user avatar widget enctype = do
     toMaster <- getRouteToMaster
+    app <- getYesod
     defaultLayout $ do
-        setTitle "Account settings - getwebb"
+        setTitle "Account settings | getwebb"
         $(widgetFile "account-settings")
 
 -- | Generates a form which returns the username and the password.

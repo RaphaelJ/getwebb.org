@@ -1,0 +1,25 @@
+<div #page>
+    <div #page_content>
+        <h1>Register
+
+        <form method=post action=@{toMaster RegisterR} enctype=#{enctype}>
+            <ul #features>
+                <li>
+                    <h3>Trace back
+                    each of your files whatever the computer from which they
+                    have been uploaded.
+                <li>
+                    <h3>Write comments
+                    about files.
+                <li>
+                    <h3>Share
+                    your public files on your public gallery.
+            <div .clear_float>
+
+            ^{widget}
+
+            <input .big_button type=submit value="Create an account" />
+            or
+            <a href=@{toMaster SignInR}>
+                sign in
+            using an existing account

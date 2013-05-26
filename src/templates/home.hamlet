@@ -11,15 +11,15 @@
                 <h2>Select some files to upload
 
                 <div #public_private>
-                    <button #public_button .toggle_button_left type=button
-                            title="Uploaded files will be published in the public gallery."
-                            onclick="uploadPublic(true);">
+                    <button #public_button .toggle_button_left
+                            type=button onclick="uploadPublic(true);"
+                            hint="Uploaded files will be published in the public gallery">
                         Public
-                    <button #private_button .toggle_button_right type=button
-                            title="Uploaded files will NOT be published in the public gallery."
-                            onclick="uploadPublic(false);">
+                    <button #private_button .toggle_button_right
+                            type=button onclick="uploadPublic(false);"
+                            hint="Uploaded files will NOT be published in the public gallery">
                         Private
-                <div .clear_float> 
+                <div .clear_float>
 
                 <div #upload_widget>
                     ^{filesWidget}
@@ -44,8 +44,20 @@
                 <div .clear_float>
 
                 <div #uploads>
+
 <div #page>
-    <ul>
+    <ul #browser>
+        $forall (upload, iconUrl) <- topImages
+          $with hmac <- uploadHmac upload
+           $with name <- uploadName upload
+            <li .hint hint=#{wrappedText name 60}>
+                <a href=@{ViewR hmac}>
+                    <img src=#{iconUrl} alt=#{name} />
+
+        <a .big_button href=#>
+            Browse public files
+
+    <ul #features>
         <li>
             <img src=@{StaticR img_homepage_storage_png}
                     alt="Storage icon">

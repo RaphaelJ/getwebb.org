@@ -34,6 +34,6 @@ getHistoryR = do
     app <- getYesod
     currentTime <- liftIO $ getCurrentTime
     defaultLayout $ do
-        setTitle "Upload history - getwebb"
+        setTitle "Upload history | getwebb"
         $(widgetFile "remove")
         $(widgetFile "history")

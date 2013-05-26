@@ -16,6 +16,7 @@ import Account.Util as Account
 
 import Account.Avatar as Account
 import Account.Auth as Account
+import Account.Register as Account
 import Account.Settings as Account
 
 mkYesodSubDispatch "Account"

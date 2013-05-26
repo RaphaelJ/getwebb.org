@@ -147,8 +147,8 @@ miniature img =
         else drawBorder $ resize $ I.crop img (I.Rect 0 ((h - w) `quot` 2) w w)
   where
     -- Resizes the cropped image to a square of miniatureSize.
-    resize img' = I.resize I.NearestNeighbor img' miniSize
-    -- resize img' = I.resize I.Bilinear img' miniSize
+--     resize img' = I.resize I.NearestNeighbor img' miniSize
+    resize img' = I.resize I.Bilinear img' miniSize
     {-# INLINE resize #-}
 
     -- Draw a bright border surrounded by a dark border.

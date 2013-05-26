@@ -1,6 +1,4 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE BangPatterns, OverloadedStrings, ScopedTypeVariables #-}
 -- | Streams files to clients. Use a daemon to buffer statistics and save disk
 -- accesses.
 module Handler.Download (
@@ -9,7 +7,7 @@ module Handler.Download (
     -- * Transmission utilities
     , trackedBS, lazyBSToSource
     -- * URL utilities
-    , routeType
+    , routeFile
     -- * Views daemon buffer management
     , ViewsBuffer, ViewsBufferEntry, viewsCommitDelay, newBuffer
     , incrementViewCount, addBandwidth, getBufferEntry
@@ -84,8 +82,7 @@ getDownloadR hmacs' = do
         bs' <- liftIO $ L.hGetContents h
         allowGzip <- getGzipClientSupport
 
-        -- Doesn't decompress a compressed file if the client's browser supports
-        -- Gzip.
+        -- Doesn't decompress a compressed file if the client's supports GZip.
         (bs, size) <- case (requestType, fileCompressed file) of
             (Original, Just compressedSize)
                 | allowGzip -> do
@@ -95,7 +92,7 @@ getDownloadR hmacs' = do
                     return (decompress bs', fileSize file)
             (Original, Nothing) -> do
                 return (bs', fileSize file)
-            (_, _) -> do
+            (_, _) -> do -- Non-original files are not compressed.
                 size <- liftIO $ hFileSize h
                 return (bs', word64 size)
 
@@ -255,7 +252,8 @@ getDownloadR hmacs' = do
     parseType (Just "display")   = Just (Display undefined)
     parseType _                  = Nothing
 
-    -- Tries to open the file. 404 Not found if doesn't exists.
+    -- Tries to open the file given its type (original, miniature ...).
+    -- 404 Not found if doesn't exists.
     safeOpenFile file requestType = do
         app <- getYesod
         let dir = uploadDir app (fileHash file)
@@ -291,9 +289,8 @@ getDownloadR hmacs' = do
     -- Splits a string on commas and removes spaces.
     splitCommas :: String -> [String]
     splitCommas [] = []
-    splitCommas xs =
-        let (ys, zs) = break (== ',') xs
-        in ys : splitCommas (dropWhile (== ' ') $ drop 1 zs)
+    splitCommas xs = let (ys, zs) = break (== ',') xs
+                     in ys : splitCommas (dropWhile (== ' ') $ drop 1 zs)
 
 -- | Wraps a 'L.ByteString' so each generated 'L.Chunk' size is commited to the
 -- given action. Executes the finalizer when the full 'L.ByteString' has been
@@ -324,9 +321,9 @@ lazyBSToSource finalizer =
     finalizer' _ = liftIO $ finalizer
 
 -- | Returns the URL to the given file for its specified type.
-routeType :: (Route App -> [(Text, Text)] -> Text) -> Upload -> ObjectType
+routeFile :: (Route App -> [(Text, Text)] -> Text) -> Upload -> ObjectType
           -> Text
-routeType urlRdr upload obj =
+routeFile urlRdr upload obj =
     urlRdr' $ case obj of
         Original            -> []
         Miniature           -> [("type", "miniature")]

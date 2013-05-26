@@ -1,7 +1,21 @@
 <div #page>
     <div #page_content>
+        <nav>
+            <ul>
+                <li>
+                    <a href=@{toMaster SettingsR}>
+                        <img .avatar alt="User avatar"
+                             src=@{avatarRoute app avatar} />
+                        #{wrappedText (accountUsername app user) 40}
+                <li>
+                    <a href=@{toMaster SettingsR} .enabled>
+                        Settings
+                <li>
+                    <a href=@{toMaster SignOutR}>
+                        Sign out
+        <h1>Account settings
+
         <form method=post action=@{toMaster SettingsR} enctype=#{enctype}>
-            <h1>Account settings
 
             ^{widget}
 

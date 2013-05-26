@@ -22,8 +22,6 @@ import Yesod
 import Account.Avatar (genIdenticon, newAvatar, getAvatar)
 import Account.Foundation
 
-
-
 -- | Creates a new user. Returns the ID of the created entity. Doesn't set the
 -- session value.
 newUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)

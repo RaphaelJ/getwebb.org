@@ -138,7 +138,7 @@ processFile adminKey f public = do
     -- Checks if the client hasn't reach the upload limits since minDate.
     -- Returns True if the client is allowed to upload one more file.
     checksIpLimits extras clientHost minDate currentSize = do
-        let sql = T.pack $ unlines [
+        let sql = T.unlines [
                   "SELECT COUNT(*), COALESCE(SUM(f.size), 0)"
                 , "FROM Upload AS u"
                 , "INNER JOIN File AS f ON f.id = u.file"
@@ -149,7 +149,7 @@ processFile adminKey f public = do
                 , PersistUTCTime minDate
                 ]
 
-        let maxN = extraMaxDailyUploads extras
+        let maxN    = extraMaxDailyUploads extras
             maxSize = extraMaxDailySize extras
         return $ maxN > n && maxSize > size + currentSize
 

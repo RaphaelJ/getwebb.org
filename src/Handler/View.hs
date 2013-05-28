@@ -117,11 +117,26 @@ getViewR hmacs' = do
     if' False _ b = b
 
 -- | Updates some attributes about an upload. Returns a 204 No content on
--- success, a 404 Not found if doesn't exists or 403 if the user isn't allowed
--- to remove the upload.
+-- success, a 400 Bad Request if the POST data are invalids, a 404 Not found if
+-- doesn't exists or 403 if the user isn't allowed to remove the upload.
 postViewR :: Hmac -> Handler ()
 postViewR hmac = do
     
+    
+  where
+    form = (,) <$> aopt textField titleSettings      Nothing
+               <*> aopt boolField isPublicSettings   Nothing
+
+    titleSettings = FieldSettings {
+          fsLabel = "Password confirmation"
+        , fsTooltip = Just "Repeat your password."
+        , fsId = Nothing, fsName = Just "title", fsAttrs = []
+        }
+
+    isPublicSettings = FieldSettings {
+          fsLabel = "Share this file", fsTooltip = Nothing
+        , fsId = Nothing, fsName = Just "public", fsAttrs = []
+        }
 
 -- | Deletes an upload. Returns a 204 No content on success, a 404 Not found if
 -- doesn't exists or 403 if the user isn't allowed to remove the upload.

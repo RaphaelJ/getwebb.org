@@ -28,7 +28,7 @@ postUploadR = do
     admiKey <- getAdminKey
     ((res, _), _) <- runFormPostNoToken uploadForm
     case res of
-        FormSuccess ~(file:_, Options public email) -> do
+        FormSuccess ~(file:_, Optisons public email) -> do
             eUpload <- processFile admiKey file public
             case eUpload of
                 Right upload -> do
@@ -58,17 +58,8 @@ uploadForm extra = do
 
     -- File selector
     let filesId = "files" :: Text
-    let filesView = FieldView {
-          fvLabel = "Select some files to upload."
-        , fvTooltip = Nothing, fvId = filesId
-        , fvInput = [whamlet|
-                <input ##{filesId} name=#{filesId} type=file multiple tabindex=1
-                                   autofocus>
-            |]
-        , fvErrors = Nothing, fvRequired = True
-        }
     let filesWidget = [whamlet|
-            ^{fvInput filesView}
+            <input name=#{filesId} type=file multiple tabindex=1 autofocus>
             ^{extra}
             |]
 
@@ -82,19 +73,17 @@ uploadForm extra = do
 
     -- Options form
     defPriv <- maybe True (userDefaultPublic . entityVal . fst) <$> lift getUser
-    let publicId = Just "public"
-        publicSettings = FieldSettings {
+    let publicSettings = FieldSettings {
               fsLabel = "Share this file"
             , fsTooltip = Just "Publish this file in the public gallery."
-            , fsId = publicId, fsName = publicId, fsAttrs = []
+            , fsId = Nothing, fsName = Just "public", fsAttrs = []
             }
     (publicRes, publicView) <- mreq checkBoxField publicSettings (Just defPriv)
 
-    let emailId = Just "email"
-        emailSettings = FieldSettings {
+    let emailSettings = FieldSettings {
               fsLabel = "Send link by email"
             , fsTooltip = Just "Send the link to the uploaded file by email."
-            , fsId = emailId, fsName = emailId
+            , fsId = Nothing, fsName = Just "email"
             , fsAttrs = [("placeholder", "Enter an email or leave empty")]
             }
     (emailRes, emailView) <- mopt emailField emailSettings Nothing

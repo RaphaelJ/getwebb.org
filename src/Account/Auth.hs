@@ -70,16 +70,12 @@ signInForm html = do
         FormFailure errs -> return (FormFailure errs, widget)
         FormMissing -> return (FormMissing, widget)
   where
-    usernameSettings =
-        let name = Just "username"
-        in FieldSettings {
+    usernameSettings = FieldSettings {
               fsLabel = "Username or email address", fsTooltip = Nothing
-            , fsId = name, fsName = name, fsAttrs = []
+            , fsId = Nothing, fsName = Just "username", fsAttrs = []
             }
 
-    passwordSettings =
-        let name = Just "password"
-        in FieldSettings {
-              fsLabel = "Password", fsTooltip = Nothing, fsId = name
-            , fsName = name, fsAttrs = []
+    passwordSettings = FieldSettings {
+              fsLabel = "Password", fsTooltip = Nothing, fsId = Nothing
+            , fsName = Just "password", fsAttrs = []
             }

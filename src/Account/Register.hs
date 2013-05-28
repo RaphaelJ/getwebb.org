@@ -70,24 +70,19 @@ registerForm html = do
         FormMissing -> (FormMissing, widget)
   where
     emailField' = checkM checkEmailExists emailField
-    emailSettings =
-        let name = Just "email"
-        in FieldSettings {
-              fsLabel = "Email address", fsTooltip = Nothing
-            , fsId = name, fsName = name, fsAttrs = []
-            }
+    emailSettings = FieldSettings {
+          fsLabel = "Email address", fsTooltip = Nothing
+        , fsId = Nothing, fsName = Just "email", fsAttrs = []
+        }
     checkEmailExists email =
         checkExists emailLookup email
                     ("This email is already used by another user." :: Text)
 
     usernameField = checkM checkUsernameExists $ check checkUsername textField
-    usernameSettings =
-        let name = Just "username"
-        in FieldSettings {
-              fsLabel = "Username"
-            , fsTooltip = Just "Alphanumeric characters."
-            , fsId = name, fsName = name, fsAttrs = []
-            }
+    usernameSettings = FieldSettings {
+          fsLabel = "Username", fsTooltip = Just "Alphanumeric characters."
+        , fsId = Nothing, fsName = Just "username", fsAttrs = []
+        }
     checkUsername name | T.any (not . (`S.member` validChars)) name =
         Left ("Username must only contain alphanumeric characters." :: Text)
                        | otherwise                                  = Right name
@@ -97,24 +92,20 @@ registerForm html = do
                     ("This username is already used by another user." :: Text)
 
     passwordField' = check checkPassword passwordField
-    passwordSettings =
-        let name = Just "password"
-        in FieldSettings {
-              fsLabel = "Password"
-            , fsTooltip = Just "Must be at least 6 characters long."
-            , fsId = name, fsName = name, fsAttrs = []
-            }
+    passwordSettings = FieldSettings {
+          fsLabel = "Password"
+        , fsTooltip = Just "Must be at least 6 characters long."
+        , fsId = Nothing, fsName = Just "password", fsAttrs = []
+        }
     checkPassword password | T.length password < 6 =
         Left ("Your password must be at least 6 characters long." :: Text)
                            | otherwise             = Right password
 
-    confirmSettings =
-        let name = Just "confirm"
-        in FieldSettings {
-              fsLabel = "Password confirmation"
-            , fsTooltip = Just "Repeat your password."
-            , fsId = name, fsName = name, fsAttrs = []
-            }
+    confirmSettings = FieldSettings {
+          fsLabel = "Password confirmation"
+        , fsTooltip = Just "Repeat your password."
+        , fsId = Nothing, fsName = Just "confirm", fsAttrs = []
+        }
 
     -- Returns the error message if the value already exists in the database
     -- for the given unique lookup key, returns the value if doesn't exists.

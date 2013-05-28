@@ -66,7 +66,7 @@ postCommentR hmac = do
             rep <- jsonToRepJson $ array errs
             sendResponseStatus badRequest400 rep
         FormMissing      -> do
-            rep <- jsonToRepJson $ array [("Incomplete form." :: Text)]
+            rep <- jsonToRepJson $ array ["Incomplete form." :: Text]
             sendResponseStatus badRequest400 rep
 
 -- | Votes for a comment.

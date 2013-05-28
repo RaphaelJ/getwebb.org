@@ -11,11 +11,11 @@
                 <h2>Select some files to upload
 
                 <div #public_private>
-                    <button #public_button .toggle_button_left
+                    <button #public_button .public_button
                             type=button onclick="uploadPublic(true);"
                             hint="Uploaded files will be published in the public gallery">
                         Public
-                    <button #private_button .toggle_button_right
+                    <button #private_button .private_button
                             type=button onclick="uploadPublic(false);"
                             hint="Uploaded files will NOT be published in the public gallery">
                         Private

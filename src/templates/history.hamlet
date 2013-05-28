@@ -27,7 +27,7 @@
 
         $if null uploads
             <div .errors>
-                <strong>You don't have uploaded any file yet.
+                You don't have uploaded any file yet.
         $else
             <ul #uploads>
                 $forall (upload, file, icon) <- uploads
@@ -40,6 +40,14 @@
                             <img  alt="File icon" src="#{icon}" />
 
                             <div .info>
+                                <p>
+                                    <button .public_button type=button
+                                            hint="Upload will be published in the public gallery">
+                                        Public
+                                    <button .private_button
+                                            hint="Upload will NOT be published in the public gallery">
+                                        Private
+
                                 <div .size>
                                     <span .value>#{PrettyFileSize (fileSize file)}
                                 <div .date>

@@ -1,3 +1,5 @@
+/* Global structure */
+
 html, body {
     background-color: #e0ded3;
     height: 100%;
@@ -12,6 +14,7 @@ html, body {
     position: relative;
 }
 
+/* Global definitions */
 
 h1, h2, h3, h4 {
     font-family: 'Open Sans', Arial, sans-serif;
@@ -26,6 +29,26 @@ a, a:visited {
 a:hover {
     text-decoration: underline;
 }
+
+.getwebb {
+    font-family: "Chau Philomene One", sans-serif;
+}
+
+.count {
+    margin-left: 5px;
+    padding: 2px 5px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 1px;
+    box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
+
+    font-size: 12px;
+}
+
+.clear_float {
+    clear: both;
+}
+
+/* Forms */
 
 form {
     label {
@@ -97,24 +120,6 @@ form {
     color: white;
 }
 
-.getwebb {
-    font-family: "Chau Philomene One", sans-serif;
-}
-
-.clear_float {
-    clear: both;
-}
-
-.count {
-    margin-left: 5px;
-    padding: 2px 5px;
-    background-color: rgba(255, 255, 255, 0.2);
-    border-radius: 1px;
-    box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
-
-    font-size: 12px;
-}
-
 .big_button {
     display: inline-block;
     padding: 8px 15px;
@@ -165,7 +170,7 @@ a.big_button, a.big_button:hover {
 }
 
 .toggle_button, .toggle_button_left, .toggle_button_central,
-.toggle_button_right {
+.toggle_button_right, .public_button, .private_button {
     padding: 5px;
     background-color: transparent;
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 1);
@@ -181,6 +186,25 @@ a.big_button, a.big_button:hover {
     transition-duration: 0.2s;
 }
 
+.toggle_button:hover, .toggle_button_left:hover, .toggle_button_central:hover,
+.toggle_button_right:hover, .public_button:hover, .private_button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    text-decoration: none;
+}
+
+.toggle_button:hover, .toggle_button_left:hover, .toggle_button_central:hover,
+.toggle_button_right:hover {
+    color: rgba(0, 0, 0, 0.7);
+}
+
+.toggle_button:active, .toggle_button.enabled,
+.toggle_button_left:active, .toggle_button_left.enabled,
+.toggle_button_central:active, .toggle_button_central.enabled,
+.toggle_button_right:active, .toggle_button_right.enabled {
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4);
+    color: rgba(0, 0, 0, 0.7);
+}
+
 a.toggle_button, a.toggle_button_left, a.toggle_button_central,
 a.toggle_button_right {
     color: rgba(0, 0, 0, 0.5);
@@ -191,11 +215,12 @@ a.toggle_button_right {
     border: 1px solid rgba(0, 0, 0, 0.3);
 }
 
-.toggle_button_left, .toggle_button_central, .toggle_button_right {
+.toggle_button_left, .toggle_button_central, .toggle_button_right,
+.public_button, .private_button {
     float: left;
 }
 
-.toggle_button_left {
+.toggle_button_left, .public_button {
     border-top: 1px solid rgba(0, 0, 0, 0.3);
     border-right: 0;
     border-bottom: 1px solid rgba(0, 0, 0, 0.3);
@@ -211,7 +236,7 @@ a.toggle_button_right {
     border-radius: 0;
 }
 
-.toggle_button_right {
+.toggle_button_right, .private_button {
     border-top: 1px solid rgba(0, 0, 0, 0.3);
     border-right: 1px solid rgba(0, 0, 0, 0.3);
     border-bottom: 1px solid rgba(0, 0, 0, 0.3);
@@ -219,19 +244,28 @@ a.toggle_button_right {
     border-radius: 0 2px 2px 0;
 }
 
-.toggle_button:hover, .toggle_button_left:hover, .toggle_button_central:hover,
-.toggle_button_right:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-    color: rgba(0, 0, 0, 0.7);
-    text-decoration: none;
+.public_button, .private_button {
+    padding-left: 9px;
+    padding-right: 9px;
+    border-color: rgba(0, 0, 0, 0.4);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+
+    color: white;
+    text-shadow: none;
 }
 
-.toggle_button:active, .toggle_button.enabled,
-.toggle_button_left:active, .toggle_button_left.enabled,
-.toggle_button_central:active, .toggle_button_central.enabled,
-.toggle_button_right:active, .toggle_button_right.enabled {
-    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4);
-    color: rgba(0, 0, 0, 0.7);
+.public_button:active, .public_button.enabled,
+.private_button:active, .private_button.enabled {
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4),
+                0 1px 0 0 rgba(255, 255, 255, 0.1);
+}
+
+.public_button:active, .public_button.enabled {
+    background-color: #80AE2B;
+}
+
+.private_button:active, .private_button.enabled {
+    background-color: #AE3737;
 }
 
 [hint] {

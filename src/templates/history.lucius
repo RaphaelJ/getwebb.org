@@ -67,6 +67,17 @@ ul#uploads {
             height: 100px;
         }
 
+        .public_button, .private_button {
+            padding-left: 4px;
+            padding-right: 4px;
+
+            font-size: 0.9em;
+        }
+
+        .public_button:hover, .private_button:hover {
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
         .info {
             margin-left: 110px;
             font-size: 0.9em;

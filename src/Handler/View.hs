@@ -31,8 +31,8 @@ import Util.Extras (
     )
 import Util.Hmac (splitHmacs, joinHmacs)
 
--- | Shows information about a file.
-getViewR :: Text -> Handler RepHtml
+-- | Shows information about an upload.
+getViewR :: Hmac -> Handler RepHtml
 getViewR hmacs' = do
     when (null hmacs)
         notFound
@@ -116,10 +116,16 @@ getViewR hmacs' = do
     if' True  a _ = a
     if' False _ b = b
 
--- | Deletes an upload, given its HMAC. Returns a 204 No content on success,
--- a 404 Not found if doesn't exists or 403 if the user isn't allowed to remove
--- the upload.
-deleteViewR :: Text -> Handler ()
+-- | Updates some attributes about an upload. Returns a 204 No content on
+-- success, a 404 Not found if doesn't exists or 403 if the user isn't allowed
+-- to remove the upload.
+postViewR :: Hmac -> Handler ()
+postViewR hmac = do
+    
+
+-- | Deletes an upload. Returns a 204 No content on success, a 404 Not found if
+-- doesn't exists or 403 if the user isn't allowed to remove the upload.
+deleteViewR :: Hmac -> Handler ()
 deleteViewR hmac = do
     mKey <- tryAdminKey
 

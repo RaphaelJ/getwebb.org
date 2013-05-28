@@ -16,6 +16,7 @@ import qualified Data.Text as T
 import Database.Persist.Store (PersistValue (..))
 import Database.Persist.GenericSql.Raw (SqlBackend)
 
+-- | Number of characters in an hmac.
 hmacLength :: Int
 hmacLength = 8
 

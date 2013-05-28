@@ -1,4 +1,4 @@
-/* Global structure */
+/* Global definitions */
 
 html, body {
     background-color: #e0ded3;
@@ -9,17 +9,9 @@ html, body {
     font-size: 15px;
 }
 
-#container { /* Used to push the footer to the bottom of screen or content */
-    min-height: 100%;
-    position: relative;
-}
-
-/* Global definitions */
-
 h1, h2, h3, h4 {
     font-family: 'Open Sans', Arial, sans-serif;
 }
-
 
 a, a:visited {
     color: #3D94B6;
@@ -46,6 +38,16 @@ a:hover {
 
 .clear_float {
     clear: both;
+}
+
+.errors {
+    margin: 5px 0;
+    padding: 5px 10px;
+    background-color: #C56154;
+    border-radius: 2px;
+    box-shadow: 2px 2px 0 0 #9A4C41;
+
+    color: white;
 }
 
 /* Forms */
@@ -110,15 +112,7 @@ form {
     }
 }
 
-.errors {
-    margin: 5px 0;
-    padding: 5px 10px;
-    background-color: #C56154;
-    border-radius: 2px;
-    box-shadow: 2px 2px 0 0 #9A4C41;
-
-    color: white;
-}
+/* Buttons */
 
 .big_button {
     display: inline-block;
@@ -175,12 +169,11 @@ a.big_button, a.big_button:hover {
     background-color: transparent;
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 1);
 
-    color: rgba(0, 0, 0, 0.5);
+    color: rgba(0, 0, 0, 0.6);
     line-height: 15px;
     font-size: 13px;
     font-weight: 500;
     text-align: center;
-    text-shadow: 0px 1px 0px rgba(255, 255, 255, 1);
 
     transition-property: all;
     transition-duration: 0.2s;
@@ -192,16 +185,12 @@ a.big_button, a.big_button:hover {
     text-decoration: none;
 }
 
-.toggle_button:hover, .toggle_button_left:hover, .toggle_button_central:hover,
-.toggle_button_right:hover {
-    color: rgba(0, 0, 0, 0.7);
-}
-
 .toggle_button:active, .toggle_button.enabled,
 .toggle_button_left:active, .toggle_button_left.enabled,
 .toggle_button_central:active, .toggle_button_central.enabled,
 .toggle_button_right:active, .toggle_button_right.enabled {
-    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4);
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.2);
+    border-color: rgba(0, 0, 0, 0.2);
     color: rgba(0, 0, 0, 0.7);
 }
 
@@ -212,7 +201,7 @@ a.toggle_button_right {
 
 .toggle_button {
     border-radius: 2px;
-    border: 1px solid rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .toggle_button_left, .toggle_button_central, .toggle_button_right,
@@ -221,43 +210,40 @@ a.toggle_button_right {
 }
 
 .toggle_button_left, .public_button {
-    border-top: 1px solid rgba(0, 0, 0, 0.3);
+    border-top: 1px solid rgba(0, 0, 0, 0.2);
     border-right: 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.3);
-    border-left: 1px solid rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    border-left: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: 2px 0 0 2px;
 }
 
 .toggle_button_central {
-    border-top: 1px solid rgba(0, 0, 0, 0.3);
+    border-top: 1px solid rgba(0, 0, 0, 0.2);
     border-right: 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.3);
-    border-left: 1px solid rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    border-left: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: 0;
 }
 
 .toggle_button_right, .private_button {
-    border-top: 1px solid rgba(0, 0, 0, 0.3);
-    border-right: 1px solid rgba(0, 0, 0, 0.3);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.3);
-    border-left: 1px solid rgba(0, 0, 0, 0.3);
+    border-top: 1px solid rgba(0, 0, 0, 0.2);
+    border-right: 1px solid rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    border-left: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: 0 2px 2px 0;
 }
 
 .public_button, .private_button {
     padding-left: 9px;
     padding-right: 9px;
-    border-color: rgba(0, 0, 0, 0.4);
-    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
-
-    color: white;
-    text-shadow: none;
 }
 
 .public_button:active, .public_button.enabled,
 .private_button:active, .private_button.enabled {
-    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4),
-                0 1px 0 0 rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.3),
+                0 1px 0 0 rgba(255, 255, 255, 0.2);
+    color: white;
+    text-shadow: none;
 }
 
 .public_button:active, .public_button.enabled {
@@ -268,6 +254,8 @@ a.toggle_button_right {
     background-color: #AE3737;
 }
 
+/* Tooltips */
+
 [hint] {
     position: relative;
 }
@@ -276,6 +264,7 @@ a.toggle_button_right {
     visibility: hidden;
     position: absolute;
     opacity: 0;
+    pointer-events: none;
     transition: 0.2s opacity;
 }
 
@@ -316,6 +305,13 @@ a.toggle_button_right {
 
     border: 5px solid transparent;
     border-bottom-color: #2E2E2E;
+}
+
+/* Page structure */
+
+#container { /* Used to push the footer to the bottom of screen or content */
+    min-height: 100%;
+    position: relative;
 }
 
 #home_screen {

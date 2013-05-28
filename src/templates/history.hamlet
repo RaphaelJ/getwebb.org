@@ -35,16 +35,27 @@
                   $with name <- uploadName upload
                     <li>
                         <a href=@{ViewR hmac} hint=#{name}>
-                            <h4 >#{wrappedText name 30}
+                            <h4>#{wrappedText name 28}
 
                             <img  alt="File icon" src="#{icon}" />
 
                             <div .info>
-                                <p>
-                                    <button .public_button type=button
+                                $if uploadPublic upload
+                                    <button .public_button .enabled type=button
+                                            onclick="return false;"
                                             hint="Upload will be published in the public gallery">
                                         Public
-                                    <button .private_button
+                                    <button .private_button type=button
+                                            onclick="return false;"
+                                            hint="Upload will NOT be published in the public gallery">
+                                        Private
+                                $else
+                                    <button .public_button type=button
+                                            onclick="return false;"
+                                            hint="Upload will be published in the public gallery">
+                                        Public
+                                    <button .private_button .enabled type=button
+                                            onclick="return false;"
                                             hint="Upload will NOT be published in the public gallery">
                                         Private
 

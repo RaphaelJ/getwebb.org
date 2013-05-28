@@ -130,7 +130,7 @@ $("#upload_form").submit(function ()
 
         $("#upload_progress").show("fast");
         $("#upload_global_progress_complete").width(0);
-        $("#upload_global_progress").fadeIn();
+        $("#upload_global_progress").show();
 
         uploadFiles(0, total, files_info, new Array(), new Array());
     }

@@ -1,28 +1,3 @@
-#user_bar {
-    position: absolute;
-    right: 15px;
-    top: 15px;
-
-    .toggle_button, .toggle_button_left, .toggle_button_central,
-    .toggle_button_right {
-        padding: 5px 8px;
-        height: 20px;
-        line-height: 20px;
-    }
-
-    a img {
-        height: 20px;
-        width: 20px;
-        border-radius: 1px;
-        color: rgba(0, 0, 0, 0.5);
-        vertical-align: middle;
-    }
-
-    a img.avatar {
-        border-radius: 2px;
-    }
-}
-
 ul#uploads {
     padding: 0;
     margin: 0;
@@ -68,14 +43,9 @@ ul#uploads {
         }
 
         .public_button, .private_button {
-            padding-left: 4px;
-            padding-right: 4px;
+            padding: 4px 7px;
 
             font-size: 0.9em;
-        }
-
-        .public_button:hover, .private_button:hover {
-            background-color: rgba(0, 0, 0, 0.4);
         }
 
         .info {

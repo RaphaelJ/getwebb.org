@@ -1,5 +1,5 @@
 <div #home_screen>
-    <div #upload_global_progress style="display: none">
+    <div #upload_global_progress>
         <div #upload_global_progress_complete .complete>
 
     <div #upload_box>

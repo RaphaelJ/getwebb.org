@@ -28,7 +28,7 @@ postUploadR = do
     admiKey <- getAdminKey
     ((res, _), _) <- runFormPostNoToken uploadForm
     case res of
-        FormSuccess ~(file:_, Optisons public email) -> do
+        FormSuccess ~(file:_, Options public email) -> do
             eUpload <- processFile admiKey file public
             case eUpload of
                 Right upload -> do

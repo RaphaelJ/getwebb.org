@@ -61,6 +61,7 @@ User
     salt Text -- Salt used to hash the password.
     created UTCTime
     avatar Int64
+    count Int
     isAdmin Bool
     defaultPublic Bool -- True if the user want new files to be public.
     UniqueUserEmail email
@@ -69,7 +70,8 @@ User
 
 AdminKey
     count Int
-    user UserId Maybe
+    -- Uploads which will be uploaded by anonymous users will be given an admin
+    -- key, while others will be linked to the user's entity.
     deriving Show
 
 -- Tracks HMACs allocations for uploads, archive files and comments.

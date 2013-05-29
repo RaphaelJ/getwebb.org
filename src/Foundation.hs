@@ -287,7 +287,7 @@ tryAdminKey = do
     mKey <- lookupSession "ADMIN_KEY"
     return $ (read . unpack) `fmap` mKey
 
--- | Reads the         session value to get the admin key of the visitor. If the user
+-- | Reads the session value to get the admin key of the visitor. If the user
 -- doesn\'t have a key, creates a new key.
 getAdminKey :: GHandler sub App AdminKeyId
 getAdminKey = do

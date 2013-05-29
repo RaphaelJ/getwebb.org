@@ -1,5 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Foundation where
 
@@ -33,6 +32,7 @@ import qualified Web.ClientSession as S
 
 import Account.Foundation
 import Model
+import Util.AdminKey (tryAdminKey)
 import Util.Pretty (PrettyNumber (..))
 
 -- | Contains a queue of background jobs which can be processed right now.
@@ -277,28 +277,3 @@ getExtra = fmap (appExtra . settings) getYesod
 -- wiki:
 --
 -- https://github.com/yesodweb/yesod/wiki/Sending-email
-
--- | Reads the session value to get the admin key of the visitor. Returns
--- 'Nothing' if the user doesn\'t have a key.
--- The admin key is a random key given to each user to control their own 
--- uploads.
-tryAdminKey :: GHandler sub App (Maybe AdminKeyId)
-tryAdminKey = do
-    mKey <- lookupSession "ADMIN_KEY"
-    return $ (read . unpack) `fmap` mKey
-
--- | Reads the session value to get the admin key of the visitor. If the user
--- doesn\'t have a key, creates a new key.
-getAdminKey :: GHandler sub App AdminKeyId
-getAdminKey = do
-    mKey <- tryAdminKey
-
-    -- Checks if the user has already an admin key.
-    case mKey of
-        Just k ->
-            return k
-        Nothing -> do
-            k <- runDB $ insert (AdminKey 0 Nothing)
-
-            setSession "ADMIN_KEY" (pack $ show k)
-            return k

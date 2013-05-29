@@ -5,7 +5,8 @@
 -- database.
 module JobsDaemon (
     -- * Daemon processing queue management
-      JobsQueue, JobsChan, JobsDepends, newQueue, registerJob, enqueueJob
+      JobsQueue, JobsChan, JobsDepends {- from Foundation -}
+    , JobType {- from Model -}, newQueue, registerJob, enqueueJob
     -- * Starting the daemon
     , jobsDaemon, forkJobsDaemon
     -- * Utilities

@@ -1,4 +1,5 @@
-
+{-# LANGUAGE OverloadedStrings #-}
+-- | Defines functions to allocate and 
 module Util.AdminKey (
       AdminKey (..), AdminKeyId {- from Model -}
     , newAdminKey, tryAdminKey, getAdminKey
@@ -7,7 +8,7 @@ module Util.AdminKey (
 import Model
 
 -- | Allocates a new 'AdminKey' in the database, linking it to a potential user.
-newAdminKey :: Maybe UserId -> YesodDB sub App AdminKeyId
+newAdminKey :: YesodDB sub App AdminKeyId
 newAdminKey = insert . AdminKey 0
 
 -- | Reads the session value to get the admin key of the visitor. Returns

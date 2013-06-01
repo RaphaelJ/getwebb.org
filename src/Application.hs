@@ -24,7 +24,6 @@ import System.IO (stdout)
 import System.Log.FastLogger (mkLogger)
 import Web.ClientSession (randomKey)
 
-import qualified JobsDaemon as J
 import Settings
 
 -- Import all relevant handler modules here.
@@ -43,6 +42,7 @@ import qualified Handler.Upload.Image as I
 import qualified Handler.Upload.Media as M
 
 import Util.Hmac (Hmacs)
+import qualified Util.JobsDaemon as J
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the

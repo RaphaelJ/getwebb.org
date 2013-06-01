@@ -1,5 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE OverloadedStrings, PatternGuards #-}
 -- | Defines functions to retrieve meta-data from a database file.
 module Util.Extras (
       Extras (..), getFileExtras

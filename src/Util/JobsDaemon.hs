@@ -3,7 +3,7 @@
 -- The queue supports multiple dependencies between jobs and provides features
 -- which enable it to be restored from an application shutdown using the
 -- database.
-module JobsDaemon (
+module Util.JobsDaemon (
     -- * Daemon processing queue management
       JobsQueue, JobsChan, JobsDepends {- from Foundation -}
     , JobType {- from Model -}, newQueue, registerJob, enqueueJob

@@ -78,14 +78,14 @@ instance ToMarkup PrettyFileSize where
     toMarkup = toMarkup . show
 
 -- | A new type to represent a media duration which will be displayed in a human
--- readable way. The duration is encoded in centisecond
+-- readable way. The duration is encoded in centisecond.
 newtype PrettyDuration = PrettyDuration Word64
 
 instance Show PrettyDuration where
     show (PrettyDuration duration)
-        | h > 0     = printf "%d h %d min %d.%d s" h m s c
-        | m > 0     = printf "%d min %d.%d s"        m s c
-        | otherwise = printf "%d.%d s"                 s c
+        | h > 0     = printf "%d h %d min %d s" h m s
+        | m > 0     = printf "%d min %d s"        m s
+        | otherwise = printf "%d s"                 s
       where
         (second, minute, hour) = (100, second * 60, minute * 60)
         h = duration `quot` hour

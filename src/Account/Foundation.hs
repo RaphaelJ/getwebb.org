@@ -59,10 +59,10 @@ class (Yesod master, YesodPersist master, RenderMessage master FormMessage
     -- | Initialise a new user value (musn't add the user to the database).
     initUser :: Text      -- ^ Email
              -> Text      -- ^ Username
-             -> Text      -- ^ Salted password
-             -> Text      -- ^ Salt
+             -> Text      -- ^ Hashed password
+             -> Text      -- ^ Salt used to hash the password
              -> AvatarNum
-             -> GHandler sub master (AccountUser master)
+             -> YesodDB sub master (AccountUser master)
 
     -- | Unique keys to fetch users from the database.
     emailLookup, usernameLookup :: master -> Text -> Unique (AccountUser master)

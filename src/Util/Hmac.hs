@@ -1,4 +1,5 @@
 -- | This module defines functions to compute and process HMACs.
+-- HMACs identify uniquely a resource like an upload, a comment or a file.
 module Util.Hmac (
       UniqueHmacId, Hmac {- From Model.hs -}, hmacLength
     , newHmac, computeHmac, splitHmacs, joinHmacs, toBase62
@@ -16,7 +17,7 @@ import qualified Data.Text as T
 import Database.Persist.Store (PersistValue (..))
 import Database.Persist.GenericSql.Raw (SqlBackend)
 
--- | Number of characters in an hmac.
+-- | Number of characters in an HMAC.
 hmacLength :: Int
 hmacLength = 8
 

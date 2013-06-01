@@ -238,11 +238,13 @@ instance YesodAccount App where
 
     initUser email name pass salt avatar = do
         time <- liftIO $ getCurrentTime
+        adminKey <- newAdminKey
         return User {
-          userEmail = email, userName = name, userPassword = pass
-        , userSalt = salt, userCreated = time, userAvatar = avatar
-        , userIsAdmin = False, userDefaultPublic = True
-        }
+              userEmail = email, userName = name, userPassword = pass
+            , userSalt = salt, userCreated = time, userAvatar = avatar
+            , userIsAdmin = False, userAdminKey = adminKey
+            , userDefaultPublic = True
+            }
 
     emailLookup    _ = UniqueUserEmail
     usernameLookup _ = UniqueUserName

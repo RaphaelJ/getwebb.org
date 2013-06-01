@@ -39,7 +39,7 @@ newUser email name pass = do
     img <- lift $ genIdenticon email
     avatarId <- newAvatar img
 
-    lift (initUser email name (saltedHash salt pass) salt avatarId) >>= insert
+    initUser email name (saltedHash salt pass) salt avatarId >>= insert
 
 -- | Checks the given credentials without setting the session value.
 -- Returns the user ID if succeed. Tries with the username then the email.

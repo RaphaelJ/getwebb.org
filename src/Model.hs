@@ -63,16 +63,16 @@ User
     avatar Int64
     count Int
     isAdmin Bool
+    -- Links every upload of this user to this user.
+    adminKey AdminKeyId
     defaultPublic Bool -- True if the user want new files to be public.
     UniqueUserEmail email
     UniqueUserName name
+    UniqueUserAdminKey adminKey
     deriving Show
 
 AdminKey
     count Int
-    -- Uploads which will be uploaded by anonymous users will be given an admin
-    -- key, while others will be linked to the user's entity.
-    user UserId Maybe
     deriving Show
 
 -- Tracks HMACs allocations for uploads, archive files and comments.

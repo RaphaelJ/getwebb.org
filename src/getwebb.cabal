@@ -25,7 +25,6 @@ library
                      Foundation
                      Import
                      Model
-                     JobsDaemon
 
                      Account
                      Account.Auth
@@ -55,6 +54,7 @@ library
 
                      Util.Date
                      Util.Extras
+                     Util.JobsDaemon
                      Util.Json
                      Util.Hmac
                      Util.Path

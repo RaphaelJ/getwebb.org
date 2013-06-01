@@ -21,7 +21,7 @@ data Options = Options {
     } deriving (Show, Read)
 
 -- | Uploads a file to the server. Returns a 201 Created with a JSON object
--- which contains the id of the upload, or a 400/403/413 with a JSON array of
+-- which contains the id of the upload, or a 400/413/429 with a JSON array of
 -- errors.
 postUploadR :: Handler ()
 postUploadR = do
@@ -39,7 +39,7 @@ postUploadR = do
                     sendResponseStatus created201 rep
                 Left err -> do
                     let status = case err of
-                            DailyIPLimitReached -> forbidden403
+                            DailyIPLimitReached -> tooManyRequests429
                             FileTooLarge -> requestEntityTooLarge413
                     rep <- jsonToRepJson $ array [show err]
                     sendResponseStatus status rep
@@ -47,6 +47,8 @@ postUploadR = do
             rep <- jsonToRepJson $ array errs
             sendResponseStatus badRequest400 rep
         FormMissing -> undefined
+  where
+    tooManyRequests429 = mkStatus 400 "Too Many Requests"
 
 -- | Creates a form for the upload and its options.
 uploadForm :: Html

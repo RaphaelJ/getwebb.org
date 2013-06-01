@@ -7,6 +7,12 @@ module Util.AdminKey (
 
 import Model
 
+data AdminKey = UserAdminKey (Entity AdminKey) (Maybe (Entity AdminKey))
+              | AnonAdminKey (Entity AdminKey)
+              | NoAdminKey
+              
+
+
 -- | Allocates a new 'AdminKey' in the database, linking it to a potential user.
 newAdminKey :: YesodDB sub App AdminKeyId
 newAdminKey = insert . AdminKey 0

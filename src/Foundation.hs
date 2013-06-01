@@ -267,7 +267,43 @@ instance YesodAccount App where
 
     avatarsDir _ = Settings.staticDir </> "avatars"
     avatarsDirRoute _ path =
-        StaticR $ StaticRoute ("avatars" : path) []
+        StaticR $ StaticRoute ("avatars" : path)
+
+-- | Each upload is associated to an 'AdminKey'.
+data AdminKey = UserAdminKey (Entity AdminKey) (Maybe (Entity AdminKey))
+              | AnonAdminKey (Entity AdminKey)
+              | NoAdminKey
+
+
+-- | Allocates a new 'AdminKey' in the database, linking it to a potential user.
+newAdminKey :: YesodDB sub App AdminKeyId
+newAdminKey = insert . AdminKey 0
+
+-- | Reads the session value to get the admin key of the visitor. Returns
+-- 'Nothing' if the user doesn\'t have a key.
+-- The admin key is a random key given to each user to control their own 
+-- uploads.
+tryAdminKey :: GHandler sub App (Maybe AdminKeyId)
+tryAdminKey = do
+    mKey <- lookupSession "ADMIN_KEY"
+    return $ (read . unpack) `fmap` mKey
+
+-- | Reads the session value to get the admin key of the visitor. If the user
+-- doesn\'t have a key, creates a new key.
+getAdminKey :: GHandler sub App AdminKeyId
+getAdminKey = do
+    mKey <- tryAdminKey
+
+    -- Checks if the user has already an admin key.
+    case mKey of
+        Just k ->
+            return k
+        Nothing -> do
+            k <- runDB $ newAdminKey Nothing
+
+            setSession "ADMIN_KEY" (pack $ show k)
+            return k
+
 
 -- | Get the 'Extra' value, used to hold data from the settings.yml file.
 getExtra :: Handler Extra

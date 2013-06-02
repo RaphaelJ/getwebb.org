@@ -9,11 +9,12 @@ import Control.Monad.Writer hiding (lift)
 import Data.Map (elems)
 
 import Network.HTTP.Types.Status (
-      mkStatus, created201, badRequest400, requestEntityTooLarge413
+      mkStatus, created201, requestEntityTooLarge413
     )
 
 import Account (getUser)
 import Handler.Upload.Processing (UploadError (..), processFile)
+import Util.API (sendErrorResponse, withFormSuccess)
 
 data Options = Options {
       optPublic :: Bool
@@ -26,40 +27,34 @@ data Options = Options {
 postUploadR :: Handler ()
 postUploadR = do
     ((res, _), _) <- runFormPostNoToken uploadForm
-    case res of
-        FormSuccess ~(file:_, Options public email) -> do
-            -- Allocates an new admin key if the client doesn't have one.
-            mAdminKey <- getAdminKey
-            adminKeyId <- case mAdminKey of
-                Just (AdminKeyUser (Entity i _) _) -> return i
-                Just (AdminKeyAnon (Entity i _))   -> return i
-                Nothing                            -> do
-                    adminKeyId <- runDB newAdminKey
-                    setAdminKey adminKeyId
-                    return adminKeyId
+    withFormSuccess res $ \~(file:_, Options public email) -> do
+        -- Allocates an new admin key if the client doesn't have one.
+        mAdminKey <- getAdminKey
+        adminKeyId <- case mAdminKey of
+            Just (AdminKeyUser (Entity i _) _) -> return i
+            Just (AdminKeyAnon (Entity i _))   -> return i
+            Nothing                            -> do
+                adminKeyId <- runDB newAdminKey
+                setAdminKey adminKeyId
+                return adminKeyId
 
-            eUpload <- processFile adminKeyId file public
-            case eUpload of
-                Right upload -> do
-                    {- TODO: email -}
-                    rdr <- getUrlRender
-                    let hmac = uploadHmac upload
-                        url  = rdr $ ViewR hmac
-                    setHeader "Location" url
-                    rep <- jsonToRepJson $ object [
-                          "id" .= hmac, "url" .= url
-                        ]
-                    sendResponseStatus created201 rep
-                Left err -> do
-                    let status = case err of
-                            DailyIPLimitReached -> tooManyRequests429
-                            FileTooLarge -> requestEntityTooLarge413
-                    rep <- jsonToRepJson $ array [show err]
-                    sendResponseStatus status rep
-        FormFailure errs -> do
-            rep <- jsonToRepJson $ array errs
-            sendResponseStatus badRequest400 rep
-        FormMissing -> undefined
+        eUpload <- processFile adminKeyId file public
+        case eUpload of
+            Right upload -> do
+                {- TODO: email -}
+                rdr <- getUrlRender
+                let hmac = uploadHmac upload
+                    url  = rdr $ ViewR hmac
+                setHeader "Location" url
+                rep <- jsonToRepJson $ object [
+                        "id" .= hmac, "url" .= url
+                    ]
+                sendResponseStatus created201 rep
+            Left err -> do
+                let status = case err of
+                        DailyIPLimitReached -> tooManyRequests429
+                        FileTooLarge -> requestEntityTooLarge413
+                sendErrorResponse status [err]
   where
     tooManyRequests429 = mkStatus 429 "Too Many Requests"
 

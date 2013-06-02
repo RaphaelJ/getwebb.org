@@ -119,13 +119,26 @@ getViewR hmacs' = do
 -- success, a 400 Bad Request if the POST data are invalids, a 404 Not found if
 -- doesn't exists or 403 if the user isn't allowed to remove the upload.
 patchViewR :: Hmac -> Handler ()
-patchViewR hmac = undefined
---     do
---     (mTitle, mPublic) <- runInputPost form
---     
---   where
---     form = (,) <$> iopt textField "title"
---                <*> iopt boolField "public"
+patchViewR hmac = do
+    ((res, _), _) <- runFormPost form
+
+    case res of
+        FormSuccess (mTitle, mPublic) ->
+        FormFailure errs ->
+        FormMissing ->
+  where
+    form = (,) <$> aopt textField titleSettings  Nothing
+               <*> aopt boolField publicSettings Nothing
+
+    titleSettings = FieldSettings {
+          fsLabel = "Upload title", fsTooltip = Nothing, fsId = Nothing
+        , fsName = "title", fsAttrs = []
+        }
+
+    publicSettings = FieldSettings {
+          fsLabel = "Share this file", fsTooltip = Nothing, fsId = Nothing
+        , fsName = Just "public", fsAttrs = []
+        }
 
 -- | Deletes an upload. Returns a 204 No content on success, a 404 Not found if
 -- doesn't exists or 403 if the user isn't allowed to remove the upload.

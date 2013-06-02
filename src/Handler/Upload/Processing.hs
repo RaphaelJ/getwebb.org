@@ -25,6 +25,7 @@ import Handler.Upload.Archive (processArchive)
 import qualified Handler.Upload.Compression as C
 import Handler.Upload.Image (processImage)
 import Handler.Upload.Media (processMedia)
+import Util.API (ToAPIError (..))
 import Util.Hmac (newHmac)
 import Util.Path (getFileSize, uploadDir, newTmpFile, getPath)
 
@@ -34,9 +35,9 @@ import System.TimeIt (timeIt)
 -- of an upload.
 data UploadError = DailyIPLimitReached | FileTooLarge
 
-instance Show UploadError where
-    show DailyIPLimitReached = "Daily per IP limit reached."
-    show FileTooLarge        = "The file exceeds the maximum file size."
+instance ToAPIError UploadError where
+    toAPIError DailyIPLimitReached = "Daily per IP limit reached."
+    toAPIError FileTooLarge        = "The file exceeds the maximum file size."
 
 -- | Process a file and returns its new ID from the database.
 -- Returns either the uploaded file or an error message to be returned to the 

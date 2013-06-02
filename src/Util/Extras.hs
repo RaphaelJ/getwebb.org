@@ -1,9 +1,8 @@
 {-# LANGUAGE OverloadedStrings, PatternGuards #-}
 -- | Defines functions to retrieve meta-data from a database file.
 module Util.Extras (
-      Extras (..), getFileExtras
-    , getIsAdmin, getUploadStats, getIcon, getImage, getMiniature
-    , getAudioSources, getArchive
+      Extras (..), getFileExtras, getUploadStats
+    , getIcon, getImage, getMiniature, getAudioSources, getArchive
     ) where
 
 import Import
@@ -48,7 +47,8 @@ getFileExtras (Entity fileId file) =
         _ -> return None
 
 
--- | Returns the statistics of the upload with the uncommited data.
+-- | Returns the statistics of the upload, taking in account the uncommited
+-- database data (@(views, last view date, bandwidth)@).
 getUploadStats :: Entity Upload -> Handler (Word64, UTCTime, Word64)
 getUploadStats (Entity uploadId upload) = do
     let views = uploadViews upload
@@ -60,15 +60,6 @@ getUploadStats (Entity uploadId upload) = do
         Just (bufViews, mBuffLastView, bufBw) ->
             (views + bufViews, fromMaybe lastView mBuffLastView, bw + bufBw)
         Nothing -> (views, lastView, bw)
-
--- | Returns True if the client is the administrator of the upload.
-getIsAdmin :: Upload -> Handler Bool
-getIsAdmin upload = do
-    mKey <- tryAdminKey
-
-    return $ case mKey of
-        Just key | key == uploadAdminKey upload -> True
-        _                                       -> False
 
 -- | Returns the URL to the file icon corresponding to the type of the file.
 getIcon :: (Route App -> [(Text, Text)] -> Text) -> Upload -> Extras -> Text

@@ -6,12 +6,12 @@ module Util.Path (
 
 import Import
 
-import Data.List
-import qualified Data.Text as T
 import System.IO
 import System.FilePath
 
 import Yesod.Default.Config
+
+import Util.HashDir (hashDir, hashDir')
 
 -- | Returns the size in bytes of the given file.
 getFileSize :: FilePath -> IO Word64
@@ -25,19 +25,6 @@ rootUploadDir app = extraUploadDir $ appExtra $ settings app
 -- directory path in the upload directory.
 uploadDir :: App -> Text -> FilePath
 uploadDir app hash = rootUploadDir app </> hashDir hash
-
--- | Splits the hash of the file in four parts and constucts a four levels
--- directory path.
-hashDir :: Text -> FilePath
-hashDir = foldl' (</>) "" . map T.unpack . hashDir'
-
--- | Splits the hash of the file in four parts.
-hashDir' :: Text -> [Text]
-hashDir' hash =
-    let (p1, hash') = T.splitAt 2 hash
-        (p2, hash'') = T.splitAt 2 hash'
-        (p3, p4) = T.splitAt 2 hash''
-    in [p1, p2, p3, p4]
 
 -- | Returns the directory where the temporary files will be created.
 tmpDir :: App -> FilePath

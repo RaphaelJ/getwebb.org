@@ -9,7 +9,7 @@ import Control.Monad.Writer hiding (lift)
 import Data.Map (elems)
 
 import Network.HTTP.Types.Status (
-      created201, badRequest400, forbidden403, requestEntityTooLarge413
+      mkStatus, created201, badRequest400, requestEntityTooLarge413
     )
 
 import Account (getUser)
@@ -25,17 +25,30 @@ data Options = Options {
 -- errors.
 postUploadR :: Handler ()
 postUploadR = do
-    admiKey <- getAdminKey
     ((res, _), _) <- runFormPostNoToken uploadForm
     case res of
         FormSuccess ~(file:_, Options public email) -> do
-            eUpload <- processFile admiKey file public
+            -- Allocates an new admin key if the client doesn't have one.
+            mAdminKey <- getAdminKey
+            adminKeyId <- case mAdminKey of
+                Just (AdminKeyUser (Entity i _) _) -> return i
+                Just (AdminKeyAnon (Entity i _))   -> return i
+                Nothing                            -> do
+                    adminKeyId <- runDB newAdminKey
+                    setAdminKey adminKeyId
+                    return adminKeyId
+
+            eUpload <- processFile adminKeyId file public
             case eUpload of
                 Right upload -> do
                     {- TODO: email -}
+                    rdr <- getUrlRender
+                    let hmac = uploadHmac upload
+                        url  = rdr $ ViewR hmac
+                    setHeader "Location" url
                     rep <- jsonToRepJson $ object [
-                              "id" .= uploadHmac upload
-                            ]
+                          "id" .= hmac, "url" .= url
+                        ]
                     sendResponseStatus created201 rep
                 Left err -> do
                     let status = case err of
@@ -48,7 +61,7 @@ postUploadR = do
             sendResponseStatus badRequest400 rep
         FormMissing -> undefined
   where
-    tooManyRequests429 = mkStatus 400 "Too Many Requests"
+    tooManyRequests429 = mkStatus 429 "Too Many Requests"
 
 -- | Creates a form for the upload and its options.
 uploadForm :: Html

@@ -54,9 +54,10 @@ library
 
                      Util.Date
                      Util.Extras
+                     Util.HashDir
+                     Util.Hmac
                      Util.JobsDaemon
                      Util.Json
-                     Util.Hmac
                      Util.Path
                      Util.Pretty
 

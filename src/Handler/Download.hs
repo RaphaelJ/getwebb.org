@@ -44,8 +44,8 @@ import Network.Mime (defaultMimeLookup)
 import Network.Wai (requestHeaders)
 import System.IO.Unsafe (unsafeInterleaveIO)
 
-import JobsDaemon (runDBIO)
 import Util.Hmac (splitHmacs)
+import Util.JobsDaemon (runDBIO)
 import Util.Path (uploadDir, getPath)
 
 -- | Streams the content of a file over HTTP.

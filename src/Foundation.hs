@@ -3,8 +3,9 @@
 module Foundation where
 
 import Prelude
-import Control.Applicative ((<$>))
+import Control.Applicative ((<$>), (<|>))
 import Control.Concurrent (Chan, MVar)
+import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
 import qualified Data.ByteString.Lazy as B
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.Map as M
@@ -30,9 +31,8 @@ import Text.Jasmine (minifym)
 import Text.Hamlet (shamlet, hamletFile)
 import qualified Web.ClientSession as S
 
-import Account.Foundation
+import Account
 import Model
-import Util.AdminKey (tryAdminKey)
 import Util.Pretty (PrettyNumber (..))
 
 -- | Contains a queue of background jobs which can be processed right now.
@@ -159,14 +159,9 @@ instance Yesod App where
         mMsg <- getMessage
 
         toMaster <- getRouteToMaster
-        currentPage <- getCurrentPage . fmap toMaster <$> getCurrentRoute
+        currentPage <- (getCurrentPage . fmap toMaster) <$> getCurrentRoute
 
-        mAdminKeyId <- tryAdminKey
-        countHistory <- case mAdminKeyId of
-            Just adminKeyId -> do
-                Just adminKey <- runDB $ get adminKeyId
-                return $! adminKeyCount adminKey
-            Nothing -> return 0
+        countHistory <- uploadsCount <$> getAdminKey
 
         pc <- widgetToPageContent $ do
             $(widgetFile "normalize")
@@ -193,7 +188,9 @@ instance Yesod App where
     -- and names them based on a hash of their content. This allows
     -- expiration dates to be set far in the future without worry of
     -- users receiving stale content.
-    addStaticContent = addStaticContentExternal minifym base64md5 Settings.staticDir (StaticR . flip StaticRoute [])
+    addStaticContent = addStaticContentExternal minifym base64md5
+                                                Settings.staticDir
+                                                (StaticR . flip StaticRoute [])
 
     -- Place Javascript at bottom of the body tag so the rest of the page loads first
     jsLoader _ = BottomOfBody
@@ -226,6 +223,8 @@ instance YesodPersist App where
 
 instance RenderMessage App FormMessage where
     renderMessage _ _ = defaultFormMessage
+
+-- Accounts --------------------------------------------------------------------
 
 data UserSettings = UserSettings { usDefaultPublic :: Bool }
 
@@ -266,44 +265,68 @@ instance YesodAccount App where
         update userId [UserDefaultPublic =. defaultPublic]
 
     avatarsDir _ = Settings.staticDir </> "avatars"
-    avatarsDirRoute _ path =
-        StaticR $ StaticRoute ("avatars" : path)
+    avatarsDirRoute _ path = StaticR $ StaticRoute ("avatars" : path) []
 
--- | Each upload is associated to an 'AdminKey'.
-data AdminKey = UserAdminKey (Entity AdminKey) (Maybe (Entity AdminKey))
-              | AnonAdminKey (Entity AdminKey)
-              | NoAdminKey
+-- Admin Keys ------------------------------------------------------------------
 
+-- | Each upload is associated to an 'AdminKey'. Anonymous got an 'AdminKey' in
+-- their cookies whereas authenticated users have an associated 'AdminKey'.
+-- An 'AdminKey' gives some privileges to the corresponding uploads to its
+-- owner.
+data AdminKeyValue = AdminKeyUser (Entity AdminKey) (Maybe (Entity AdminKey))
+                   | AdminKeyAnon (Entity AdminKey)
 
--- | Allocates a new 'AdminKey' in the database, linking it to a potential user.
+adminKeySessionKey :: Text
+adminKeySessionKey = "ADMIN_KEY"
+
+-- | Allocates a new 'AdminKey' in the database. Doesn't set the session key.
 newAdminKey :: YesodDB sub App AdminKeyId
-newAdminKey = insert . AdminKey 0
+newAdminKey = insert $ AdminKey 0
 
--- | Reads the session value to get the admin key of the visitor. Returns
--- 'Nothing' if the user doesn\'t have a key.
--- The admin key is a random key given to each user to control their own 
--- uploads.
-tryAdminKey :: GHandler sub App (Maybe AdminKeyId)
-tryAdminKey = do
-    mKey <- lookupSession "ADMIN_KEY"
-    return $ (read . unpack) `fmap` mKey
+-- | Sets the 'AdminKey' in the user's session cookie.
+setAdminKey :: AdminKeyId -> GHandler sub App ()
+setAdminKey = setSession adminKeySessionKey . pack . show
 
--- | Reads the session value to get the admin key of the visitor. If the user
--- doesn\'t have a key, creates a new key.
-getAdminKey :: GHandler sub App AdminKeyId
-getAdminKey = do
-    mKey <- tryAdminKey
+-- | Returns the admin key(s). Checks that it exists in the database or returns
+-- 'Nothing' if the client doesn\'t have an 'AdminKey' yet.
+getAdminKey :: GHandler sub App (Maybe AdminKeyValue)
+getAdminKey = runMaybeT $
+        do
+        (Entity _ user, _) <- MaybeT getUser
+        MaybeT $ runDB $ runMaybeT $ do
+            let keyId = userAdminKey user
+            key <- MaybeT $ get keyId
+            lift $ AdminKeyUser (Entity keyId key) <$> getCookieKey
+    <|> (AdminKeyAnon <$> MaybeT (runDB getCookieKey))
+  where
+    -- Retrieves the AdminKey in the browser's session, if any.
+    getCookieKey = runMaybeT $ do
+        keyId' <- MaybeT $ lift $ lookupSession adminKeySessionKey
+        let keyId = read $ unpack keyId'
+        key    <- MaybeT $ get keyId
+        return $ Entity keyId key
 
-    -- Checks if the user has already an admin key.
-    case mKey of
-        Just k ->
-            return k
-        Nothing -> do
-            k <- runDB $ newAdminKey Nothing
+-- | Returns the total number of upload of the user.
+uploadsCount :: Maybe AdminKeyValue -> Int
+uploadsCount k =
+    case k of Just (AdminKeyUser a Nothing)  -> keyCount a
+              Just (AdminKeyUser a (Just b)) -> keyCount a + keyCount b
+              Just (AdminKeyAnon a)          -> keyCount a
+              Nothing                        -> 0
+  where
+    keyCount = adminKeyCount . entityVal
 
-            setSession "ADMIN_KEY" (pack $ show k)
-            return k
+-- | Returns True if the client is the administrator of the upload.
+isAdmin :: Upload -> Maybe AdminKeyValue -> Bool
+isAdmin upload key =
+    case key of Just (AdminKeyUser a _)        | sameKey a -> True
+                Just (AdminKeyUser _ (Just b)) | sameKey b -> True
+                Just (AdminKeyAnon a)          | sameKey a -> True
+                _                                          -> False
+  where
+    sameKey = (uploadAdminKey upload ==) . entityKey
 
+-- Extras ----------------------------------------------------------------------
 
 -- | Get the 'Extra' value, used to hold data from the settings.yml file.
 getExtra :: Handler Extra

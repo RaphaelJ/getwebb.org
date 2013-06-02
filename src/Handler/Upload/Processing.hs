@@ -43,7 +43,7 @@ instance Show UploadError where
 -- user.
 processFile :: AdminKeyId -> FileInfo -> Bool
             -> Handler (Either UploadError Upload)
-processFile adminKey f public = do
+processFile adminKeyId f public = do
     app <- getYesod
     extras <- getExtra
     clientHost <- remoteTextHost
@@ -111,7 +111,7 @@ processFile adminKey f public = do
                   uploadHmac = hmac,  uploadFile = fileId
                 , uploadName = fileName f, uploadDescription = Nothing
                 , uploadPublic = public, uploadCreated = time
-                , uploadHostname = clientHost, uploadAdminKey = adminKey
+                , uploadHostname = clientHost, uploadAdminKey = adminKeyId
                 , uploadViews = 0, uploadViewed = time
                 , uploadBandwidth = 0
                 }
@@ -119,7 +119,7 @@ processFile adminKey f public = do
             lift $ insertKey key upload
 
             -- Increments the user's upload count
-            lift $ update adminKey [AdminKeyCount +=. 1]
+            lift $ update adminKeyId [AdminKeyCount +=. 1]
 
             return (upload, new)
 

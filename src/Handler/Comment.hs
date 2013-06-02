@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards #-}
 module Handler.Comment (
       maxNComments, defaultNComments, maxCommentLength
-    , getCommentR, postCommentR, putCommentUpR, putCommentDownR
+    , getCommentsR, postCommentsR
+    , putCommentUpR, putCommentDownR
     , retrieveComments, commentForm, score
     ) where
 
@@ -32,11 +33,11 @@ maxCommentLength :: Int
 maxCommentLength = 400
 
 -- | Returns the comments of a file.
-getCommentR :: Hmac -> Handler RepJson
-getCommentR hmac = do
+getCommentsR :: Hmac -> Handler RepJson
+getCommentsR hmac = do
     mNComments <- lookupGetParam "n"
     mMaxScore  <- lookupGetParam "max_score"
-    let nComments = maybe defaultNComments 
+    let nComments = maybe defaultNComments
                           (max 0 . min maxNComments . read . T.unpack)
                           mNComments
         maxScore  = (max 0 . read . T.unpack) <$> mMaxScore
@@ -48,8 +49,8 @@ getCommentR hmac = do
     jsonToRepJson $ array comments
 
 -- | Posts a new comment.
-postCommentR :: Hmac -> Handler ()
-postCommentR hmac = do
+postCommentsR :: Hmac -> Handler ()
+postCommentsR hmac = do
     (Entity userId _, _) <- requireAuth
     ((res, _), _) <- runFormPostNoToken commentForm
 
@@ -104,6 +105,7 @@ voteComment voteType hmac = do
                          , CommentDownvotes =. downvotes
                          , CommentScore     =. score upvotes downvotes ]
 
+-- | Retrieves a set of comments from the database 
 retrieveComments :: UploadId -> Int -> Maybe Double
                  -> YesodDB sub App [(Comment, User)]
 retrieveComments uploadId nComments maxScore = do

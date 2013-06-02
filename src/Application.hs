@@ -41,7 +41,6 @@ import qualified Handler.Upload.Compression as C
 import qualified Handler.Upload.Image as I
 import qualified Handler.Upload.Media as M
 
-import Util.Hmac (Hmacs)
 import qualified Util.JobsDaemon as J
 
 -- This line actually creates our YesodDispatch instance. It is the second half

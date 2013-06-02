@@ -91,7 +91,6 @@ instance Show PrettyDuration where
         h = duration `quot` hour
         m = (duration `mod` hour)   `quot` minute
         s = (duration `mod` minute) `quot` second
-        c = duration `mod` second
 
 instance ToMarkup PrettyDuration where
     toMarkup = toMarkup . show

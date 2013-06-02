@@ -61,7 +61,6 @@ User
     salt Text -- Salt used to hash the password.
     created UTCTime
     avatar Int64
-    count Int
     isAdmin Bool
     -- Links every upload of this user to this user.
     adminKey AdminKeyId
@@ -100,7 +99,7 @@ Upload
     description Text Maybe
     public Bool
     created UTCTime
-    hostname Text
+    hostname Text -- ^ IP address of the uploader.
     adminKey AdminKeyId
     views Word64 default=0
     viewed UTCTime

@@ -29,7 +29,7 @@ import qualified Vision.Primitive as I
 import Yesod
 
 import Account.Foundation
-import Util.Path (hashDir, hashDir')
+import Util.HashDir (hashDir, hashDir')
 
 -- | Abstract data type used to enforce images to be resized before database
 -- insertion.

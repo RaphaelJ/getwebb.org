@@ -19,7 +19,7 @@ import Codec.Compression.GZip (
       compressWith, defaultCompressParams, compressLevel, bestCompression
     )
 
-import JobsDaemon (registerJob, runDBIO)
+import Util.JobsDaemon (registerJob, runDBIO)
 import Util.Path (uploadDir, newTmpFile, getPath)
 
 -- | Tries to compress a file. Replaces the original file and updates the

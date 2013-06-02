@@ -37,7 +37,6 @@ import qualified Sound.TagLib as ID3
 import System.Posix.Files (createSymbolicLink, removeLink)
 import qualified Vision.Image as I
 
-import JobsDaemon (registerJob, runDBIO)
 
 import Handler.Upload.FFmpeg (
       MediaInfo (..), MediaDuration (..), argsWebMAudio, argsMP3
@@ -45,6 +44,7 @@ import Handler.Upload.FFmpeg (
     )
 import qualified Handler.Upload.Compression as C
 import Handler.Upload.Image (miniature)
+import Util.JobsDaemon (registerJob, runDBIO)
 import Util.Path (uploadDir, getPath, newTmpFile)
 
 encodeVideos :: Bool

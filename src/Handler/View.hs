@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, PatternGuards #-}
 -- | Page which displays the information about a file.
-module Handler.View (getViewR, deleteViewR)
+module Handler.View (getViewR, patchViewR, deleteViewR)
     where
 
 import Import
@@ -25,9 +25,8 @@ import Util.Pretty (
     , wrappedText
     )
 import Util.Extras (
-      Extras (..), getFileExtras
-    , getIsAdmin, getUploadStats, getIcon, getImage, getMiniature
-    , getAudioSources, getArchive
+      Extras (..), getFileExtras, getUploadStats
+    , getIcon, getImage, getMiniature, getAudioSources, getArchive
     )
 import Util.Hmac (splitHmacs, joinHmacs)
 
@@ -66,10 +65,10 @@ getViewR hmacs' = do
                     then lift notFound
                     else lift $ redirect $ ViewR $ joinHmacs existing
 
+    mAdminKey <- getAdminKey
     rdr <- getUrlRenderParams
     currUrl <- (flip rdr [] . fromJust) <$> getCurrentRoute
     stats <- getUploadStats entity
-    isAdmin <- getIsAdmin upload
     facebookAppId <- extraFacebook <$> getExtra
     (newCommentWidget, newCommentEnctype) <- generateFormPost commentForm
 
@@ -119,31 +118,29 @@ getViewR hmacs' = do
 -- | Updates some attributes about an upload. Returns a 204 No content on
 -- success, a 400 Bad Request if the POST data are invalids, a 404 Not found if
 -- doesn't exists or 403 if the user isn't allowed to remove the upload.
-postViewR :: Hmac -> Handler ()
-postViewR hmac = do
-    (mTitle, mPublic) <- runInputPost form
-    
-  where
-    form = (,) <$> iopt textField "title"
-               <*> iopt boolField "public"
+patchViewR :: Hmac -> Handler ()
+patchViewR hmac = undefined
+--     do
+--     (mTitle, mPublic) <- runInputPost form
+--     
+--   where
+--     form = (,) <$> iopt textField "title"
+--                <*> iopt boolField "public"
 
 -- | Deletes an upload. Returns a 204 No content on success, a 404 Not found if
 -- doesn't exists or 403 if the user isn't allowed to remove the upload.
 deleteViewR :: Hmac -> Handler ()
 deleteViewR hmac = do
-    mKey <- tryAdminKey
+    mAdminKey <- getAdminKey
 
-    case mKey of
-        Just key -> do
+    case mAdminKey of
+        Just adminKey -> do
             validKey <- runDB $ do
                 entity@(Entity _ upload) <- getBy404 $ UniqueUploadHmac hmac
 
-                if uploadAdminKey upload == key
-                    then do
-                        removeUpload entity
-                        return True
-                    else
-                        return False
+                if isAdmin upload (Just adminKey) then do removeUpload entity
+                                                          return True
+                                                  else return False
             if validKey
                 then sendResponseStatus noContent204 ()
                 else 

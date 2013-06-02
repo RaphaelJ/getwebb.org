@@ -85,15 +85,15 @@ getUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)
            , PersistStore (YesodDB sub master)) =>
            GHandler sub master (Maybe (Entity (AccountUser master), Avatar))
 getUser = runMaybeT $ do
-        MaybeT (cacheLookup userCacheKey)
-    <|> do
-        userId <- MaybeT $ getUserId
-        info   <- MaybeT $ runDB $ runMaybeT $ do
-            user     <- MaybeT $ get userId
-            avatar   <- MaybeT $ getAvatar user
-            return (Entity userId user, avatar)
-        lift $ userCacheKey `cacheInsert` info
-        return info
+    userId <- MaybeT $ getUserId
+    (    MaybeT (cacheLookup userCacheKey)
+     <|> do
+         info <- MaybeT $ runDB $ runMaybeT $ do
+             user   <- MaybeT $ get userId
+             avatar <- MaybeT $ getAvatar user
+             return (Entity userId user, avatar)
+         lift $ userCacheKey `cacheInsert` info
+         return info)
   where
     -- Used to avoid to query multiple times the DB for the user information.
     userCacheKey = $(mkCacheKey)

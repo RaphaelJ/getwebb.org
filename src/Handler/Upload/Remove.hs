@@ -10,6 +10,8 @@ import System.Directory (removeDirectoryRecursive)
 
 import Util.Path (uploadDir)
 
+-- | Removes an upload. Decrements its owner\'s count and remove the associated
+-- file if the file is now upload-less.
 removeUpload :: Entity Upload -> YesodDB App App ()
 removeUpload (Entity uploadId upload) = do
     let fileId = uploadFile upload

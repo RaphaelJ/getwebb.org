@@ -10,8 +10,6 @@
             position: absolute;
             top: 25px;
             left: 50px;
-
-            font-family: "Chau Philomene One", sans-serif;
         }
 
         .message {

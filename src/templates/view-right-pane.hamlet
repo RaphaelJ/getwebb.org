@@ -4,7 +4,7 @@
                        tabindex=1>
             Download
 
-    $if isAdmin
+    $if isAdmin upload mAdminKey
         <div .remove>
             <a .big_button .remove_button href="#"
                onclick="removeUpload('#{hmac}'); return false">

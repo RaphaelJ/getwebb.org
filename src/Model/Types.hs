@@ -5,7 +5,6 @@ import Prelude
 import Yesod
 
 import Data.Text (Text)
-import qualified Data.Text as T
 
 -- | File types recognized.
 data FileType = Image | Audio | Video | Archive | UnknownType

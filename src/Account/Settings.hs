@@ -30,85 +30,84 @@ data AvatarResult = AvatarResult {
     }
 
 -- | Displays the sign in and the register forms in the default layout.
-getSettingsR :: YesodAccount master => GHandler Account master RepHtml
+getSettingsR :: YesodAccount parent => AccountHandler parent RepHtml
 getSettingsR = do
-    (Entity _ user, avatar) <- redirectAuth
-    (widget, enctype) <- generateFormPost $ settingsForm user avatar
+    (Entity _ user, avatar) <- lift redirectAuth
+    (widget, enctype) <- lift $ generateFormPost $ settingsForm user avatar
     displaySettings user avatar widget enctype
 
-postSettingsR :: YesodAccount master => GHandler Account master RepHtml
+postSettingsR :: YesodAccount parent => AccountHandler parent RepHtml
 postSettingsR = do
-    (Entity userId user, avatar) <- redirectAuth
-    ((res, widget), enctype) <- runFormPost $ settingsForm user avatar
+    (Entity userId user, avatar) <- lift redirectAuth
+    ((res, widget), enctype) <- lift $ runFormPost $ settingsForm user avatar
 
-    widget' <- case res of
-        FormSuccess (ar, setts) -> do
-            case ar of
-                AvatarResult True (Just f) -> do
-                    -- New user uploaded avatar.
-                    tmpDir <- getYesod >>= return . (</> "tmp") . avatarsDir
-                    (tmpPath, h) <- liftIO $ openTempFile tmpDir ""
-                    _ <- register (removeFile tmpPath)
-                    liftIO $ hClose h
-                    liftIO $ fileMove f tmpPath
+    widget' <- lift $ case res of
+        FormSuccess (AvatarResult True (Just f), setts) -> do
+            -- New user uploaded avatar.
+            tmpDir <- ((</> "tmp") . avatarsDir) <$> getYesod
+            (tmpPath, h) <- liftIO $ openTempFile tmpDir ""
+            _ <- register (removeFile tmpPath)
+            liftIO $ hClose h
+            liftIO $ fileMove f tmpPath
 
-                    eImg <- liftIO $ E.try (I.load tmpPath)
+            eImg <- liftIO $ E.try (I.load tmpPath)
 
-                    case eImg of
-                        Right img -> do
-                            runDB $ do
-                                replaceAvatar userId user avatar (genAvatar img)
-                                accountSettingsSave userId setts
-                            redirectSignIn
-                        Left (_ :: E.SomeException) ->
-                            let msg = "Invalid image." :: Text
-                            in return [whamlet|
-                                <p .errors>#{msg}
-                                ^{widget}
-                            |]
-                AvatarResult False _ | not (avatarGenerated avatar) -> do
-                    -- Restores the generated avatar.
-                    app <- getYesod
-                    img <- genIdenticon (accountEmail app user)
+            case eImg of
+                Right img -> do
                     runDB $ do
-                        replaceAvatar userId user avatar img
+                        replaceAvatar userId user avatar (genAvatar img)
                         accountSettingsSave userId setts
                     redirectSignIn
-                _ -> do
-                    runDB $ accountSettingsSave userId setts
-                    redirectSignIn
+                Left (_ :: E.SomeException) ->
+                    let msg = "Invalid image." :: Text
+                    in return [whamlet|
+                        <p .errors>#{msg}
+                        ^{widget}
+                    |]
+        FormSuccess (AvatarResult False _, setts)
+            | not (avatarGenerated avatar) -> do
+            -- Restores the generated avatar.
+            app <- getYesod
+            img <- genIdenticon (accountEmail app user)
+            runDB $ do
+                replaceAvatar userId user avatar img
+                accountSettingsSave userId setts
+            redirectSignIn
+        FormSuccess (_, setts) -> do
+            runDB $ accountSettingsSave userId setts
+            redirectSignIn
         _ -> return widget
 
     displaySettings user avatar widget' enctype
   where
     replaceAvatar userId user oldAvatar img = do
-        oldAvatarId <- lift $ getAvatarId user
+        oldAvatarId <- getAvatarId user
         removeAvatar oldAvatarId oldAvatar
 
-        app <- lift getYesod
+        app <- getYesod
         avatarId <- newAvatar img
         update userId [ accountAvatarIdField app =. avatarId ]
 
     redirectSignIn = getYesod >>= redirect . signInDest
 
-displaySettings :: YesodAccount master => AccountUser master -> Avatar
-                -> GWidget Account master () -> Enctype
-                -> GHandler Account master RepHtml
+displaySettings :: YesodAccount parent => AccountUser parent -> Avatar
+                -> ParentWidget parent () -> Enctype
+                -> AccountHandler parent RepHtml
 displaySettings user avatar widget enctype = do
-    toMaster <- getRouteToMaster
+    toMaster <- getRouteToParent
     app <- getYesod
-    defaultLayout $ do
+    lift $ defaultLayout $ do
         setTitle "Account settings | getwebb"
         $(widgetFile "account-settings")
 
 -- | Generates a form which returns the username and the password.
-settingsForm :: YesodAccount master =>
-                AccountUser master -> Avatar -> Html
-             -> MForm Account master (FormResult (AvatarResult
-                                                 , AccountSettings master)
-                                     , GWidget Account master ())
+settingsForm :: YesodAccount parent =>
+                AccountUser parent -> Avatar -> Html
+             -> MForm (ParentHandler parent)
+                      (FormResult (AvatarResult, AccountSettings parent)
+                      , ParentWidget parent ())
 settingsForm user avatar extra = do
-    app <- lift getYesod
+    app <- getYesod
     let avatarRte = avatarRoute app avatar
         generated = avatarGenerated avatar
 
@@ -134,8 +133,8 @@ settingsForm user avatar extra = do
     return ((,) <$> (AvatarResult <$> avatarRes <*> fileRes) 
                 <*> setsRes, widget)
   where
-    renderDivs' :: AForm sub master a -> 
-                   MForm sub master (FormResult a, GWidget sub master ())
+    renderDivs' :: AForm sub parent a -> 
+                   MForm sub parent (FormResult a, GWidget sub parent ())
     renderDivs' aform = renderDivs aform mempty
 
     avatarSettings =

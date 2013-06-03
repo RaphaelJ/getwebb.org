@@ -18,8 +18,7 @@ import Yesod
 import Yesod.Static
 import Yesod.Default.Config
 import Yesod.Default.Util (addStaticContentExternal)
-import qualified Database.Persist.Store
-import Database.Persist.GenericSql
+import qualified Database.Persist
 import Network.HTTP.Conduit (Manager)
 import qualified Settings
 import Settings (widgetFile, Extra (..))

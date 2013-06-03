@@ -4,7 +4,6 @@ module Model where
 import Prelude
 import Yesod
 
-import Control.Monad.IO.Class
 import Control.Monad.Trans.Writer
 import Data.Int
 import Data.Text (Text)
@@ -12,46 +11,9 @@ import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Data.Word
 
-import Database.Persist.GenericSql (Migration)
-import Database.Persist.GenericSql.Raw (SqlPersist)
+import Database.Persist.Sql (SqlPersistT, Migration)
 
--- | File types recognized.
-data FileType = Image | Audio | Video | Archive | UnknownType
-    deriving (Show, Read, Eq)
-derivePersistField "FileType"
-
-type Hmac = Text
--- | Types of resources which use an Hmac as an unique and global identifier.
-data HmacResourceType = HmacFile | HmacUpload | HmacComment | HmacArchiveFile
-    deriving (Show, Read, Eq)
-derivePersistField "HmacResourceType"
-
--- | Used to give the type of the secondary resized image which generated to
--- be displayed in the browser.
-data DisplayType = PNG | JPG | GIF
-    deriving (Show, Read, Eq)
-derivePersistField "DisplayType"
-
--- | Used to represents the different items which can be downloaded.
-data ObjectType = Original
-                | Miniature | Display DisplayType
-                | WebMAudio | MP3
-                | WebMVideo | MKV
-                | CompressedFile Hmac
-    deriving (Show, Read, Eq)
-derivePersistField "ObjectType"
-
-data VoteType = Upvote | Downvote
-    deriving (Show, Read, Eq)
-derivePersistField "VoteType"
-
--- | Used to tags background jobs.
-data JobType = Compression
-             | Transcode
-             | Resize DisplayType
-             | ExifTags
-    deriving (Show, Read, Eq)
-derivePersistField "JobType"
+import Model.Types
 
 share [mkPersist sqlOnlySettings, mkMigrate "migrateEnts"] [persistLowerCase|
 User
@@ -199,7 +161,8 @@ JobDependency
 |]
 
 -- | Creates each entities and their indexes.
-migrateAll :: (MonadIO m, MonadBaseControl IO m) => Migration (SqlPersist m)
+migrateAll :: (MonadLogger m, MonadIO m, MonadBaseControl IO m) =>
+              Migration (SqlPersistT m)
 migrateAll = do
     migrateEnts
     lift $ tell [

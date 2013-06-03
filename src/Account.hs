@@ -19,11 +19,11 @@ import Account.Auth as Account
 import Account.Register as Account
 import Account.Settings as Account
 
-mkYesodSubDispatch "Account"
-    [ ClassP ''YesodAccount [VarT $ mkName "master"] ]
-    resourcesAccount
+instance YesodAccount master =>
+         YesodSubDispatch Account (HandlerT master IO) where
+    yesodSubDispatch = $(mkYesodSubDispatch resourcesAccount)
 
--- | Initialize a new 'Account' foundation type.
+-- | Initializes a new 'Account' foundation type.
 makeAccount :: IO Account
 makeAccount = do
     reCaptachaKeys <- read `fmap` readFile "config/recaptcha"

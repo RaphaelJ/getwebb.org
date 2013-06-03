@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 -- | Provides functions to create and authenticate users.
 module Account.Util (
       newUser, validateUser, setUserId, getUserId, getUser, unsetUserId
@@ -24,31 +25,20 @@ import Account.Foundation
 
 -- | Creates a new user. Returns the ID of the created entity. Doesn't set the
 -- session value.
-newUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)
-            ~ PersistMonadBackend (YesodDB sub master)
-           , PersistEntityBackend Avatar
-            ~ PersistMonadBackend (YesodDB sub master)
-           , PersistQuery (YesodDB sub master)
-           , PersistUnique (YesodDB sub master)
-           , MonadLift (GHandler Account master) (YesodDB sub master)) =>
-           Text -> Text -> Text
-        -> YesodDB sub master (Key (AccountUser master))
+newUser :: YesodAccount parent => Text -> Text -> Text
+        -> AccountHandler parent (Key (AccountUser parent))
 newUser email name pass = do
+    sub  <- getYesod
     salt <- randomSalt
-
-    img <- lift $ genIdenticon email
-    avatarId <- newAvatar img
-
-    initUser email name (saltedHash salt pass) salt avatarId >>= insert
+    let !img = genIdenticon (acAvatarSprite sub) email
+    lift $ runDB $ do
+        avatarId <- newAvatar img
+        initUser email name (saltedHash salt pass) salt avatarId >>= insert
 
 -- | Checks the given credentials without setting the session value.
 -- Returns the user ID if succeed. Tries with the username then the email.
-validateUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)
-                 ~ PersistMonadBackend (YesodDB sub master)
-                , Functor (YesodDB sub master)
-                , PersistUnique (YesodDB sub master)) =>
-                Text -> Text
-             -> YesodDB sub master (Maybe (Key (AccountUser master)))
+validateUser :: YesodAccount parent => Text -> Text
+             -> YesodDB parent (Maybe (Key (AccountUser parent)))
 validateUser name pass = do
     app <- lift getYesod
     -- Tries by username, then by email.
@@ -65,51 +55,36 @@ validateUser name pass = do
     getValidUser unique = MaybeT $ getBy $ unique name
 
 -- | Sets the session value to the given user ID.
-setUserId :: YesodAccount master => Key (AccountUser master)
-          -> GHandler sub master ()
+setUserId :: YesodAccount parent =>
+             Key (AccountUser parent) -> ParentHandler parent ()
 setUserId = (sessionKey `setSession`) . T.pack . show
 
 -- | Returns the user's key from the user's session. Does NOT check if the key
 -- exists in the database.
-getUserId :: YesodAccount master =>
-             GHandler sub master (Maybe (Key (AccountUser master)))
+getUserId :: YesodAccount parent =>
+             ParentHandler parent (Maybe (Key (AccountUser parent)))
 getUserId = runMaybeT $ do
     userIdTxt <- MaybeT $ lookupSession sessionKey
     return $ read $ T.unpack userIdTxt
 
 -- | Returns the user entity if the user is authenticated.
-getUser :: (YesodAccount master, PersistEntityBackend (AccountUser master)
-            ~ PersistMonadBackend (YesodDB sub master)
-           , PersistEntityBackend Avatar
-            ~ PersistMonadBackend (YesodDB sub master)
-           , PersistStore (YesodDB sub master)) =>
-           GHandler sub master (Maybe (Entity (AccountUser master), Avatar))
+getUser :: YesodAccount parent =>
+           ParentHandler parent (Maybe (Entity (AccountUser parent), Avatar))
 getUser = runMaybeT $ do
     userId <- MaybeT $ getUserId
-    (    MaybeT (cacheLookup userCacheKey)
-     <|> do
-         info <- MaybeT $ runDB $ runMaybeT $ do
+    MaybeT $ runDB $ runMaybeT $ do -- TODO: Cache
              user   <- MaybeT $ get userId
              avatar <- MaybeT $ getAvatar user
              return (Entity userId user, avatar)
-         lift $ userCacheKey `cacheInsert` info
-         return info)
-  where
-    -- Used to avoid to query multiple times the DB for the user information.
-    userCacheKey = $(mkCacheKey)
 
 -- | Resets the session value so the user is now no more connected.
-unsetUserId :: YesodAccount master => GHandler sub master ()
+unsetUserId :: YesodAccount parent => ParentHandler parent ()
 unsetUserId = deleteSession sessionKey
 
--- | Returns the user entity or invokes a 403 Permission denied if the user 
+-- | Returns the user entity or invokes a 403 Permission denied if the user
 -- isn't authenticated.
-requireAuth :: (YesodAccount master, PersistEntityBackend (AccountUser master)
-                ~ PersistMonadBackend (YesodDB sub master)
-               , PersistEntityBackend Avatar
-                ~ PersistMonadBackend (YesodDB sub master)
-               , PersistStore (YesodDB sub master)) =>
-               GHandler sub master (Entity (AccountUser master), Avatar)
+requireAuth :: YesodAccount parent =>
+               ParentHandler parent (Entity (AccountUser parent), Avatar)
 requireAuth = do
     mUser <- getUser
 
@@ -119,31 +94,22 @@ requireAuth = do
 
 -- | Returns the user entity. If the user is not authenticated, redirects to
 -- the login page.
-redirectAuth :: (YesodAccount master, PersistEntityBackend (AccountUser master)
-                 ~ PersistMonadBackend (YesodDB sub master)
-                , PersistEntityBackend Avatar
-                 ~ PersistMonadBackend (YesodDB sub master)
-                , PersistStore (YesodDB sub master)) =>
-                GHandler sub master (Entity (AccountUser master), Avatar)
+redirectAuth :: YesodAccount parent =>
+                ParentHandler parent (Entity (AccountUser parent), Avatar)
 redirectAuth = do
     mUser <- getUser
 
     case mUser of
         Just user -> return user
         Nothing   -> do
-            master <- getYesod
+            parent <- getYesod
             setUltDestCurrent
-            case authRoute master of
+            case authRoute parent of
                 Just rte -> redirect rte
                 Nothing  -> permissionDenied "Please configure authRoute"
 
 -- | Redirects to 'signInDest' if the user is authenticated.
-redirectNoAuth :: (YesodAccount master, PersistMonadBackend (YesodDB sub master)
-                   ~ PersistEntityBackend (AccountUser master)
-                  , PersistEntityBackend Avatar
-                   ~ PersistMonadBackend (YesodDB sub master)
-                  , PersistStore (YesodDB sub master)) =>
-                  GHandler sub master ()
+redirectNoAuth :: YesodAccount parent => ParentHandler parent ()
 redirectNoAuth = do
     mUser <- getUser
     case mUser of

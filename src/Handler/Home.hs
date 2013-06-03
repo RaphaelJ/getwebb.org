@@ -7,7 +7,7 @@ import Import
 import Data.Text as T
 import Text.Julius (rawJS)
 
-import Database.Persist.GenericSql (rawSql)
+import Database.Persist.Sql (rawSql)
 
 import Handler.Download (routeFile)
 import Handler.Upload (uploadForm)

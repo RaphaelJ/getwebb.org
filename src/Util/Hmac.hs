@@ -14,8 +14,8 @@ import Data.Digits (digits)
 import Data.Maybe
 import qualified Data.Text as T
 
-import Database.Persist.Store (PersistValue (..))
-import Database.Persist.GenericSql.Raw (SqlBackend)
+import Database.Persist (PersistValue (..))
+import Database.Persist.Sql (SqlBackend)
 
 -- | Number of characters in an HMAC.
 hmacLength :: Int

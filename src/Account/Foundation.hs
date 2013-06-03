@@ -1,21 +1,24 @@
-{-# LANGUAGE ImpredicativeTypes #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ImpredicativeTypes, RankNTypes #-}
 module Account.Foundation where
 
 import Prelude
-import Control.Monad.Trans (MonadTrans)
 import Data.Int
 import qualified Data.Array as A
 import Data.Text (Text)
-import Language.Haskell.TH (Pred (..), Type (..), mkName)
 
+import Database.Persist.Sql (SqlBackend)
 import Yesod
+
 import qualified Vision.Image as I
+
+-- | The sprite contains the set of patterns which can be used to build a random
+-- avatar (identicon).
+newtype Sprite = Sprite (A.Array Int I.GreyImage)
 
 data Account = Account {
       -- | The public and the private reCaptcha keys.
       acRecaptchaKeys :: (Text, Text)
-    , acAvatarSprite :: A.Array Int I.GreyImage
+    , acAvatarSprite :: Sprite
     }
 
 -- | The key used in the sessions to store the user's ID.
@@ -38,23 +41,28 @@ Avatar
 
 type AvatarNum = Int64
 
--- | Defines a few parameters, getters and lookup functions to interact with the 
--- master site routes and entities.
-class (Yesod master, YesodPersist master, RenderMessage master FormMessage
-      , PersistEntity (AccountUser master)
-      , PersistEntityBackend (AccountUser master)
-        ~ PersistMonadBackend (YesodDB Account master)
-      , PersistEntityBackend Avatar
-        ~ PersistMonadBackend (YesodDB Account master)
-      , PersistQuery (YesodDB Account master)
-      , PersistUnique (YesodDB Account master)
-      , MonadTrans (YesodPersistBackend master)
-      , Functor (YesodDB Account master)) => YesodAccount master where
-    type AccountUser     master :: *
-    type AccountSettings master :: *
+type AccountHandler parent = HandlerT Account (HandlerT parent IO)
+type ParentHandler  parent = HandlerT parent  IO
+type ParentWidget   parent = WidgetT  parent  IO
+
+-- | Defines a few parameters, getters and lookup functions to interact with the
+-- parent site routes and entities.
+class (Yesod parent, YesodPersist parent, RenderMessage parent FormMessage
+      , PersistEntity (AccountUser parent)
+      , PersistEntityBackend (AccountUser parent)
+        ~ PersistMonadBackend (YesodDB parent)
+      , PersistEntityBackend Avatar ~ PersistMonadBackend (YesodDB parent)
+      , PersistEntityBackend (AccountUser parent) ~ SqlBackend
+      , PersistMonadBackend (YesodDB parent) ~ SqlBackend
+      , PersistQuery (YesodDB parent)
+      , PersistUnique (YesodDB parent)
+      , MonadTrans (YesodPersistBackend parent)
+      , Functor (YesodDB parent)) => YesodAccount parent where
+    type AccountUser     parent :: *
+    type AccountSettings parent :: *
 
     -- | Post sign in/sign out routes.
-    signInDest, signOutDest :: master -> Route master
+    signInDest, signOutDest :: parent -> Route parent
 
     -- | Initialise a new user value (musn't add the user to the database).
     initUser :: Text      -- ^ Email
@@ -62,34 +70,33 @@ class (Yesod master, YesodPersist master, RenderMessage master FormMessage
              -> Text      -- ^ Hashed password
              -> Text      -- ^ Salt used to hash the password
              -> AvatarNum
-             -> YesodDB sub master (AccountUser master)
+             -> YesodDB parent (AccountUser parent)
 
     -- | Unique keys to fetch users from the database.
-    emailLookup, usernameLookup :: master -> Text -> Unique (AccountUser master)
+    emailLookup, usernameLookup :: parent -> Text -> Unique (AccountUser parent)
 
     -- | Accesses data from the user account data type.
     accountEmail, accountUsername, accountPassword, accountSalt ::
-        master -> AccountUser master -> Text
+        parent -> AccountUser parent -> Text
 
-    accountAvatarId :: master -> AccountUser master -> AvatarNum
+    accountAvatarId :: parent -> AccountUser parent -> AvatarNum
 
     -- | Used to change the avatar\' ID of the user.
-    accountAvatarIdField :: master -> EntityField (AccountUser master) AvatarNum
+    accountAvatarIdField :: parent -> EntityField (AccountUser parent) AvatarNum
 
     -- | Form used on the settings page and which is added to the avatar form.
-    accountSettingsForm :: AccountUser master
-                        -> AForm sub master (AccountSettings master)
+    accountSettingsForm :: AccountUser parent
+                        -> AForm m (AccountSettings parent)
 
     -- | Saves the new user settings to the database.
-    accountSettingsSave :: Key (AccountUser master) -> (AccountSettings master)
-                        -> YesodDB sub master ()
+    accountSettingsSave :: Key (AccountUser parent) -> (AccountSettings parent)
+                        -> YesodDB parent ()
 
     -- | Directory where avatars will be stored.
-    avatarsDir :: master -> FilePath
+    avatarsDir :: parent -> FilePath
 
    -- | How to get a route in the avatars directory.
-    avatarsDirRoute :: master -> [Text] -> Route master
+    avatarsDirRoute :: parent -> [Text] -> Route parent
 
 mkYesodSubData "Account"
-    [ ClassP ''YesodAccount [VarT $ mkName "master"] ]
     $(parseRoutesFile "config/routes_account")

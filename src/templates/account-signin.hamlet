@@ -2,12 +2,12 @@
     <div #page_content>
         <h1>Sign in
 
-        <form method=post action=@{toMaster SignInR}
+        <form method=post action=@{toParent SignInR}
                         enctype=#{enctype}>
             <table>
                 ^{widget}
 
             <input .big_button type=submit value="Sign in" />
             or
-            <a href=@{toMaster RegisterR}>
+            <a href=@{toParent RegisterR}>
                 create a new account

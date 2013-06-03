@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedString #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings #-}
 -- | Defines a set of various functions used in API requests/responses.
 module Util.API (
       APIError (..), ToAPIError (..), sendErrorResponse,  withFormSuccess

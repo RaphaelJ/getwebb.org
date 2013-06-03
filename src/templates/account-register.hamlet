@@ -2,7 +2,7 @@
     <div #page_content>
         <h1>Register
 
-        <form method=post action=@{toMaster RegisterR} enctype=#{enctype}>
+        <form method=post action=@{toParent RegisterR} enctype=#{enctype}>
             <ul #features>
                 <li>
                     <h3>Trace back
@@ -20,6 +20,6 @@
 
             <input .big_button type=submit value="Create an account" />
             or
-            <a href=@{toMaster SignInR}>
+            <a href=@{toParent SignInR}>
                 sign in
             using an existing account

@@ -14,8 +14,8 @@ import Yesod.Default.Config
 import Yesod.Default.Main
 import Yesod.Default.Handlers
 import Control.Monad.Logger (runLoggingT)
-import Database.Persist.GenericSql (runMigration)
-import qualified Database.Persist.Store
+import Database.Persist.Sql (runMigration)
+import qualified Database.Persist
 import Network.Wai.Middleware.Autohead (autohead)
 import Network.Wai.Middleware.RequestLogger
 import Network.HTTP.Conduit (newManager, def)
@@ -83,9 +83,9 @@ makeFoundation conf = do
     account <- makeAccount
 
     dbconf <- withYamlEnvironment "config/sqlite.yml" (appEnv conf)
-              Database.Persist.Store.loadConfig >>=
-              Database.Persist.Store.applyEnv
-    p <- Database.Persist.Store.createPoolConfig (dbconf :: Settings.PersistConfig)
+              Database.Persist.loadConfig >>=
+              Database.Persist.applyEnv
+    p <- Database.Persist.createPoolConfig (dbconf :: Settings.PersistConfig)
     logger <- mkLogger True stdout
     key <- getEncryptionKey
 

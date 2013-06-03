@@ -13,42 +13,43 @@ import Account.Util (validateUser, setUserId, unsetUserId, redirectNoAuth)
 import Settings (widgetFile)
 
 -- | Displays the sign in form in the default layout.
-getSignInR :: YesodAccount master => GHandler Account master RepHtml
+getSignInR :: YesodAccount parent => AccountHandler parent RepHtml
 getSignInR = do
-    redirectNoAuth
-    generateFormPost signInForm >>= showForm
+    lift redirectNoAuth
+    lift (generateFormPost signInForm) >>= showForm
 
 -- | Tries to sign in the user.
-postSignInR :: YesodAccount master => GHandler Account master RepHtml
+postSignInR :: YesodAccount parent => AccountHandler parent RepHtml
 postSignInR = do
-    redirectNoAuth
-    ((res, widget), enctype) <- runFormPost signInForm
+    lift redirectNoAuth
+    ((res, widget), enctype) <- lift (runFormPost signInForm)
 
     case res of
-        FormSuccess userId -> do
+        FormSuccess userId -> lift $ do
             setUserId userId
             getYesod >>= redirect . signInDest
         _ -> showForm (widget, enctype)
 
 -- | Removes the session value so the user is then signed out. Then redirects.
-getSignOutR :: YesodAccount master => GHandler Account master ()
-getSignOutR = do
+getSignOutR :: YesodAccount parent => AccountHandler parent ()
+getSignOutR = lift $ do
     unsetUserId
     getYesod >>= redirect . signOutDest
 
 -- | Responds with the sign in and the register forms in the default layout.
-showForm :: YesodAccount master => (GWidget Account master (), Enctype)
-         -> GHandler Account master RepHtml
+showForm :: YesodAccount parent =>
+            (ParentWidget parent (), Enctype) -> AccountHandler parent RepHtml
 showForm (widget, enctype) = do
-    toMaster <- getRouteToMaster
-    defaultLayout $ do
+    toParent <- getRouteToParent
+    lift $ defaultLayout $ do
         setTitle "Sign in | getwebb"
         $(widgetFile "account-signin")
 
 -- | Generates a form which returns the username and the password.
-signInForm :: YesodAccount master => Html
-           -> MForm Account master (FormResult (Key (AccountUser master))
-                                   , GWidget Account master ())
+signInForm :: YesodAccount parent => Html
+           -> MForm (ParentHandler parent) 
+                    (FormResult (Key (AccountUser parent))
+                    , ParentWidget parent ())
 signInForm html = do
     let form = (,) <$> areq textField     usernameSettings Nothing
                    <*> areq passwordField passwordSettings Nothing

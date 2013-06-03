@@ -29,7 +29,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
 
 import Control.Monad.Trans.Resource (ResourceT, runResourceT)
-import Database.Persist.Store (runPool)
+import Database.Persist (runPool)
 import System.TimeIt (timeItT)
 
 import Foundation (

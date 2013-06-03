@@ -15,29 +15,31 @@ import Account.Util (newUser, setUserId, redirectNoAuth)
 import Settings (widgetFile)
 
 -- | Displays the register form in the default layout.
-getRegisterR :: YesodAccount master => GHandler Account master RepHtml
+getRegisterR :: YesodAccount parent => AccountHandler parent RepHtml
 getRegisterR = do
-    redirectNoAuth
-    generateFormPost registerForm >>= showForm
+    lift redirectNoAuth
+    lift (generateFormPost registerForm) >>= showForm
 
 -- | Tries to register the user.
-postRegisterR :: YesodAccount master => GHandler Account master RepHtml
+postRegisterR :: YesodAccount parent => AccountHandler parent RepHtml
 postRegisterR = do
-    redirectNoAuth
-    ((res, widget), enctype) <- runFormPost registerForm
+    lift redirectNoAuth
+    ((res, widget), enctype) <- lift (runFormPost registerForm)
 
     case res of
         FormSuccess (email, name, pass) -> do
-            runDB (newUser email name pass) >>= setUserId
-            getYesod >>= (redirect . signInDest)
+            userId <- newUser email name pass
+            lift $ do
+                setUserId userId
+                getYesod >>= redirect . signInDest
         _ -> showForm (widget, enctype)
 
 -- | Responds with the register form in the default layout.
-showForm :: YesodAccount master => (GWidget Account master (), Enctype)
-         -> GHandler Account master RepHtml
+showForm :: YesodAccount parent => (ParentWidget parent (), Enctype)
+         -> AccountHandler parent RepHtml
 showForm (widget, enctype) = do
-    toMaster <- getRouteToMaster
-    defaultLayout $ do
+    toParent <- getRouteToParent
+    lift $ defaultLayout $ do
         setTitle "Register | getwebb"
         $(widgetFile "account-register")
 
@@ -45,9 +47,9 @@ data RegisterRes = RegisterRes {
       rrEmail :: Text, rrUsername :: Text, rrPassword :: Text, rrConfirm :: Text
     }
 
-registerForm :: YesodAccount master => Html
-             -> MForm Account master (FormResult (Text, Text, Text)
-                                     , GWidget Account master ())
+registerForm :: YesodAccount parent => Html 
+             -> MForm (ParentHandler parent) (FormResult (Text, Text, Text)
+                                             , ParentWidget parent ())
 registerForm html = do
     let form = RegisterRes <$> areq emailField'    emailSettings    Nothing
                            <*> areq usernameField  usernameSettings Nothing

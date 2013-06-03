@@ -13,8 +13,8 @@ import System.FilePath
 import System.IO
 
 import Control.Monad.Trans.Either
-import Database.Persist.GenericSql (Single (..), rawSql)
-import Database.Persist.Store (PersistValue (..))
+import Database.Persist (PersistValue (..))
+import Database.Persist.Sql (Single (..), rawSql)
 import qualified Data.ByteString.Lazy as B
 import Data.Digest.Pure.SHA (sha1, showDigest)
 import qualified Data.Text as T

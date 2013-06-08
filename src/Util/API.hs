@@ -2,13 +2,16 @@
 -- | Defines a set of various functions used in API requests/responses.
 module Util.API (
       APIError (..), ToAPIError (..)
-    , sendErrorResponse, sendObjectCreated, withFormSuccess
+    , sendObjectCreated, sendNoContent, sendErrorResponse, sendInvalidAdminKey
+    , withFormSuccess
     ) where
 
 import Import
 
 import Data.String (IsString)
-import Network.HTTP.Types.Status (Status, badRequest400, created201)
+import Network.HTTP.Types.Status (
+      Status, badRequest400, created201, noContent204, forbidden403
+    )
 
 import Util.Hmac (Hmac)
 
@@ -24,14 +27,8 @@ instance ToAPIError APIError where
 instance ToAPIError Text where
     toAPIError = APIError
 
--- | Responds to the client with a status code and a set of errors in an JSON
--- array.
-sendErrorResponse :: (MonadHandler m, ToAPIError a) => Status -> [a] -> m b
-sendErrorResponse status errs =
-    sendResponseStatus status (array $ map toAPIError errs)
-
--- | Responds to the client with a JSON object containing the hmac of the object
--- and eventually the url to the object.
+-- | Responds to the client with a 201 Created and a JSON object containing the
+-- HMAC of the object and eventually the URL to the object.
 sendObjectCreated :: MonadHandler m =>
                      Hmac -> Maybe (Hmac -> Route (HandlerSite m)) -> m a
 sendObjectCreated hmac (Just route) = do
@@ -42,6 +39,24 @@ sendObjectCreated hmac (Just route) = do
         ]
 sendObjectCreated hmac Nothing      =
     sendResponseStatus created201 $ object [ "id" .= hmac ]
+
+-- | Responds to the client with a 204 created indicating a successful
+-- operation.
+sendNoContent :: MonadHandler m => m a
+sendNoContent = sendResponseStatus noContent204 ()
+
+-- | Responds to the client with a status code and a set of errors in an JSON
+-- array.
+sendErrorResponse :: (MonadHandler m, ToAPIError a) => Status -> [a] -> m b
+sendErrorResponse status errs =
+    sendResponseStatus status (array $ map toAPIError errs)
+
+-- | Responds to the client with a 403 status code and a JSON array containing
+-- the error saying that he has no ownership on the object.
+sendInvalidAdminKey :: MonadHandler m => m a
+sendInvalidAdminKey =
+    let msg = "You are not the owner of this resource." :: Text
+    in sendErrorResponse forbidden403 [msg]
 
 -- | Executes the inner action if the form has been correctly encoded, responds
 -- with a 400 Bad request with a JSON array of errors otherwise.

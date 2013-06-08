@@ -11,13 +11,13 @@ import Data.Maybe
 import qualified Data.ByteString as B
 
 import Network.HTTP.Types.Header (hUserAgent)
-import Network.HTTP.Types.Status (noContent204)
 import Network.Wai (requestHeaders)
 import System.Directory (removeDirectoryRecursive)
 import Text.Hamlet (shamlet)
 import Text.Julius (rawJS)
 
 import Handler.Comment (maxCommentLength, commentForm)
+import Util.API (sendNoContent, sendInvalidAdminKey, withFormSuccess)
 import Util.Date (getDiffTime)
 import Util.Pretty (
       PrettyNumber (..), PrettyFileSize (..), PrettyDuration (..)
@@ -28,11 +28,11 @@ import Util.Extras (
       Extras (..), getFileExtras, getUploadStats
     , getIcon, getImage, getMiniature, getAudioSources, getArchive
     )
-import Util.Hmac (splitHmacs, joinHmacs)
+import Util.Hmac (Hmac (..))
 import Util.Path (uploadDir)
 
 -- | Shows information about an upload.
-getViewR :: Hmac -> Handler RepHtml
+getViewR :: Text -> Handler RepHtml
 getViewR hmacs' = do
     when (null hmacs)
         notFound
@@ -123,10 +123,20 @@ patchViewR :: Hmac -> Handler ()
 patchViewR hmac = do
     ((res, _), _) <- runFormPost form
 
-    withFormSuccess res $ \(mTitle, mPublic) ->
+    withFormSuccess res $ \(mTitle, mPublic) -> do
         mAdminKey <- getAdminKey
-        case 
-
+        case mAdminKey of
+            Just adminKey -> runDB $ do
+                Entity uploadId upload <- getBy404 $ UniqueUploadHmac hmac
+                if isAdmin upload mAdminKey
+                    then 
+                        update uploadId $ catMaybe [
+                              (UpdateTitle =.)  <$> mTitle
+                            , (UpdatePublic =.) <$> mPublic
+                            ]
+                        sendNoContent
+                    else sendInvalidAdminKey
+            Nothing -> sendInvalidAdminKey
   where
     form = (,) <$> aopt textField titleSettings  Nothing
                <*> aopt boolField publicSettings Nothing
@@ -148,19 +158,16 @@ deleteViewR hmac = do
     mAdminKey <- getAdminKey
 
     case mAdminKey of
-        Just adminKey -> do
-            validKey <- runDB $ do
-                entity@(Entity _ upload) <- getBy404 $ UniqueUploadHmac hmac
+        Just adminKey -> runDB $ do
+            entity@(Entity _ upload) <- getBy404 $ UniqueUploadHmac hmac
 
-                if isAdmin upload (Just adminKey) then do removeUpload entity
-                                                          return True
-                                                  else return False
-            if validKey
-                then sendResponseStatus noContent204 ()
-                else 
-                    permissionDenied "Your are not the owner of this upload."
+            if isAdmin upload mAdminKey
+                then do removeUpload entity
+                        sendNoContent
+                else sendInvalidAdminKey
+        Nothing -> sendInvalidAdminKey
 
-        Nothing -> permissionDenied "Your admin key cookie is empty."
+-- Utilities -------------------------------------------------------------------
 
 -- | Removes an upload. Decrements its owner\'s count and remove the associated
 -- file if the file is now upload-less.
@@ -196,4 +203,3 @@ removeUpload (Entity uploadId upload) = do
         app <- lift $ getYesod
         let dir = uploadDir app (fileHash file)
         liftIO $ removeDirectoryRecursive dir
-

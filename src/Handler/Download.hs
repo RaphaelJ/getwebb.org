@@ -55,9 +55,7 @@ getDownloadR hmacs' = do
     -- header.
 
     case fromPathPiece hmacs' of
-        Nothing             -> notFound
-        Just (Hmacs [])     -> notFound
-        Just (Hmacs [hmac]) -> do
+        Just (Hmacs [hmac])       -> do
             query <- parseQuery
             case query of
                 Just (Display _)               -> streamDisplayable hmac
@@ -66,6 +64,7 @@ getDownloadR hmacs' = do
                 Just requestType               -> streamFile hmac requestType
                 Nothing                        -> notFound
         Just (Hmacs hmacs@(_:_))  -> streamFiles hmacs
+        _                         -> notFound
   where
     -- Streams a simple file to the client.
     streamFile hmac requestType = do

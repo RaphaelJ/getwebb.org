@@ -14,7 +14,7 @@ import Network.HTTP.Types.Status (
 
 import Account (getUser)
 import Handler.Upload.Processing (UploadError (..), processFile)
-import Util.API (sendErrorResponse, sendObjectCreated, withFormSuccess)
+import Util.API (sendObjectCreated, sendErrorResponse, withFormSuccess)
 
 data Options = Options {
       optPublic :: Bool

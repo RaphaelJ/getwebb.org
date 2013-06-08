@@ -14,8 +14,8 @@ import Yesod.Default.Config
 import Yesod.Default.Main
 import Yesod.Default.Handlers
 import Control.Monad.Logger (runLoggingT)
+import Database.Persist (runPool)
 import Database.Persist.Sql (runMigration)
-import qualified Database.Persist
 import Network.Wai.Middleware.Autohead (autohead)
 import Network.Wai.Middleware.RequestLogger
 import Network.HTTP.Conduit (newManager, def)
@@ -37,11 +37,8 @@ import Handler.Home
 import Handler.Upload
 import Handler.View
 
-import qualified Handler.Upload.Compression as C
-import qualified Handler.Upload.Image as I
-import qualified Handler.Upload.Media as M
-
-import qualified Util.JobsDaemon as J
+import qualified JobsDaemon.Daemon as J
+import qualified JobsDaemon.Restore as J
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -58,7 +55,7 @@ makeApplication conf = do
 
     -- Starts the background processes.
     let nJobsThreads = extraJobsThreads $ appExtra conf
-    replicateM_ nJobsThreads (J.forkJobsDaemon foundation)
+    J.forkJobsDaemon nJobsThreads foundation
 
     -- Initialize the logging middleware
     logWare <- mkRequestLogger def {
@@ -98,11 +95,10 @@ makeFoundation conf = do
 
     -- Performs database migrations using our application's logging settings.
     let migrations = migrateAccount >> migrateAll
-    runLoggingT
-        (Database.Persist.Store.runPool dbconf (runMigration migrations) p)
-        (messageLoggerSource foundation logger)
+    runLoggingT (runPool dbconf (runMigration migrations) p)
+                (messageLoggerSource foundation logger)
 
-    restoreJobQueue foundation
+    J.restoreJobQueue foundation
 
     return foundation
 
@@ -116,27 +112,6 @@ getEncryptionKey = do
             (bs, _) <- randomKey
             S.writeFile encryptKeyFile bs
             return $ L.fromStrict bs
-
--- | Reloads the saved state of the background processing queue.
-restoreJobQueue :: App -> IO ()
-restoreJobQueue app =
-    J.runDBIO app $ do
-        jobs <- selectList [JobCompleted ==. False] [Asc JobFile]
-        forM_ jobs $ \(Entity jobId job) -> do
-            deps <- getDependencies jobId
-
-            let fileId = jobFile job
-                typ = jobType job
-            liftIO $ J.enqueueJob app jobId deps (action fileId typ)
-  where
-    getDependencies jobId =
-        selectList [JobDependencyJob ==. jobId] [] >>=
-        return . map (jobDependencyDependency . entityVal)
-
-    action fileId Compression  = C.compressFile app fileId
-    action fileId Transcode    = M.transcodeFile app fileId
-    action fileId (Resize typ) = I.jobResize typ app fileId
-    action fileId ExifTags     = I.jobExifTags app fileId
 
 -- for yesod devel
 getApplicationDev :: IO (Int, Application)

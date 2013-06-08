@@ -1,6 +1,4 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE BangPatterns, OverloadedStrings, ScopedTypeVariables #-}
 -- | Recognises images and create miniature for them.
 module Handler.Upload.Image (
     -- * Constants
@@ -8,9 +6,7 @@ module Handler.Upload.Image (
     -- * Upload processing
     , processImage
     -- * Images processing
-    , miniature, displayable, exifTags
-    -- * Jobs
-    , jobResize, jobExifTags
+    , miniature
     ) where
 
 import Import
@@ -30,8 +26,10 @@ import Graphics.Exif (fromFile, allTags)
 import Graphics.Exif.Internals (tagFromName, tagTitle)
 import System.TimeIt (timeIt)
 
-import qualified Handler.Upload.Compression as C
-import Util.JobsDaemon (registerJob, runDBIO)
+import qualified JobsDaemon.Compression as C
+import qualified JobsDaemon.ResizeImage as R
+import qualified JobsDaemon.ExifTags    as EXIF
+import JobsDaemon.Util (registerJob, runDBIO)
 import Util.Path (uploadDir, getPath, getFileSize)
 
 -- | Files extensions which are supported by the DevIL image library.
@@ -46,11 +44,6 @@ extensions = S.fromDistinctAscList [
 -- | The size of miniatures in pixels (both in width and height).
 miniatureSize :: Int
 miniatureSize = 100
-
--- | The maximum size of an image to be displayed in the viewer.
-maxImageSize :: I.Size
-maxW, maxH :: Int
-maxImageSize@(I.Size maxW maxH) = I.Size 2048 1200
 
 -- | Try to open the image and to generate a miniature.
 processImage :: FilePath -> Text -> FileId -> Handler Bool
@@ -72,13 +65,12 @@ processImage path ext fileId | not (ext `S.member` extensions) = return False
                 let miniImg = miniature img
                 I.save miniImg (getPath dir Miniature)
 
-            (displayType, displayJobId) <- genDisplayable dir size img
+            (displayType, mDisplayJobId) <- genDisplayable dir size img
 
             -- Starts a background job to seek the EXIF tags of the
             -- image.
             let exifJob = jobExifTags app fileId
-            exifJobId <- liftIO $
-                registerJob app fileId ExifTags [] exifJob
+            exifJobId <- liftIO $ EXIF.putFile app fileId
 
             _ <- runDB $ do
                 update fileId [FileType =. Image]
@@ -90,9 +82,9 @@ processImage path ext fileId | not (ext `S.member` extensions) = return False
                     , imageAttrsDisplayable = displayType
                     }
 
-            -- Compresses the file after the EXIF tags and the
-            -- displayable image processes have been executed.
-            let compressDeps = exifJobId : maybeToList displayJobId
+            -- Compresses the file after the EXIF tags and the displayable image
+            -- processes have been executed.
+            let compressDeps = exifJobId : maybeToList mDisplayJobId
             _ <- liftIO $ C.putFile app fileId compressDeps
 
             return True
@@ -118,24 +110,12 @@ processImage path ext fileId | not (ext `S.member` extensions) = return False
         app <- getYesod
         if w > maxW || h > maxH
             then liftIO $ do
-                let job = jobResize destType app fileId
-                jobId <- registerJob app fileId (Resize destType) [] job
+                jobId <- R.putFile app fileId destType []
                 return (Nothing, Just jobId)
             else
                 return (Nothing, Nothing)
 
--- -----------------------------------------------------------------------------
-
--- | Returns an image which has been scaled down if its size is larger than
--- 'maxImageSize'
-displayable :: I.RGBImage -> I.RGBImage
-displayable img | w > maxW || h > maxH =
-    I.resize I.NearestNeighbor img size'
-  where
-    I.Size w h = I.getSize img
-    maxRatio = max (w % maxW) (h % maxH)
-    size' = I.Size (round $ (w % 1) / maxRatio) (round $ (h % 1) / maxRatio)
-displayable img                        = img
+    I.Size maxW maxH = R.maxImageSize
 
 -- | Generates a miniature from the input image.
 miniature :: I.RGBImage -> I.RGBImage
@@ -168,54 +148,3 @@ miniature img =
 
     I.Size w h = I.getSize img
     !miniSize = I.Size miniatureSize miniatureSize
-
--- | Reads EXIF tags from the image file. Returns an empty list if the image
--- doesn't support EXIF tags.
-exifTags :: FilePath -> IO [(Text, Text)]
-exifTags path = do
-    eTags <- E.try $ do
-        tags <- fromFile path >>= allTags
-        forM tags $ \(!name, !value) -> do
-            title <- tagFromName name >>= tagTitle
-            E.evaluate (T.pack title, T.pack value)
-
-    case eTags of
-        Right tags -> return tags
-        Left (_ :: E.SomeException) -> return []
-
--- -----------------------------------------------------------------------------
-
--- | Generates a resized image in background. Doesn't save the displayable
--- file if this one is larger than the original file.
-jobResize :: DisplayType -> App -> FileId -> IO ()
-jobResize destType app fileId = do
-    Just file <- runDBIO app $ get fileId
-
-    let dir = uploadDir app (fileHash file)
-        path = getPath dir Original
-        destPath = getPath dir (Display destType)
-
-    img <- I.load path
-
-    I.save (displayable img) destPath
-    newSize <- getFileSize destPath
-
-    if newSize < fileSize file
-        then runDBIO app $
-                updateWhere [ImageAttrsFile ==. fileId]
-                            [ImageAttrsDisplayable =. Just destType]
-        else removeFile destPath
-
--- | Reads and saves the EXIF tags of an image in the database.
-jobExifTags :: App -> FileId -> IO ()
-jobExifTags app fileId = do
-    Just file <- runDBIO app $ get fileId
-
-    let path = getPath (uploadDir app (fileHash file)) Original
-
-    tags <- exifTags path
-
-    when (not $ null tags) $ do
-        runDBIO app $
-            forM_ tags $ \(title, value) ->
-                insertUnique $ ExifTag fileId title value

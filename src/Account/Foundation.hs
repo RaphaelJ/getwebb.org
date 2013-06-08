@@ -56,6 +56,8 @@ class (Yesod parent, YesodPersist parent, RenderMessage parent FormMessage
       , PersistMonadBackend (YesodDB parent) ~ SqlBackend
       , PersistQuery (YesodDB parent)
       , PersistUnique (YesodDB parent)
+      , HandlerSite (YesodDB parent) ~ parent
+      , MonadHandler (YesodDB parent)
       , MonadTrans (YesodPersistBackend parent)
       , Functor (YesodDB parent)) => YesodAccount parent where
     type AccountUser     parent :: *
@@ -85,7 +87,8 @@ class (Yesod parent, YesodPersist parent, RenderMessage parent FormMessage
     accountAvatarIdField :: parent -> EntityField (AccountUser parent) AvatarNum
 
     -- | Form used on the settings page and which is added to the avatar form.
-    accountSettingsForm :: AccountUser parent
+    accountSettingsForm :: (MonadHandler m, HandlerSite m ~ parent) =>
+                           AccountUser parent
                         -> AForm m (AccountSettings parent)
 
     -- | Saves the new user settings to the database.

@@ -1,5 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 -- | Recognises zip archives and adds their content to the database.
 module Handler.Upload.Archive (
       ArchiveTree (..), extensions, processArchive, archiveTree, treeToHtml
@@ -19,8 +18,8 @@ import System.FilePath (splitDirectories, hasTrailingPathSeparator)
 import qualified Codec.Archive.Zip as Z
 import Text.Hamlet (shamlet)
 
-import qualified Handler.Upload.Compression as C
-import Util.Hmac (newHmac)
+import qualified JobsDaemon.Compression as C
+import Util.Hmac (Hmac, newHmac)
 import Util.Pretty (PrettyFileSize (..), wrappedText)
 
 -- | Represents a hierarchy of files within an archive.

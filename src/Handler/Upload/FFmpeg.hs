@@ -1,4 +1,4 @@
--- | Functions which are useful to communicate with the FFmpeg command.
+-- | Wrapper over the FFmpeg command.
 module Handler.Upload.FFmpeg (
       MediaInfo (..), MediaDuration (..), FFmpegArgs
     , ffmpeg, ffprobe, argsProbe, argsWebM, argsH264, argsWebMAudio, argsMP3
@@ -28,7 +28,7 @@ data MediaInfo = MediaInfo { miType :: FileType, miDuration :: MediaDuration }
     deriving (Show)
 
 data MediaDuration = MediaDuration {
-      dHours :: Int, dMins :: Int, dSecs :: Int, dCenti :: Int
+      mdHours :: Int, mdMins :: Int, mdSecs :: Int, mdCentis :: Int
     }
 
 instance Show MediaDuration where

@@ -7,7 +7,7 @@ module Handler.Download (
     -- * Transmission utilities
     , trackedBS, lazyBSToSource
     -- * URL utilities
-    , routeFile
+    , downloadRoute
     -- * Views daemon buffer management
     , ViewsBuffer, ViewsBufferEntry, viewsCommitDelay, newBuffer
     , incrementViewCount, addBandwidth, getBufferEntry
@@ -44,9 +44,9 @@ import Network.Mime (defaultMimeLookup)
 import Network.Wai (requestHeaders)
 import System.IO.Unsafe (unsafeInterleaveIO)
 
-import Util.Hmac (splitHmacs)
-import Util.JobsDaemon (runDBIO)
-import Util.Path (uploadDir, getPath)
+import JobsDaemon.Util (runDBIO)
+import Util.Hmac (Hmac (..), Hmacs (..))
+import Util.Path (ObjectType (..), uploadDir, getPath)
 
 -- | Streams the content of a file over HTTP.
 getDownloadR :: Text -> Handler ()
@@ -54,9 +54,10 @@ getDownloadR hmacs' = do
     -- TODO: Return a 304 status if the browser sends us a if-modified-since
     -- header.
 
-    case hmacs of
-        [] -> notFound
-        [hmac] -> do
+    case fromPathPiece hmacs' of
+        Nothing             -> notFound
+        Just (Hmacs [])     -> notFound
+        Just (Hmacs [hmac]) -> do
             query <- parseQuery
             case query of
                 Just (Display _)               -> streamDisplayable hmac
@@ -64,10 +65,8 @@ getDownloadR hmacs' = do
                     streamArchiveFile hmac archiveHmac
                 Just requestType               -> streamFile hmac requestType
                 Nothing                        -> notFound
-        (_:_) -> streamFiles
+        Just (Hmacs hmacs@(_:_))  -> streamFiles hmacs
   where
-    hmacs = splitHmacs hmacs'
-
     -- Streams a simple file to the client.
     streamFile hmac requestType = do
         (file, uploadId, upload, h) <- runDB $ do
@@ -86,7 +85,7 @@ getDownloadR hmacs' = do
         (bs, size) <- case (requestType, fileCompressed file) of
             (Original, Just compressedSize)
                 | allowGzip -> do
-                    setHeader "Content-Encoding" "gzip"
+                    addHeader "Content-Encoding" "gzip"
                     return (bs', compressedSize)
                 | otherwise -> do
                     return (decompress bs', fileSize file)
@@ -160,9 +159,9 @@ getDownloadR hmacs' = do
         streamByteString [h] bs mime (Just size)
 
     -- Streams a set of file inside a .zip archive.
-    streamFiles = do
+    streamFiles hmacs = do
         uploads' <- runDB $ do
-            -- The archive cann't contains two files with the same name.
+            -- The archive can't contains two files with the same name.
             -- Thus a mutable Map is used to count the number of occurence of
             -- each name.
             ioNames <- liftIO $ newIORef (M.empty :: M.Map Text Int)
@@ -221,7 +220,7 @@ getDownloadR hmacs' = do
         neverExpires
 
         whenJust mSize $ \size ->
-            setHeader "Content-Length" (T.pack $ show size)
+            addHeader "Content-Length" (T.pack $ show size)
 
         let source = lazyBSToSource (mapM_ hClose hs) bs
         sendResponse (mime, ContentSource source)
@@ -238,8 +237,8 @@ getDownloadR hmacs' = do
     parseQuery = do
         mArchive <- lookupGetParam "archive"
         case mArchive of
-            Just archiveHmac -> return $! Just (CompressedFile archiveHmac)
-            Nothing          -> parseType <$> lookupGetParam "type"
+            Just hmac -> return $! Just (CompressedFile (Hmac hmac))
+            Nothing   -> parseType <$> lookupGetParam "type"
 
     -- Parses the file type from the URL parameter.
     parseType Nothing            = Just Original
@@ -321,28 +320,29 @@ lazyBSToSource finalizer =
     finalizer' _ = liftIO $ finalizer
 
 -- | Returns the URL to the given file for its specified type.
-routeFile :: (Route App -> [(Text, Text)] -> Text) -> Upload -> ObjectType
-          -> Text
-routeFile urlRdr upload obj =
+downloadRoute :: (Route App -> [(Text, Text)] -> Text) -> Upload -> ObjectType
+              -> Text
+downloadRoute urlRdr upload obj =
     urlRdr' $ case obj of
-        Original            -> []
-        Miniature           -> [("type", "miniature")]
-        WebMAudio           -> [("type", "awebm")]
-        MP3                 -> [("type", "mp3")]
-        WebMVideo           -> [("type", "vwebm")]
-        MKV                 -> [("type", "mkv")]
-        Display _           -> [("type", "display")]
-        CompressedFile hmac -> [("archive", hmac)]
+        Original                   -> []
+        Miniature                  -> [("type", "miniature")]
+        WebMAudio                  -> [("type", "awebm")]
+        MP3                        -> [("type", "mp3")]
+        WebMVideo                  -> [("type", "vwebm")]
+        MKV                        -> [("type", "mkv")]
+        Display _                  -> [("type", "display")]
+        CompressedFile (Hmac hmac) -> [("archive", hmac)]
   where
-    urlRdr' = urlRdr (DownloadR (uploadHmac upload))
+    Hmac hmacTxt = uploadHmac upload
+    urlRdr' = urlRdr (DownloadR hmacTxt)
 
 -- -----------------------------------------------------------------------------
 
 -- | Temporary buffer for the count of views, the last view and the bandwidth
 -- which have not been commited yet to the database. The second MVar is used to
 -- signal that at least a file view has been added to the buffer.
-type ViewsBufferEntry = (Word64, Maybe UTCTime, Word64)
 type ViewsBuffer = (MVar (M.Map UploadId ViewsBufferEntry), MVar ())
+type ViewsBufferEntry = (Word64, Maybe UTCTime, Word64)
 
 -- | Initialises a new view buffer to be inserted in the foundation type.
 newBuffer :: IO ViewsBuffer
@@ -426,6 +426,6 @@ viewsDaemon app = do
 
         threadDelay viewsCommitDelay
 
--- | Forks the view buffer daemon on a new thread and returns its) 'ThreadId'.
+-- | Forks the view buffer daemon on a new thread and returns its 'ThreadId'.
 forkViewsDaemon :: App -> IO ThreadId
 forkViewsDaemon = forkIO . viewsDaemon

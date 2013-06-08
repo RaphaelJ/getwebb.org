@@ -31,7 +31,7 @@
         $else
             <ul #uploads>
                 $forall (upload, file, icon) <- uploads
-                 $with hmac <- uploadHmac upload
+                 $with Hmac hmac <- uploadHmac upload
                   $with name <- uploadName upload
                     <li>
                         <a href=@{ViewR hmac} hint=#{name}>

@@ -3,7 +3,7 @@
 -- to resize uploaded images, to add and remove avatars in the database and to
 -- get paths and routes to avatar files.
 module Account.Avatar (
-      AvatarImage, aiImage, aiGenerated, aiHash
+      AvatarImage, ImageHash (..), aiImage, aiGenerated, aiHash
     , avatarSize, spriteFile, tileSize, loadSprite
     , genIdenticon, genAvatar
     , newAvatar, removeAvatar, getAvatarId, getAvatar, getAvatarFile
@@ -30,15 +30,18 @@ import Yesod
 import Account.Foundation
 import Util.HashDir (hashDir, hashDir')
 
--- | Abstract data type used to enforce images to be resized before database
--- insertion.
+-- | Abstract data type used to enforce images to be resized before being
+-- inserted in the database.
 data AvatarImage = AvatarImage {
-      aiImage :: !I.RGBAImage, aiGenerated :: !Bool, aiHash :: !Text
+      aiImage :: !I.RGBAImage, aiGenerated :: !Bool, aiHash :: !ImageHash
     }
+
+newtype ImageHash = ImageHash Text
 
 avatarSize, tileSize :: Int
 avatarSize = 4 * tileSize -- Must be a multiple of 2 * tileSize
 
+-- | Size of the tiles in 'spriteFile'.
 tileSize = 20
 
 spriteFile :: FilePath
@@ -122,14 +125,14 @@ genAvatar img =
 -- | Registers and saves a new avatar. Checks if the same avatar is not used by
 -- another user.
 newAvatar :: YesodAccount parent => AvatarImage -> YesodDB parent AvatarNum
-newAvatar (AvatarImage img generated hash) = do
+newAvatar (AvatarImage img generated imgHash@(ImageHash hash)) = do
     mFile <- getBy $ UniqueAvatarFileHash hash
     case mFile of
         Just (Entity fileId _) -> do
             update fileId [AvatarFileCount +=. 1]
         Nothing                -> do
             app <- lift $ getYesod
-            let path = avatarPath app hash
+            let path = avatarPath app imgHash
             liftIO $ createDirectoryIfMissing True (takeDirectory path)
             liftIO $ I.save img path
             insert_ $ AvatarFile hash 1
@@ -142,7 +145,7 @@ removeAvatar :: YesodAccount parent => AvatarId -> Avatar -> YesodDB parent ()
 removeAvatar avatarId avatar = do
     delete avatarId
 
-    let hash = avatarHash avatar
+    let hash = ImageHash $ avatarHash avatar
     Just (Entity fileId file) <- getAvatarFile avatar
 
     if avatarFileCount file <= 1
@@ -152,8 +155,8 @@ removeAvatar avatarId avatar = do
             liftIO $ removeFile $ avatarPath app hash
         else update fileId [AvatarFileCount -=. 1]
 
-getAvatarId :: YesodAccount parent =>
-               AccountUser parent -> HandlerT parent IO AvatarId
+getAvatarId :: (MonadHandler m, YesodAccount (HandlerSite m)) =>
+               AccountUser (HandlerSite m) -> m AvatarId
 getAvatarId user = do
     app <- getYesod
     return $ Key $ PersistInt64 $ accountAvatarId app user
@@ -166,8 +169,8 @@ getAvatarFile :: YesodAccount parent =>
                  Avatar -> YesodDB parent (Maybe (Entity AvatarFile))
 getAvatarFile avatar = getBy $ UniqueAvatarFileHash $ avatarHash avatar
 
-avatarPath :: YesodAccount parent => parent -> Text -> FilePath
-avatarPath app hash = avatarsDir app </> hashDir hash <.> "png"
+avatarPath :: YesodAccount parent => parent -> ImageHash -> FilePath
+avatarPath app (ImageHash hash) = avatarsDir app </> hashDir hash <.> "png"
 
 avatarRoute :: YesodAccount parent => parent -> Avatar -> Route parent
 avatarRoute app avatar =
@@ -176,9 +179,10 @@ avatarRoute app avatar =
     in avatarsDirRoute app file
 
 -- | Returns the SHA1 of the pixels values of the image.
-hashImage :: I.RGBAImage -> Text
+hashImage :: I.RGBAImage -> ImageHash
 hashImage =
-    T.pack . showDigest . sha1 . L.pack . concat . map I.pixToValues . I.toList
+    ImageHash . T.pack . showDigest . sha1 . L.pack . concat 
+              . map I.pixToValues . I.toList
 
 int :: Integral a => a -> Int
 int = fromIntegral

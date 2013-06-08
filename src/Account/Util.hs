@@ -25,13 +25,13 @@ import Account.Foundation
 
 -- | Creates a new user. Returns the ID of the created entity. Doesn't set the
 -- session value.
-newUser :: YesodAccount parent => Text -> Text -> Text
-        -> AccountHandler parent (Key (AccountUser parent))
-newUser email name pass = do
-    sub  <- getYesod
+newUser :: (MonadHandler m, YesodAccount (HandlerSite m)) =>
+           Account -> Text -> Text -> Text
+        -> m (Key (AccountUser (HandlerSite m)))
+newUser sub email name pass = do
     salt <- randomSalt
     let !img = genIdenticon (acAvatarSprite sub) email
-    lift $ runDB $ do
+    liftHandlerT $ runDB $ do
         avatarId <- newAvatar img
         initUser email name (saltedHash salt pass) salt avatarId >>= insert
 
@@ -55,36 +55,34 @@ validateUser name pass = do
     getValidUser unique = MaybeT $ getBy $ unique name
 
 -- | Sets the session value to the given user ID.
-setUserId :: YesodAccount parent =>
-             Key (AccountUser parent) -> ParentHandler parent ()
+setUserId :: MonadHandler m => Key (AccountUser (HandlerSite m)) -> m ()
 setUserId = (sessionKey `setSession`) . T.pack . show
 
 -- | Returns the user's key from the user's session. Does NOT check if the key
 -- exists in the database.
-getUserId :: YesodAccount parent =>
-             ParentHandler parent (Maybe (Key (AccountUser parent)))
+getUserId :: MonadHandler m => m (Maybe (Key (AccountUser (HandlerSite m))))
 getUserId = runMaybeT $ do
     userIdTxt <- MaybeT $ lookupSession sessionKey
     return $ read $ T.unpack userIdTxt
 
 -- | Returns the user entity if the user is authenticated.
-getUser :: YesodAccount parent =>
-           ParentHandler parent (Maybe (Entity (AccountUser parent), Avatar))
+getUser :: (MonadHandler m, YesodAccount (HandlerSite m)) =>
+           m (Maybe (Entity (AccountUser (HandlerSite m)), Avatar))
 getUser = runMaybeT $ do
     userId <- MaybeT $ getUserId
-    MaybeT $ runDB $ runMaybeT $ do -- TODO: Cache
+    MaybeT $ liftHandlerT $ runDB $ runMaybeT $ do -- TODO: Cache
              user   <- MaybeT $ get userId
              avatar <- MaybeT $ getAvatar user
              return (Entity userId user, avatar)
 
 -- | Resets the session value so the user is now no more connected.
-unsetUserId :: YesodAccount parent => ParentHandler parent ()
+unsetUserId :: MonadHandler m => m ()
 unsetUserId = deleteSession sessionKey
 
 -- | Returns the user entity or invokes a 403 Permission denied if the user
 -- isn't authenticated.
-requireAuth :: YesodAccount parent =>
-               ParentHandler parent (Entity (AccountUser parent), Avatar)
+requireAuth :: (MonadHandler m, YesodAccount (HandlerSite m)) =>
+               m (Entity (AccountUser (HandlerSite m)), Avatar)
 requireAuth = do
     mUser <- getUser
 
@@ -94,8 +92,8 @@ requireAuth = do
 
 -- | Returns the user entity. If the user is not authenticated, redirects to
 -- the login page.
-redirectAuth :: YesodAccount parent =>
-                ParentHandler parent (Entity (AccountUser parent), Avatar)
+redirectAuth :: (MonadHandler m, YesodAccount (HandlerSite m)) =>
+                m (Entity (AccountUser (HandlerSite m)), Avatar)
 redirectAuth = do
     mUser <- getUser
 
@@ -109,7 +107,7 @@ redirectAuth = do
                 Nothing  -> permissionDenied "Please configure authRoute"
 
 -- | Redirects to 'signInDest' if the user is authenticated.
-redirectNoAuth :: YesodAccount parent => ParentHandler parent ()
+redirectNoAuth :: (MonadHandler m, YesodAccount (HandlerSite m)) => m ()
 redirectNoAuth = do
     mUser <- getUser
     case mUser of

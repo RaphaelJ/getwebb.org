@@ -2,9 +2,9 @@
 /robots.txt             RobotsR         GET
 
 /                       HomeR           GET
-/d/#Hmac                DownloadR       GET
+/d/#Text                DownloadR       GET
 /u                      UploadR         POST
-/v/#Hmac                ViewR           GET PATCH DELETE
+/v/#Text                ViewR           GET PATCH DELETE
 
 /comments/#Hmac         CommentsR       GET POST
 /comment/#Hmac/up       CommentUpR      PUT

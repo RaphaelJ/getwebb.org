@@ -4,7 +4,7 @@ module Foundation where
 
 import Prelude
 import Control.Applicative ((<$>), (<|>))
-import Control.Concurrent (Chan, MVar)
+import Control.Concurrent (MVar)
 import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
 import qualified Data.ByteString.Lazy as B
 import qualified Data.ByteString.Char8 as S8
@@ -18,7 +18,7 @@ import Yesod
 import Yesod.Static
 import Yesod.Default.Config
 import Yesod.Default.Util (addStaticContentExternal)
-import qualified Database.Persist
+import Database.Persist.Sql (SqlPersistT)
 import Network.HTTP.Conduit (Manager)
 import qualified Settings
 import Settings (widgetFile, Extra (..))
@@ -31,40 +31,27 @@ import Text.Hamlet (shamlet, hamletFile)
 import qualified Web.ClientSession as S
 
 import Account
+import JobsDaemon.Type (JobsQueue)
 import Model
+import Util.Hmac.Type (Hmac)
 import Util.Pretty (PrettyNumber (..))
-
--- | Contains a queue of background jobs which can be processed right now.
-type JobsChan = Chan (JobId, IO ())
--- | Maps each uncompleted parent job to a list of its dependent jobs.
--- Each mapped job contains its id, its action and possibly the list of the
--- remaining other dependencies of the job.
--- When a job completes, the corresponding entry from the map is removed and
--- each mapped job is :
---      - added to the 'JobsChan' if the list of remaining dependencies of the
---      job is empty ;
---      - added to the first job of its remaining dependencies if the list is
---      not empty.
-type JobsDepends = MVar (M.Map JobId [(JobId, IO (), [JobId])])
--- | Contains the queue of jobs which can be processed and the graph of
--- dependencies.
-type JobsQueue = (JobsChan, JobsDepends)
 
 -- | The site argument for your application. This can be a good place to
 -- keep settings and values requiring initialisation before your application
 -- starts running, such as database connections. Every handler will have
 -- access to the data present here.
 data App = App {
-      settings :: AppConfig DefaultEnv Extra
-    , getStatic :: Static -- ^ Settings for static file serving.
-    , getAccount :: Account -- ^ Account management subsite.
-    , connPool :: Database.Persist.Store.PersistConfigPool Settings.PersistConfig -- ^ Database connection pool.
-    , httpManager :: Manager
-    , persistConfig :: Settings.PersistConfig
-    , appLogger :: Logger
-    , encryptKey :: B.ByteString
-    , jobsQueue :: JobsQueue
-    , viewsBuffer :: (MVar (M.Map UploadId (Word64, Maybe UTCTime, Word64)), MVar ())
+      settings      :: AppConfig DefaultEnv Extra
+    , getStatic     :: Static       -- ^ Settings for static file serving.
+    , getAccount    :: Account      -- ^ Account management subsite.
+    , connPool      :: PersistConfigPool Settings.PersistConf
+    , httpManager   :: Manager
+    , persistConfig :: Settings.PersistConf
+    , appLogger     :: Logger
+    , encryptKey    :: B.ByteString
+    , jobsQueue     :: JobsQueue
+    , viewsBuffer   :: (MVar (M.Map UploadId (Word64, Maybe UTCTime, Word64))
+                       , MVar ())   -- ^ Used by Handler.Download.
     }
 
 -- Set up i18n messages. See the message folder.
@@ -91,7 +78,7 @@ data App = App {
 -- split these actions into two functions and place them in separate files.
 mkYesodData "App" $(parseRoutesFile "config/routes")
 
-type Form x = Html -> MForm App App (FormResult x, Widget)
+type Form x = Html -> MForm (HandlerT App IO) (FormResult x, Widget)
 
 encryptKeyFile :: FilePath
 encryptKeyFile = "config/client_session_key.aes"
@@ -113,15 +100,6 @@ instance Yesod App where
                             If this was an uploaded file, it has been removed.
                         |]
                     in ("404 Not Found", Just msg)
-                PermissionDenied err ->
-                    let msg = [shamlet|
-                            You don't have the permission to access this
-                            ressource for the following reason :
-                            <pre>
-                                #{err}
-                        |]
-                    in ("403 Permission Denied", Just msg)
-                InvalidArgs _ -> ("Invalid Arguments", Nothing)
                 InternalError err ->
                     let msg = [shamlet|
                             Our internal software failed for the following
@@ -130,20 +108,28 @@ instance Yesod App where
                                 #{err}
                         |]
                     in ("500 Internal Server Error", Just msg)
+                InvalidArgs _ -> ("Invalid Arguments", Nothing)
+                NotAuthenticated -> ("401 Not Authenticated", Nothing)
+                PermissionDenied err ->
+                    let msg = [shamlet|
+                            You don't have the permission to access this
+                            ressource for the following reason :
+                            <pre>
+                                #{err}
+                        |]
+                    in ("403 Permission Denied", Just msg)
                 BadMethod m ->
                     let msg = [shamlet|
                             Method <code>#{S8.unpack m}</code> not supported
                         |]
                     in ("405 Method Not Allowed", Just msg)
 
-        let repHtml = do
+        selectRep $ do
+            provideRep $ defaultLayout $ do
                 setTitle [shamlet|#{title} - getwebb|]
                 $(widgetFile "error")
-            repJson = case mMsg of
-                Just msg -> object [(title, renderMarkup msg)]
-                Nothing  -> object [(title, "" :: Text)]
-        rep <- defaultLayoutJson repHtml repJson
-        return $ chooseRep rep
+
+            provideJson $ object [title .= maybe "" renderMarkup mMsg]
 
     -- Store session data on the client in encrypted cookies,
     -- default session idle timeout is two year.
@@ -151,14 +137,13 @@ instance Yesod App where
         key <- S.getKey encryptKeyFile
         let timeout = 2 * 365 * 24 * 3600 -- 2 years
         (getCachedDate, _closeDateCache) <- clientSessionDateCacher timeout
-        return . Just $ clientSessionBackend2 key getCachedDate
+        return . Just $ clientSessionBackend key getCachedDate
 
     defaultLayout widget = do
         app <- getYesod
         mMsg <- getMessage
 
-        toMaster <- getRouteToMaster
-        currentPage <- (getCurrentPage . fmap toMaster) <$> getCurrentRoute
+        currentPage <- getCurrentPage <$> getCurrentRoute
 
         countHistory <- uploadsCount <$> getAdminKey
 
@@ -202,7 +187,7 @@ instance Yesod App where
     -- Permits a query which can hold the request and the file if its the upload
     -- page.
     maximumContentLength app page =
-        case page of
+        Just $ case page of
             Just UploadR -> maxFileSize + maxRequestSize
             _            -> maxRequestSize
       where
@@ -212,13 +197,10 @@ instance Yesod App where
 
 -- How to run database actions.
 instance YesodPersist App where
-    type YesodPersistBackend App = SqlPersist
+    type YesodPersistBackend App = SqlPersistT
     runDB f = do
         master <- getYesod
-        Database.Persist.Store.runPool
-            (persistConfig master)
-            f
-            (connPool master)
+        runPool (persistConfig master) f (connPool master)
 
 instance RenderMessage App FormMessage where
     renderMessage _ _ = defaultFormMessage
@@ -256,7 +238,7 @@ instance YesodAccount App where
     accountAvatarIdField _ = UserAvatar
 
     accountSettingsForm user =
-        UserSettings <$> areq checkBoxField 
+        UserSettings <$> areq checkBoxField
                               "Set uploads as public by default"
                               (Just (userDefaultPublic user))
 
@@ -279,16 +261,16 @@ adminKeySessionKey :: Text
 adminKeySessionKey = "ADMIN_KEY"
 
 -- | Allocates a new 'AdminKey' in the database. Doesn't set the session key.
-newAdminKey :: YesodDB sub App AdminKeyId
+newAdminKey :: YesodDB App AdminKeyId
 newAdminKey = insert $ AdminKey 0
 
 -- | Sets the 'AdminKey' in the user's session cookie.
-setAdminKey :: AdminKeyId -> GHandler sub App ()
+setAdminKey :: AdminKeyId -> Handler ()
 setAdminKey = setSession adminKeySessionKey . pack . show
 
 -- | Returns the admin key(s). Checks that it exists in the database or returns
 -- 'Nothing' if the client doesn\'t have an 'AdminKey' yet.
-getAdminKey :: GHandler sub App (Maybe AdminKeyValue)
+getAdminKey :: Handler (Maybe AdminKeyValue)
 getAdminKey = runMaybeT $
         do
         (Entity _ user, _) <- MaybeT getUser

@@ -14,7 +14,7 @@ import Network.HTTP.Types.Status (
 
 import Account (getUser)
 import Handler.Upload.Processing (UploadError (..), processFile)
-import Util.API (sendErrorResponse, withFormSuccess)
+import Util.API (sendErrorResponse, sendObjectCreated, withFormSuccess)
 
 data Options = Options {
       optPublic :: Bool
@@ -42,14 +42,7 @@ postUploadR = do
         case eUpload of
             Right upload -> do
                 {- TODO: email -}
-                rdr <- getUrlRender
-                let hmac = uploadHmac upload
-                    url  = rdr $ ViewR hmac
-                setHeader "Location" url
-                rep <- jsonToRepJson $ object [
-                        "id" .= hmac, "url" .= url
-                    ]
-                sendResponseStatus created201 rep
+                sendObjectCreated hmac (Just ViewR)
             Left err -> do
                 let status = case err of
                         DailyIPLimitReached -> tooManyRequests429

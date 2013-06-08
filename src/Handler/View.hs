@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, PatternGuards #-}
 -- | Page which displays the information about a file.
-module Handler.View (getViewR, patchViewR, deleteViewR)
+module Handler.View (getViewR, patchViewR, deleteViewR, removeUpload)
     where
 
 import Import
@@ -13,11 +13,11 @@ import qualified Data.ByteString as B
 import Network.HTTP.Types.Header (hUserAgent)
 import Network.HTTP.Types.Status (noContent204)
 import Network.Wai (requestHeaders)
+import System.Directory (removeDirectoryRecursive)
 import Text.Hamlet (shamlet)
 import Text.Julius (rawJS)
 
 import Handler.Comment (maxCommentLength, commentForm)
-import Handler.Upload.Remove (removeUpload)
 import Util.Date (getDiffTime)
 import Util.Pretty (
       PrettyNumber (..), PrettyFileSize (..), PrettyDuration (..)
@@ -29,6 +29,7 @@ import Util.Extras (
     , getIcon, getImage, getMiniature, getAudioSources, getArchive
     )
 import Util.Hmac (splitHmacs, joinHmacs)
+import Util.Path (uploadDir)
 
 -- | Shows information about an upload.
 getViewR :: Hmac -> Handler RepHtml
@@ -122,10 +123,10 @@ patchViewR :: Hmac -> Handler ()
 patchViewR hmac = do
     ((res, _), _) <- runFormPost form
 
-    case res of
-        FormSuccess (mTitle, mPublic) ->
-        FormFailure errs ->
-        FormMissing ->
+    withFormSuccess res $ \(mTitle, mPublic) ->
+        mAdminKey <- getAdminKey
+        case 
+
   where
     form = (,) <$> aopt textField titleSettings  Nothing
                <*> aopt boolField publicSettings Nothing
@@ -157,7 +158,42 @@ deleteViewR hmac = do
             if validKey
                 then sendResponseStatus noContent204 ()
                 else 
-                    permissionDenied
-                        "Your admin key doesn't match the upload's admin key."
+                    permissionDenied "Your are not the owner of this upload."
 
         Nothing -> permissionDenied "Your admin key cookie is empty."
+
+-- | Removes an upload. Decrements its owner\'s count and remove the associated
+-- file if the file is now upload-less.
+removeUpload :: Entity Upload -> YesodDB App App ()
+removeUpload (Entity uploadId upload) = do
+    let fileId = uploadFile upload
+    delete uploadId
+    update (uploadAdminKey upload) [AdminKeyCount -=. 1]
+
+    -- TODO : Removes the comments.
+
+    -- Removes the corresponding file if it was the last upload.
+    file <- updateGet fileId [FileCount -=. 1]
+    when (fileCount file < 1) $ do
+        -- Removes attributes
+        case fileType file of
+            Image   -> do
+                deleteWhere [ImageAttrsFile ==. fileId]
+                deleteWhere [ExifTagFile ==. fileId]
+            Audio   -> do
+                deleteWhere [MediaAttrsFile ==. fileId]
+                deleteWhere [AudioAttrsFile ==. fileId]
+            Video   ->
+                deleteWhere [MediaAttrsFile ==. fileId]
+            Archive ->
+                deleteWhere [ArchiveFileFile ==. fileId]
+            _       -> return ()
+
+        -- Doesn't remove the jobs as they are kept as a log.
+
+        delete fileId
+
+        app <- lift $ getYesod
+        let dir = uploadDir app (fileHash file)
+        liftIO $ removeDirectoryRecursive dir
+

@@ -25,7 +25,7 @@ library
                      Foundation
                      Import
                      Model
-                     Model.Types
+                     Model.Field
 
                      Account
                      Account.Auth
@@ -41,13 +41,20 @@ library
                      Handler.Home
                      Handler.Upload
                      Handler.Upload.Archive
-                     Handler.Upload.Compression
                      Handler.Upload.FFmpeg
                      Handler.Upload.Image
                      Handler.Upload.Media
                      Handler.Upload.Processing
-                     Handler.Upload.Remove
                      Handler.View
+
+                     JobsDaemon.Compression
+                     JobsDaemon.Daemon
+                     JobsDaemon.ExifTags
+                     JobsDaemon.ResizeImage
+                     JobsDaemon.Restore
+                     JobsDaemon.Transcode
+                     JobsDaemon.Type
+                     JobsDaemon.Util
 
                      Settings
                      Settings.StaticFiles
@@ -58,7 +65,7 @@ library
                      Util.Extras
                      Util.HashDir
                      Util.Hmac
-                     Util.JobsDaemon
+                     Util.Hmac.Type
                      Util.Json
                      Util.Path
                      Util.Pretty

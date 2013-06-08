@@ -1,23 +1,22 @@
 {-# LANGUAGE FlexibleInstances, UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Provides a sub-site which manages registration, authentication and
--- user accounts.
+-- settings of user accounts.
 module Account (
       module Account
     )
     where
 
 import Prelude
-import Language.Haskell.TH (Pred (..), Type (..), mkName)
 
 import Yesod
 import Account.Foundation as Account
 import Account.Util as Account
-
 import Account.Avatar as Account
-import Account.Auth as Account
-import Account.Register as Account
-import Account.Settings as Account
+
+import Account.Auth
+import Account.Register
+import Account.Settings
 
 instance YesodAccount master =>
          YesodSubDispatch Account (HandlerT master IO) where

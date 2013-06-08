@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | Defines types and functions to display various values in an human readable
--- way.
+-- | Types and functions to display various values in an human readable way.
 module Util.Pretty (
       WrappedText (wtText, wtMaxLength), wrappedText
     , PrettyNumber (..), PrettyFileSize (..), PrettyDuration (..)
@@ -20,9 +19,9 @@ import Text.Blaze (ToMarkup (..))
 -- | A new type to represents a showable object on which the string
 -- representation will be truncated if too long.
 data WrappedText = WrappedText {
-      wtText :: T.Text -- ^ The original value.
+      wtText      :: T.Text -- ^ The original value.
     , wtTruncated :: T.Text -- ^ The truncated result of the show function.
-    , wtMaxLength :: Int -- ^ The maximum length of the truncated result.
+    , wtMaxLength :: Int    -- ^ The maximum length of the truncated result.
     }
 
 -- | Truncates the text if longer than the given integer.

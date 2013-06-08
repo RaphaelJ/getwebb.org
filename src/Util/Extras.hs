@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, PatternGuards #-}
--- | Defines functions to retrieve meta-data from a database file.
+-- | Functions to retrieve meta-data and statistics from a file/upload.
 module Util.Extras (
       Extras (..), getFileExtras, getUploadStats
     , getIcon, getImage, getMiniature, getAudioSources, getArchive
@@ -14,8 +14,9 @@ import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import System.FilePath (takeExtension)
 
-import Handler.Download (routeFile, getBufferEntry)
+import Handler.Download (downloadRoute, getBufferEntry)
 import Handler.Upload.Archive (archiveTree, treeToHtml)
+import Util.Path (ObjectType (..))
 
 -- | Used to retrieve the attributes about each file type from the database.
 data Extras = ImageExtras ImageAttrs [ExifTag]
@@ -25,7 +26,7 @@ data Extras = ImageExtras ImageAttrs [ExifTag]
             | None
 
 -- | Returns the meta data about a file.
-getFileExtras :: Entity File -> YesodDB App App Extras
+getFileExtras :: Entity File -> YesodDB App Extras
 getFileExtras (Entity fileId file) =
     case fileType file of
         Image -> do
@@ -116,27 +117,27 @@ getImage :: (Route App -> [(Text, Text)] -> Text) -> Upload -> Extras
          -> Maybe Text
 getImage rdr upload (ImageExtras attrs _) =
     case imageAttrsDisplayable attrs of
-        Just t  -> Just $ routeFile rdr upload (Display t)
-        Nothing -> Just $ routeFile rdr upload Original
+        Just t  -> Just $ downloadRoute rdr upload (Display t)
+        Nothing -> Just $ downloadRoute rdr upload Original
 getImage _   _      _                     = Nothing
 
 -- | Returns the URL to the miniature if the file has one.
 getMiniature :: (Route App -> [(Text, Text)] -> Text) -> Upload -> Extras
              -> Maybe Text
 getMiniature rdr upload (ImageExtras _ _) =
-    Just $ routeFile rdr upload Miniature
+    Just $ downloadRoute rdr upload Miniature
 getMiniature rdr upload (AudioExtras _ (Just attrs))
     | audioAttrsMiniature attrs           =
-        Just $ routeFile rdr upload Miniature
+        Just $ downloadRoute rdr upload Miniature
 getMiniature _   _      _                 = Nothing
 
 -- | Returns the URL to every HTML5 audio files which can be displayed in the
 -- browser with thier mime-types.
 getAudioSources :: (Route App -> [(Text, Text)] -> Text) -> Upload -> Extras
-                -> [(Text, Text)]
+                -> [(Text, ContentType)]
 getAudioSources rdr upload (AudioExtras _ _) = [
-      (routeFile rdr upload WebMAudio, "audio/webm")
-    , (routeFile rdr upload MP3      , "audio/mpeg")
+      (downloadRoute rdr upload WebMAudio, "audio/webm")
+    , (downloadRoute rdr upload MP3      , "audio/mpeg")
     ]
 getAudioSources _   _      _                 = []
 
@@ -144,6 +145,6 @@ getAudioSources _   _      _                 = []
 getArchive :: (Route App -> [(Text, Text)] -> Text) -> Upload -> Extras
            -> Maybe Html
 getArchive rdr upload (ArchiveExtras files) =
-    let rdr' archiveHmac = routeFile rdr upload (CompressedFile archiveHmac)
+    let rdr' archiveHmac = downloadRoute rdr upload (CompressedFile archiveHmac)
     in Just $ treeToHtml rdr' (archiveTree files)
 getArchive _   _      _                     = Nothing

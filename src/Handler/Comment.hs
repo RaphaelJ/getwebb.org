@@ -14,10 +14,9 @@ import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
 import Text.Printf
 
-import Network.HTTP.Types.Status (created201, badRequest400)
-
 import Account (requireAuth)
-import Util.Hmac (newHmac)
+import Util.API (sendObjectCreated, withFormSuccess)
+import Util.Hmac (Hmac, newHmac)
 import Util.Json ()
 
 -- | Maximum number of comments which will be fetched in one request.
@@ -32,8 +31,8 @@ defaultNComments = 50
 maxCommentLength :: Int
 maxCommentLength = 400
 
--- | Returns the comments of a file.
-getCommentsR :: Hmac -> Handler RepJson
+-- | Returns the comments of an upload in JSON.
+getCommentsR :: Hmac -> Handler Value
 getCommentsR hmac = do
     mNComments <- lookupGetParam "n"
     mMaxScore  <- lookupGetParam "max_score"
@@ -46,29 +45,24 @@ getCommentsR hmac = do
         Entity uploadId _ <- getBy404 $ UniqueUploadHmac hmac
         retrieveComments uploadId nComments maxScore
 
-    jsonToRepJson $ array comments
+    return $ array comments
 
--- | Posts a new comment.
+-- | Posts a new comment. Returns a 201 Created with a JSON object indicating
+-- the 'Hmac' of the comment, or a 400/404 with a JSON array of errors.
 postCommentsR :: Hmac -> Handler ()
 postCommentsR hmac = do
     (Entity userId _, _) <- requireAuth
     ((res, _), _) <- runFormPostNoToken commentForm
 
-    case res of
-        FormSuccess (Textarea msg)  -> do
-            time <- liftIO $ getCurrentTime
-            runDB $ do
-                Entity uploadId _ <- getBy404 $ UniqueUploadHmac hmac
-                (key, commentHmac) <- newHmac HmacComment
-                insertKey key $ Comment commentHmac userId uploadId msg time
-                                        (score 0 0) 0 0
-            sendResponseStatus created201 ()
-        FormFailure errs -> do
-            rep <- jsonToRepJson $ array errs
-            sendResponseStatus badRequest400 rep
-        FormMissing      -> do
-            rep <- jsonToRepJson $ array ["Incomplete form." :: Text]
-            sendResponseStatus badRequest400 rep
+    withFormSuccess res $ \(Textarea msg) -> do
+        time <- liftIO $ getCurrentTime
+        commentHmac <- runDB $ do
+            Entity uploadId _ <- getBy404 $ UniqueUploadHmac hmac
+            (key, commentHmac) <- newHmac HmacComment
+            insertKey key $ Comment commentHmac userId uploadId msg time
+                                    (score 0 0) 0 0
+            return commentHmac
+        sendObjectCreated commentHmac Nothing
 
 -- | Votes for a comment.
 putCommentUpR :: Hmac -> Handler ()
@@ -107,7 +101,7 @@ voteComment voteType hmac = do
 
 -- | Retrieves a set of comments from the database 
 retrieveComments :: UploadId -> Int -> Maybe Double
-                 -> YesodDB sub App [(Comment, User)]
+                 -> YesodDB App [(Comment, User)]
 retrieveComments uploadId nComments maxScore = do
     let restrict = maybeToList ((CommentScore <.) <$> maxScore)
 

@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | This module handles the processing of an uploaded file.
+-- | Handles the whole processing of a recently uploaded file.
 module Handler.Upload.Processing (
       UploadError (..), processFile, moveToTmp, hashFile, moveToUpload
     ) where
@@ -22,9 +22,9 @@ import Data.Time.Clock (getCurrentTime, addUTCTime)
 import Network.Wai (remoteHost)
 
 import Handler.Upload.Archive (processArchive)
-import qualified Handler.Upload.Compression as C
 import Handler.Upload.Image (processImage)
 import Handler.Upload.Media (processMedia)
+import qualified JobsDaemon.Compression as C
 import Util.API (ToAPIError (..))
 import Util.Hmac (newHmac)
 import Util.Path (getFileSize, uploadDir, newTmpFile, getPath)

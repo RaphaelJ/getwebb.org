@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | Defines a few functions to deal with dates.
 module Util.Date (
       PrettyDiffTime (..), NominalDiffTime, Rfc822Date (..)
     , getDiffTime

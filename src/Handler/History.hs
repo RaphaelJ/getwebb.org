@@ -9,6 +9,7 @@ import Data.Time.Clock (getCurrentTime, diffUTCTime)
 
 import Account
 import Util.Extras (getFileExtras, getIcon)
+import Util.Hmac (Hmac (..))
 import Util.Pretty (PrettyFileSize (..), PrettyDiffTime (..), wrappedText)
 
 -- | Shows the user's upload history.

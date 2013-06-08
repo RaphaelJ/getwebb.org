@@ -1,10 +1,9 @@
--- | This module declares a daemon which will receive file to compress on a
--- concurrent queue. Try to compress the file using the GZip algorithm and
--- update the database entry if the compressed file is smaller than the original
--- file.
-module Handler.Upload.Compression (
-    -- * Compression
-      compressFile
+-- | Uses the JobDaemon to try to compress recently uploaded files using the
+-- GZip algorithm and update the database entry if the compressed file is
+-- smaller than the original file.
+module JobsDaemon.Compression (
+    -- * Job
+      jobCompress
     -- * Background compression queue management
     , putFile
     ) where
@@ -19,13 +18,13 @@ import Codec.Compression.GZip (
       compressWith, defaultCompressParams, compressLevel, bestCompression
     )
 
-import Util.JobsDaemon (registerJob, runDBIO)
-import Util.Path (uploadDir, newTmpFile, getPath)
+import JobsDaemon.Util (registerJob, runDBIO)
+import Util.Path (ObjectType (..), uploadDir, newTmpFile, getPath)
 
 -- | Tries to compress a file. Replaces the original file and updates the
 -- database if the compressed file is smaller.
-compressFile :: App -> FileId -> IO ()
-compressFile app fileId = do
+jobCompress :: App -> FileId -> IO ()
+jobCompress app fileId = do
     Just file <- runDBIO app $ get fileId
 
     let path = getPath (uploadDir app (fileHash file)) Original
@@ -64,7 +63,7 @@ compressFile app fileId = do
     -- Compression parameters.
     params = defaultCompressParams { compressLevel = bestCompression }
 
--- | Adds a file to a background compression queue.
+-- | Adds a file to the background compression queue.
 putFile :: App -> FileId -> [JobId] -> IO JobId
-putFile app fileId deps =
-    registerJob app fileId Compression deps (compressFile app fileId)
+putFile app fileId deps = registerJob app fileId Compression deps
+                                      (jobCompress app fileId)

@@ -1,4 +1,4 @@
--- | Defines a few utilities to create paths based on file\'s hashes.
+-- | Creates paths based on file\'s hashes.
 module Util.HashDir (hashDir, hashDir') where
 
 import Prelude

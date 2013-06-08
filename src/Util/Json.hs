@@ -1,11 +1,10 @@
 {-# LANGUAGE FlexibleInstances, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
--- | Defines 'ToJSON' instances to transform models and types in json objects.
+-- | Defines 'ToJSON' instances to transform common models and types to json
+-- objects.
 module Util.Json () where
 
 import Import
-
-import Data.Aeson (ToJSON (..))
 
 import Util.Date (Rfc822Date (..))
 

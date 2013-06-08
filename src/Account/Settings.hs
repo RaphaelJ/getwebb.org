@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE BangPatterns, OverloadedStrings, ScopedTypeVariables #-}
 -- | The handlers in this modules privide a way for users to manager their
 -- settings.
 module Account.Settings (getSettingsR, postSettingsR) where
@@ -41,10 +41,12 @@ postSettingsR = do
     (Entity userId user, avatar) <- lift redirectAuth
     ((res, widget), enctype) <- lift $ runFormPost $ settingsForm user avatar
 
+    app <- lift getYesod
+    sub <- getYesod
     widget' <- lift $ case res of
         FormSuccess (AvatarResult True (Just f), setts) -> do
             -- New user uploaded avatar.
-            tmpDir <- ((</> "tmp") . avatarsDir) <$> getYesod
+            let tmpDir = avatarsDir app </> "tmp"
             (tmpPath, h) <- liftIO $ openTempFile tmpDir ""
             _ <- register (removeFile tmpPath)
             liftIO $ hClose h
@@ -67,8 +69,7 @@ postSettingsR = do
         FormSuccess (AvatarResult False _, setts)
             | not (avatarGenerated avatar) -> do
             -- Restores the generated avatar.
-            app <- getYesod
-            img <- genIdenticon (accountEmail app user)
+            let !img = genIdenticon (acAvatarSprite sub) (accountEmail app user)
             runDB $ do
                 replaceAvatar userId user avatar img
                 accountSettingsSave userId setts
@@ -81,7 +82,7 @@ postSettingsR = do
     displaySettings user avatar widget' enctype
   where
     replaceAvatar userId user oldAvatar img = do
-        oldAvatarId <- getAvatarId user
+        oldAvatarId <- lift $ getAvatarId user
         removeAvatar oldAvatarId oldAvatar
 
         app <- getYesod
@@ -94,14 +95,15 @@ displaySettings :: YesodAccount parent => AccountUser parent -> Avatar
                 -> ParentWidget parent () -> Enctype
                 -> AccountHandler parent RepHtml
 displaySettings user avatar widget enctype = do
-    toMaster <- getRouteToParent
-    app <- getYesod
+    toParent <- getRouteToParent
+    app <- lift getYesod
     lift $ defaultLayout $ do
         setTitle "Account settings | getwebb"
         $(widgetFile "account-settings")
 
 -- | Generates a form which returns the username and the password.
-settingsForm :: YesodAccount parent =>
+settingsForm :: (YesodAccount parent
+                , HandlerSite (ParentHandler parent) ~ parent) =>
                 AccountUser parent -> Avatar -> Html
              -> MForm (ParentHandler parent)
                       (FormResult (AvatarResult, AccountSettings parent)
@@ -133,8 +135,7 @@ settingsForm user avatar extra = do
     return ((,) <$> (AvatarResult <$> avatarRes <*> fileRes) 
                 <*> setsRes, widget)
   where
-    renderDivs' :: AForm sub parent a -> 
-                   MForm sub parent (FormResult a, GWidget sub parent ())
+    -- Doesn't render twice @extra@
     renderDivs' aform = renderDivs aform mempty
 
     avatarSettings =

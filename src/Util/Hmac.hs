@@ -1,8 +1,8 @@
--- | This module defines functions to compute and process HMACs.
+-- | Functions to compute and process HMACs.
 -- HMACs identify uniquely a resource like an upload, a comment or a file.
 module Util.Hmac (
-      UniqueHmacId, Hmac {- From Model.hs -}, hmacLength
-    , newHmac, computeHmac, splitHmacs, joinHmacs, toBase62
+      module Util.Hmac.Type, UniqueHmacId {- From Model -}, hmacLength
+    , newHmac, computeHmac, toBase62
     ) where
 
 import Import
@@ -14,18 +14,15 @@ import Data.Digits (digits)
 import Data.Maybe
 import qualified Data.Text as T
 
-import Database.Persist (PersistValue (..))
-import Database.Persist.Sql (SqlBackend)
+import Util.Hmac.Type
 
 -- | Number of characters in an HMAC.
 hmacLength :: Int
 hmacLength = 8
 
 -- | Returns a new unique identifier for a resource.
-newHmac :: (Functor m, PersistUnique m, MonadLift (GHandler App App) m
-           , PersistQuery m, PersistMonadBackend m ~ SqlBackend
-           , PersistEntity val) =>
-           HmacResourceType -> m (Key val, Hmac)
+newHmac :: PersistEntity val =>
+           HmacResourceType -> YesodDB App (Key val, Hmac)
 newHmac resource = do
     hmacId <- insert $ UniqueHmac "" resource
 
@@ -51,16 +48,7 @@ computeHmac idKey = do
     app <- getYesod
     let key = encryptKey app
         hmac = integerDigest $ hmacSha1 key idKey
-    return $! T.pack $ take hmacLength $ toBase62 $ hmac
-
--- | Returns a list of HMACs from a list of url string of HMACs separated by
--- commas.
-splitHmacs :: Text -> [Text]
-splitHmacs = T.split (== ',')
-
--- | Returns an url string from a list of HMACs.
-joinHmacs :: [Text] -> Text
-joinHmacs = T.intercalate ","
+    return $! Hmac $ T.pack $ take hmacLength $ toBase62 $ hmac
 
 -- | Encodes an integer in base 62 (using letters and numbers).
 toBase62 :: Integer -> String

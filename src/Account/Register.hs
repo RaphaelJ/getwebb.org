@@ -28,7 +28,8 @@ postRegisterR = do
 
     case res of
         FormSuccess (email, name, pass) -> do
-            userId <- newUser email name pass
+            sub <- getYesod
+            userId <- lift $ newUser sub email name pass
             lift $ do
                 setUserId userId
                 getYesod >>= redirect . signInDest
@@ -47,7 +48,7 @@ data RegisterRes = RegisterRes {
       rrEmail :: Text, rrUsername :: Text, rrPassword :: Text, rrConfirm :: Text
     }
 
-registerForm :: YesodAccount parent => Html 
+registerForm :: YesodAccount parent => Html
              -> MForm (ParentHandler parent) (FormResult (Text, Text, Text)
                                              , ParentWidget parent ())
 registerForm html = do

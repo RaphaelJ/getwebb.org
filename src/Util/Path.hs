@@ -1,6 +1,7 @@
--- | Defines a few utilities to manages uploads files and directories.
+-- | Few utilities to manages uploads file paths and directories.
 module Util.Path (
-      getFileSize, rootUploadDir, uploadDir, hashDir, hashDir', tmpDir
+      ObjectType (..)
+    , getFileSize, rootUploadDir, uploadDir, hashDir, hashDir', tmpDir
     , newTmpFile, getPath
     ) where
 
@@ -11,7 +12,16 @@ import System.FilePath
 
 import Yesod.Default.Config
 
+import Util.Hmac (Hmac)
 import Util.HashDir (hashDir, hashDir')
+
+-- | Used to represents the different resources which can be downloaded.
+data ObjectType = Original
+                | Miniature | Display DisplayType
+                | WebMAudio | MP3
+                | WebMVideo | MKV
+                | CompressedFile Hmac
+    deriving (Show, Eq)
 
 -- | Returns the size in bytes of the given file.
 getFileSize :: FilePath -> IO Word64

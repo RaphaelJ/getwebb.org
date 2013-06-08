@@ -1,13 +1,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
--- | Recognises medias (audio and video), collects information and create
--- HTML 5 audio/videos in a separate thread.
+-- | Recognises medias (audio and video), collects information and converts to
+-- an HTML 5 audio/video using the JobsDaemon.
 module Handler.Upload.Media (
     -- * Processing uploads
       processMedia
-    -- * Transcoding
-    , transcodeFile
-    -- * Background transcoding queue management
-    , putFile
     ) where
 
 import Import
@@ -42,9 +38,9 @@ import Handler.Upload.FFmpeg (
       MediaInfo (..), MediaDuration (..), argsWebMAudio, argsMP3
     , argsWebM, argsH264, encode, getInfo
     )
-import qualified Handler.Upload.Compression as C
 import Handler.Upload.Image (miniature)
-import Util.JobsDaemon (registerJob, runDBIO)
+import qualified JobsDaemon.Compression as C
+import qualified JobsDaemon.Transcode   as T
 import Util.Path (uploadDir, getPath, newTmpFile)
 
 encodeVideos :: Bool
@@ -114,7 +110,7 @@ processMedia path ext fileId | not (ext `S.member` extensions) = return False
             app <- getYesod
             _ <- if mediaType == Audio || encodeVideos
                 then do -- Doesn't always transcode videos
-                    jobId <- liftIO $ putFile app fileId
+                    jobId <- liftIO $ T.putFile app fileId
                     liftIO $ C.putFile app fileId [jobId]
                 else 
                     liftIO $ C.putFile app fileId []
@@ -260,46 +256,3 @@ processMedia path ext fileId | not (ext `S.member` extensions) = return False
             return imgUrl
 
     miniaturePath = getPath (takeDirectory path) Miniature
-
--- -----------------------------------------------------------------------------
-
--- | Transcodes a file and updated the corresponding database entry.
-transcodeFile :: App -> FileId -> IO ()
-transcodeFile app fileId = do
-    Just file <- runDBIO app $ get fileId
-
-    let dir = uploadDir app (fileHash file)
-        getPath' = getPath dir
-        path = getPath' Original
-
-    case fileType file of
-        Audio -> do
-            _ <- encodeFile argsWebMAudio path (getPath' WebMAudio)
-            _ <- encodeFile argsMP3       path (getPath' MP3)
-            updateHtml5Encoded
-            return ()
-        Video -> do
-            _ <- encodeFile argsWebM path (getPath' WebMVideo)
-            _ <- encodeFile argsH264 path (getPath' MKV)
-            updateHtml5Encoded
-            return ()
-        _     ->
-            error "Invalid file type."
-  where
-    encodeFile args inPath outPath = do
-        code <- encode args inPath (sinkFile outPath)
-
-        -- Removes the output file if the encoding failed.
-        case code of
-            e@(ExitFailure _) -> do
-                removeFile outPath
-                error (printf "FFmpeg failed with \"%s\"" (show e))
-            _             -> return ()
-
-    updateHtml5Encoded = runDBIO app $
-        updateWhere [MediaAttrsFile ==. fileId] [MediaAttrsTranscoded =. True]
-
--- | Adds a file to a background transcoding queue.
-putFile :: App -> FileId -> IO JobId
-putFile app fileId =
-    registerJob app fileId Transcode [] (transcodeFile app fileId)

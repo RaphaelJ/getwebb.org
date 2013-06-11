@@ -19,7 +19,9 @@ import Text.Julius (rawJS)
 
 import Account (avatarRoute)
 import Handler.Comment (maxCommentLength, commentForm)
-import Util.API (sendNoContent, sendInvalidAdminKey, withFormSuccess)
+import Util.API (
+      sendNoContent, sendInvalidAdminKey, withFormSuccess, withUploadOwner
+    )
 import Util.Date (getDiffTime)
 import Util.Pretty (
       PrettyNumber (..), PrettyFileSize (..), PrettyDuration (..)
@@ -127,8 +129,8 @@ patchViewR :: Text -> Handler ()
 patchViewR hmacTxt = do
     ((res, _), _) <- runFormPostNoToken form
 
-    withFormSuccess res $ \(mDescription, mPublic) -> do
-        withUploadOwner (Hmac hmacTxt) sendNoContent $
+    withFormSuccess res $ \(mDescription, mPublic) ->
+        withUploadOwner (Hmac hmacTxt) sendNoContent $ \(Entity uploadId _) ->
             update uploadId $ catMaybes [
                   (UploadDescription =.) <$> Just <$> mDescription
                 , (UploadPublic =.) <$> mPublic
@@ -158,20 +160,15 @@ deleteViewR hmacTxt = withUploadOwner (Hmac hmacTxt) sendNoContent removeUpload
 -- file if the file is now upload-less.
 removeUpload :: Entity Upload -> YesodDB App ()
 removeUpload (Entity uploadId upload) = do
-    liftIO $ print "1"
     let fileId = uploadFile upload
     delete uploadId
-    liftIO $ print "2"
     update (uploadAdminKey upload) [AdminKeyCount -=. 1]
-    liftIO $ print "3"
 
     -- TODO : Removes the comments.
 
     -- Removes the corresponding file if it was the last upload.
     file <- updateGet fileId [FileCount -=. 1]
-    liftIO $ print "4"
     when (fileCount file < 1) $ do
-        liftIO $ print "5"
         -- Removes attributes
         case fileType file of
             Image   -> do
@@ -188,10 +185,8 @@ removeUpload (Entity uploadId upload) = do
 
         -- Doesn't remove the jobs as they are kept as a log.
 
-        liftIO $ print "6"
         delete fileId
 
         app <- getYesod
         let dir = uploadDir app (fileHash file)
         liftIO $ removeDirectoryRecursive dir
-        liftIO $ print "7"

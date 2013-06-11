@@ -9,8 +9,10 @@ import Text.Julius (rawJS)
 
 import Database.Persist.Sql (rawSql)
 
-import Handler.Download (routeFile)
+import Handler.Download (downloadRoute)
 import Handler.Upload (uploadForm)
+import Util.Hmac (Hmac (..))
+import Util.Path (ObjectType (..))
 import Util.Pretty (PrettyFileSize (..), wrappedText)
 
 -- | Shows the home page.
@@ -41,4 +43,4 @@ getHomeR = do
         imgs <- rawSql sql []
 
         rdr <- lift getUrlRenderParams
-        return [ (i, routeFile rdr i Miniature) | Entity _ i <- imgs ]
+        return [ (i, downloadRoute rdr i Miniature) | Entity _ i <- imgs ]

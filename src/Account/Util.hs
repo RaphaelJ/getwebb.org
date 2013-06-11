@@ -65,7 +65,7 @@ getUserId = runMaybeT $ do
     userIdTxt <- MaybeT $ lookupSession sessionKey
     return $ read $ T.unpack userIdTxt
 
--- | Returns the user entity if the user is authenticated.
+-- | Returns the current user entity if the user is authenticated.
 getUser :: (MonadHandler m, YesodAccount (HandlerSite m)) =>
            m (Maybe (Entity (AccountUser (HandlerSite m)), Avatar))
 getUser = runMaybeT $ do

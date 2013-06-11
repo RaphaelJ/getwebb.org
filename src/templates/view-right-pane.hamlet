@@ -1,13 +1,14 @@
 <div #right_pane>
+ $with hmacTxt <- toPathPiece hmac
     <div .download>
-        <a .big_button href=@{DownloadR hmac} download=#{uploadName upload}
+        <a .big_button href=@{DownloadR hmacTxt} download=#{uploadName upload}
                        tabindex=1>
             Download
 
     $if isAdmin upload mAdminKey
         <div .remove>
             <a .big_button .remove_button href="#"
-               onclick="removeUpload('#{hmac}'); return false">
+               onclick="removeUpload('#{hmacTxt}'); return false">
                 Remove
 
     <div .size>
@@ -16,10 +17,10 @@
 
     <div .share>
         <a .facebook_button
-            href="https://www.facebook.com/dialog/feed?app_id=#{facebookAppId}&link=@{ViewR hmac}&picture=#{icon}&name=#{wrappedName}&redirect_uri=#{currUrl}">
+            href="https://www.facebook.com/dialog/feed?app_id=#{facebookAppId}&link=@{ViewR hmacTxt}&picture=#{icon}&name=#{wrappedName}&redirect_uri=#{currUrl}">
             Share
         <a .twitter_button
-            href="https://twitter.com/intent/tweet?text=#{wrappedName}&url=@{ViewR hmac}&via=GetwebbFiles&original_referer=#{currUrl}">
+            href="https://twitter.com/intent/tweet?text=#{wrappedName}&url=@{ViewR hmacTxt}&via=GetwebbFiles&original_referer=#{currUrl}">
             Tweet
 
     <div .clear_float>
@@ -41,74 +42,79 @@
 
         <div #codes_links>
             <h4>Link
-            <input type=text value=@{ViewR hmac} onclick="this.select()" />
+            <input type=text value=@{ViewR hmacTxt} onclick="this.select()" />
             <h4>Direct link
-            <input type=text value=@{DownloadR hmac} onclick="this.select()" />
+            <input type=text value=@{DownloadR hmacTxt} onclick="this.select()" />
 
         <div #codes_html style="display: none">
             <h4>Link
-            <input type=text value="<a href='@{ViewR hmac}'>#{wrappedName}</a>"
+            <input type=text value="<a href='@{ViewR hmacTxt}'>#{wrappedName}</a>"
                    onclick="this.select()" />
             <h4>Direct link
             <input type=text
-                   value="<a href='@{DownloadR hmac}'>#{wrappedName}</a>"
+                   value="<a href='@{DownloadR hmacTxt}'>#{wrappedName}</a>"
                    onclick="this.select()" />
 
             $maybe imageUrl <- image
                 <h4>Image with link
                 <input type=text
-                       value="<a href='@{ViewR hmac}'><img alt='#{wrappedName}' src='#{imageUrl}' /></a>"
+                       value="<a href='@{ViewR hmacTxt}'><img alt='#{wrappedName}' src='#{imageUrl}' /></a>"
                        onclick="this.select()" />
 
             $maybe miniatureUrl <- miniature
                 <h4>Miniature with link
                 <input type=text
-                       value="<a href='@{ViewR hmac}'><img alt='#{wrappedName}' src='#{miniatureUrl}' /></a>"
+                       value="<a href='@{ViewR hmacTxt}'><img alt='#{wrappedName}' src='#{miniatureUrl}' /></a>"
                        onclick="this.select()" />
 
         <div #codes_bbcode style="display: none">
             <h4>Link
-            <input type=text value="[url=@{ViewR hmac}]#{wrappedName}[/url]"
+            <input type=text value="[url=@{ViewR hmacTxt}]#{wrappedName}[/url]"
                    onclick="this.select()" />
             <h4>Direct link
             <input type=text
-                   value="[url=@{DownloadR hmac}]#{wrappedName}[/url]"
+                   value="[url=@{DownloadR hmacTxt}]#{wrappedName}[/url]"
                    onclick="this.select()" />
 
             $maybe imageUrl <- image
                 <h4>Image with link
                 <input type=text
-                       value="[url=@{ViewR hmac}][img]#{imageUrl}[/img][/url]"
+                       value="[url=@{ViewR hmacTxt}][img]#{imageUrl}[/img][/url]"
                        onclick="this.select()" />
 
             $maybe miniatureUrl <- miniature
                 <h4>Miniature with link
                 <input type=text
-                       value="[url=@{ViewR hmac}][img]#{miniatureUrl}[/img][/url]"
+                       value="[url=@{ViewR hmacTxt}][img]#{miniatureUrl}[/img][/url]"
                        onclick="this.select()" />
 
         <div #codes_markdown style="display: none">
             <h4>Link
-            <input type=text value="[#{wrappedName}](@{ViewR hmac})"
+            <input type=text value="[#{wrappedName}](@{ViewR hmacTxt})"
                    onclick="this.select()" />
             <h4>Direct link
-            <input type=text value="[#{wrappedName}](@{DownloadR hmac})"
+            <input type=text value="[#{wrappedName}](@{DownloadR hmacTxt})"
                    onclick="this.select()" />
 
             $maybe imageUrl <- image
                 <h4>Image with link
                 <input type=text
-                       value="[@{ViewR hmac}](![#{wrappedName}](#{imageUrl}))"
+                       value="[@{ViewR hmacTxt}](![#{wrappedName}](#{imageUrl}))"
                        onclick="this.select()" />
 
             $maybe miniatureUrl <- miniature
                 <h4>Miniature with link
                 <input type=text
-                       value="[@{ViewR hmac}](![#{wrappedName}](#{miniatureUrl}))"
+                       value="[@{ViewR hmacTxt}](![#{wrappedName}](#{miniatureUrl}))"
                        onclick="this.select()" />
 
     <div .stats>
         <h3>Statistics
+        $maybe (Entity ownerId owner, ownerAvatar) <- mOwner
+         $with ownerName <- userName owner
+            <div .creator>
+                <img src=@{avatarRoute app ownerAvatar} alt=#{ownerName} />
+                Uploaded by <a href="#">#{ownerName}</a>.
         $with (views, _, bw) <- stats
             <span .key>Totalled
             <span .value>

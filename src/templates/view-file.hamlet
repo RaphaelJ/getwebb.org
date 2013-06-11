@@ -1,12 +1,13 @@
 <div #page>
     <div #left_pane>
-        <a .icon_link href=@{DownloadR hmac}>
+     $with hmacTxt <- toPathPiece hmac
+        <a .icon_link href=@{DownloadR hmacTxt}>
             <img .icon alt="File icon" src="#{icon}" />
 
         <h1 hint=#{uploadName upload}>
             #{wrappedName}
             <img .qrcode alt="QR Code to this page"
-                  src="http://chart.googleapis.com/chart?cht=qr&chs=150x150&chl=@{ViewR hmac}"/>
+                  src="http://chart.googleapis.com/chart?cht=qr&chs=150x150&chl=@{ViewR hmacTxt}"/>
 
         $if fileType file == Audio
             <div .audio_player>
@@ -14,7 +15,8 @@
                     $if mediaAttrsTranscoded medExtras
                         <audio controls>
                             $forall (audioUrl, audioMime) <- audioSources
-                                <source src=#{audioUrl} type=#{audioMime}>
+                                <source src=#{audioUrl}
+                                        type=#{C.unpack audioMime}>
                     $else
                         <div .transcoding>
                             The media is being re-encoded.<br />

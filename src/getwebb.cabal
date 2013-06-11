@@ -41,7 +41,6 @@ library
                      Handler.Home
                      Handler.Upload
                      Handler.Upload.Archive
-                     Handler.Upload.FFmpeg
                      Handler.Upload.Image
                      Handler.Upload.Media
                      Handler.Upload.Processing
@@ -63,6 +62,7 @@ library
                      Util.API
                      Util.Date
                      Util.Extras
+                     Util.FFmpeg
                      Util.HashDir
                      Util.Hmac
                      Util.Hmac.Type

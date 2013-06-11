@@ -43,5 +43,6 @@ getHistoryR = do
     currentTime <- liftIO $ getCurrentTime
     defaultLayout $ do
         setTitle "Upload history | getwebb"
+        $(widgetFile "public-private")
         $(widgetFile "remove")
         $(widgetFile "history")

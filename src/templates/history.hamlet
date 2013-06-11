@@ -31,31 +31,35 @@
         $else
             <ul #uploads>
                 $forall (upload, file, icon) <- uploads
-                 $with Hmac hmac <- uploadHmac upload
+                 $with Hmac hmacTxt <- uploadHmac upload
                   $with name <- uploadName upload
                     <li>
-                        <a href=@{ViewR hmac} hint=#{name}>
+                        <a href=@{ViewR hmacTxt} hint=#{name}>
                             <h4>#{wrappedText name 28}
 
                             <img  alt="File icon" src="#{icon}" />
 
                             <div .info>
                                 $if uploadPublic upload
-                                    <button .public_button .enabled type=button
-                                            onclick="return false;"
+                                    <button #public_button_#{hmacTxt}
+                                            .public_button .enabled type=button
+                                            onclick="changeUploadPolicy('#{hmacTxt}', true); return false;"
                                             hint="Upload will be published in the public gallery">
                                         Public
-                                    <button .private_button type=button
-                                            onclick="return false;"
+                                    <button #private_button_#{hmacTxt}
+                                            .private_button type=button
+                                            onclick="changeUploadPolicy('#{hmacTxt}', false); return false;"
                                             hint="Upload will NOT be published in the public gallery">
                                         Private
                                 $else
-                                    <button .public_button type=button
-                                            onclick="return false;"
+                                    <button #public_button_#{hmacTxt}
+                                            .public_button type=button
+                                            onclick="changeUploadPolicy('#{hmacTxt}', false); return false;"
                                             hint="Upload will be published in the public gallery">
                                         Public
-                                    <button .private_button .enabled type=button
-                                            onclick="return false;"
+                                    <button #private_button_#{hmacTxt}
+                                            .private_button .enabled type=button
+                                            onclick="changeUploadPolicy('#{hmacTxt}', true); return false;"
                                             hint="Upload will NOT be published in the public gallery">
                                         Private
 

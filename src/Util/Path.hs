@@ -1,8 +1,8 @@
 -- | Few utilities to manages uploads file paths and directories.
 module Util.Path (
       ObjectType (..)
-    , getFileSize, rootUploadDir, uploadDir, hashDir, hashDir', tmpDir
-    , newTmpFile, getPath
+    , rootUploadDir, uploadDir, hashDir, hashDir', tmpDir
+    , newTmpFile, getFileSize, getPath
     ) where
 
 import Import
@@ -23,10 +23,6 @@ data ObjectType = Original
                 | CompressedFile Hmac
     deriving (Show, Eq)
 
--- | Returns the size in bytes of the given file.
-getFileSize :: FilePath -> IO Word64
-getFileSize path = fromIntegral <$> withFile path ReadMode hFileSize
-
 -- | Returns the directory where the uploaded files will be stored.
 rootUploadDir :: App -> FilePath
 rootUploadDir app = extraUploadDir $ appExtra $ settings app
@@ -43,6 +39,10 @@ tmpDir app = rootUploadDir app </> "tmp"
 -- | Opens a new temporary file with the given prefix.
 newTmpFile :: App -> String -> IO (FilePath, Handle)
 newTmpFile app prefix = openTempFile (tmpDir app) prefix
+
+-- | Returns the size in bytes of the given file.
+getFileSize :: FilePath -> IO Word64
+getFileSize path = fromIntegral <$> withFile path ReadMode hFileSize
 
 -- | Returns the path to the given object in the upload directory.
 getPath :: FilePath -> ObjectType -> FilePath

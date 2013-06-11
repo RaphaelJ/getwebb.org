@@ -9,11 +9,14 @@ module JobsDaemon.ResizeImage (
     ) where
 
 import Import
+import Data.Ratio
+import System.Directory (removeFile)
 
 import qualified Vision.Image as I
 import qualified Vision.Primitive as I
 
 import JobsDaemon.Util (registerJob, runDBIO)
+import Util.Path (ObjectType (..), uploadDir, getFileSize, getPath)
 
 -- | The maximum size of an image to be displayed in the viewer.
 maxImageSize :: I.Size

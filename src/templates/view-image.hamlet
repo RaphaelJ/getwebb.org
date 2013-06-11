@@ -1,6 +1,7 @@
 $with headersHeight <- if' (isJust links) 67 37
  <div #full_screen style="top: #{headersHeight}px">
     <div #position_relative>
+     $with hmacTxt <- toPathPiece hmac
         <div #title>
             <h1 hint=#{uploadName upload}>
                 #{wrappedName}
@@ -24,11 +25,11 @@ $with headersHeight <- if' (isJust links) 67 37
 
 
         <div #left_pane>
-            <a href=@{DownloadR hmac} title="View image in full resolution">
+            <a href=@{DownloadR hmacTxt} title="View image in full resolution">
                 <img #image src=#{fromJust $ image} alt=#{uploadName upload}>
 
             <img .qrcode alt="QR Code to this page"
-                src="http://chart.googleapis.com/chart?cht=qr&chs=150x150&chl=@{ViewR hmac}"/>
+                src="http://chart.googleapis.com/chart?cht=qr&chs=150x150&chl=@{ViewR hmacTxt}"/>
 
         ^{right_pane}
 
@@ -37,8 +38,8 @@ $with headersHeight <- if' (isJust links) 67 37
                 <div .avatar>
                     <img src="https://irs1.4sqi.net/img/user/60x60/4Y4NMGQF0LPZYSJN.jpg">
 
-                <form method=post action="" enctype=#{newCommentEnctype}>
-                    ^{newCommentWidget}
+                <form method=post action="" enctype=#{commentEnctype}>
+                    ^{commentWidget}
                     <input #submit_comment .big_button type=submit 
                             value=Publish />
                     <span #chars_left 

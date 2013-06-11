@@ -2,7 +2,7 @@
 -- | Recognises images and create miniature for them.
 module Handler.Upload.Image (
     -- * Constants
-      extensions, miniatureSize, maxImageSize
+      extensions, miniatureSize
     -- * Upload processing
     , processImage
     -- * Images processing
@@ -12,25 +12,18 @@ module Handler.Upload.Image (
 import Import
 
 import qualified Control.Exception as E
-import Control.Monad
 import Data.Maybe
-import Data.Ratio
 import qualified Data.Set as S
-import qualified Data.Text as T
-import System.Directory (removeFile)
 import System.FilePath (takeDirectory)
 
 import qualified Vision.Image as I
 import qualified Vision.Primitive as I
-import Graphics.Exif (fromFile, allTags)
-import Graphics.Exif.Internals (tagFromName, tagTitle)
 import System.TimeIt (timeIt)
 
 import qualified JobsDaemon.Compression as C
 import qualified JobsDaemon.ResizeImage as R
 import qualified JobsDaemon.ExifTags    as EXIF
-import JobsDaemon.Util (registerJob, runDBIO)
-import Util.Path (uploadDir, getPath, getFileSize)
+import Util.Path (ObjectType (..), getPath)
 
 -- | Files extensions which are supported by the DevIL image library.
 extensions :: S.Set Text
@@ -69,8 +62,7 @@ processImage path ext fileId | not (ext `S.member` extensions) = return False
 
             -- Starts a background job to seek the EXIF tags of the
             -- image.
-            let exifJob = jobExifTags app fileId
-            exifJobId <- liftIO $ EXIF.putFile app fileId
+            exifJobId <- liftIO $ EXIF.putFile app fileId []
 
             _ <- runDB $ do
                 update fileId [FileType =. Image]
@@ -100,7 +92,7 @@ processImage path ext fileId | not (ext `S.member` extensions) = return False
         | ext == ".jpg" || ext == ".jpeg" = genDisplayableAsync size JPG
         | ext == ".gif"                   = genDisplayableAsync size GIF
         | otherwise                       = do
-            let img' = displayable img
+            let img' = R.displayable img
             liftIO $ I.save img' (getPath dir (Display PNG))
             return (Just PNG, Nothing)
 

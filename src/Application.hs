@@ -6,15 +6,17 @@ module Application
     ) where
 
 import Import
-import Control.Monad
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Lazy as L
 
-import Yesod.Default.Config
+import Yesod.Default.Config (
+      AppConfig, ConfigSettings (..), DefaultEnv (..)
+    , appExtra, appEnv, configSettings, withYamlEnvironment
+    )
+import qualified Yesod.Default.Config
 import Yesod.Default.Main
 import Yesod.Default.Handlers
 import Control.Monad.Logger (runLoggingT)
-import Database.Persist (runPool)
 import Database.Persist.Sql (runMigration)
 import Network.Wai.Middleware.Autohead (autohead)
 import Network.Wai.Middleware.RequestLogger
@@ -39,6 +41,7 @@ import Handler.View
 
 import qualified JobsDaemon.Daemon as J
 import qualified JobsDaemon.Restore as J
+import qualified JobsDaemon.Util as J
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -55,7 +58,7 @@ makeApplication conf = do
 
     -- Starts the background processes.
     let nJobsThreads = extraJobsThreads $ appExtra conf
-    J.forkJobsDaemon nJobsThreads foundation
+    _ <- J.forkJobsDaemon nJobsThreads foundation
 
     -- Initialize the logging middleware
     logWare <- mkRequestLogger def {
@@ -80,9 +83,8 @@ makeFoundation conf = do
     account <- makeAccount
 
     dbconf <- withYamlEnvironment "config/sqlite.yml" (appEnv conf)
-              Database.Persist.loadConfig >>=
-              Database.Persist.applyEnv
-    p <- Database.Persist.createPoolConfig (dbconf :: Settings.PersistConfig)
+              loadConfig >>= applyEnv
+    p <- createPoolConfig (dbconf :: Settings.PersistConf)
     logger <- mkLogger True stdout
     key <- getEncryptionKey
 
@@ -118,6 +120,6 @@ getApplicationDev :: IO (Int, Application)
 getApplicationDev =
     defaultDevelApp loader makeApplication
   where
-    loader = loadConfig (configSettings Development) {
+    loader = Yesod.Default.Config.loadConfig (configSettings Development) {
           csParseExtra = parseExtra
         }

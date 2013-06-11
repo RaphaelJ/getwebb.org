@@ -6,9 +6,10 @@ module Handler.View (getViewR, patchViewR, deleteViewR, removeUpload)
 import Import
 
 import Control.Monad
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as C
 import Data.List (head, tail, last, init)
 import Data.Maybe
-import qualified Data.ByteString as B
 
 import Network.HTTP.Types.Header (hUserAgent)
 import Network.Wai (requestHeaders)
@@ -16,6 +17,7 @@ import System.Directory (removeDirectoryRecursive)
 import Text.Hamlet (shamlet)
 import Text.Julius (rawJS)
 
+import Account (avatarRoute)
 import Handler.Comment (maxCommentLength, commentForm)
 import Util.API (sendNoContent, sendInvalidAdminKey, withFormSuccess)
 import Util.Date (getDiffTime)
@@ -25,74 +27,76 @@ import Util.Pretty (
     , wrappedText
     )
 import Util.Extras (
-      Extras (..), getFileExtras, getUploadStats
-    , getIcon, getImage, getMiniature, getAudioSources, getArchive
+      Extras (..), getFileExtras, getUploadStats, getIcon, getImage
+    , getMiniature, getAudioSources, getArchive, getUploadOwner
     )
-import Util.Hmac (Hmac (..))
+import Util.Hmac (Hmac (..), Hmacs (..))
 import Util.Path (uploadDir)
 
 -- | Shows information about an upload.
 getViewR :: Text -> Handler RepHtml
 getViewR hmacs' = do
-    when (null hmacs)
-        notFound
+    case fromPathPiece hmacs' of
+        Just (Hmacs hmacs@(hmac:_)) -> do
+            redirectWget
 
-    let hmac = head hmacs
+            (entity@(Entity _ upload), file, extras, mOwner) <- runDB $ do
+                mUpload <- getBy $ UniqueUploadHmac hmac
 
-    -- Redirects immediately wget clients to the download handler.
-    mUserAgent <- ((hUserAgent `lookup`) . requestHeaders) <$> waiRequest
-    case mUserAgent of
-        Just userAgent | "Wget/" `B.isPrefixOf` userAgent ->
-            redirect (DownloadR hmacs')
-        _ ->
-            return ()
+                case mUpload of
+                    Just entity@(Entity _ upload) -> do
+                        let fileId = uploadFile upload
+                        Just file <- get fileId
 
-    (entity@(Entity _ upload), file, extras) <- runDB $ do
-        mUpload <- getBy $ UniqueUploadHmac hmac
+                        mOwner <- getUploadOwner upload
+                        extras <- getFileExtras (Entity fileId file)
 
-        case mUpload of
-            Just entity@(Entity _ upload) -> do
-                let fileId = uploadFile upload
-                Just file <- get fileId
+                        return (entity, file, extras, mOwner)
+                    Nothing -> redirectNext (tail hmacs)
 
-                extras <- getFileExtras (Entity fileId file)
+            app <- getYesod
+            mAdminKey <- getAdminKey
+            rdr <- getUrlRenderParams
+            currUrl <- (flip rdr [] . fromJust) <$> getCurrentRoute
+            stats <- getUploadStats entity
+            facebookAppId <- extraFacebook <$> getExtra
+            (commentWidget, commentEnctype) <- generateFormPost commentForm
 
-                return (entity, file, extras)
-            Nothing -> do
-                -- The file has been removed, redirects to the first existing
-                -- file.
-                existing <- dropRemoved (tail hmacs)
-                if null existing
-                    then lift notFound
-                    else lift $ redirect $ ViewR $ joinHmacs existing
+            let name = uploadName upload
+                wrappedName = wrappedText name 50
+                links = getLinks hmacs
+                icon = getIcon rdr upload extras
+                image = getImage rdr upload extras
+                miniature = getMiniature rdr upload extras
+                audioSources = getAudioSources rdr upload extras
+                archive = getArchive rdr upload extras
+            uploadDiffTime <- getDiffTime $ uploadCreated upload
 
-    mAdminKey <- getAdminKey
-    rdr <- getUrlRenderParams
-    currUrl <- (flip rdr [] . fromJust) <$> getCurrentRoute
-    stats <- getUploadStats entity
-    facebookAppId <- extraFacebook <$> getExtra
-    (newCommentWidget, newCommentEnctype) <- generateFormPost commentForm
+            defaultLayout $ do
+                setTitle [shamlet|#{wrappedName} | getwebb|]
+                let right_pane = $(widgetFile "view-right-pane")
+                    page = case fileType file of
+                        Image -> $(widgetFile "view-image")
+                        _     -> $(widgetFile "view-file")
 
-    let name = uploadName upload
-        wrappedName = wrappedText name 50
-        icon = getIcon rdr upload extras
-        image = getImage rdr upload extras
-        miniature = getMiniature rdr upload extras
-        audioSources = getAudioSources rdr upload extras
-        archive = getArchive rdr upload extras
-    uploadDiffTime <- getDiffTime $ uploadCreated upload
-
-    defaultLayout $ do
-        setTitle [shamlet|#{wrappedName} | getwebb|]
-        let right_pane = $(widgetFile "view-right-pane")
-            page = case fileType file of
-                Image -> $(widgetFile "view-image")
-                _     -> $(widgetFile "view-file")
-
-        $(widgetFile "remove")
-        $(widgetFile "view")
+                $(widgetFile "remove")
+                $(widgetFile "view")
+        _  -> notFound
   where
-    hmacs = splitHmacs hmacs'
+    -- Redirects immediately wget clients to the download handler.
+    redirectWget = do
+        mUserAgent <- ((hUserAgent `lookup`) . requestHeaders) <$> waiRequest
+        case mUserAgent of
+            Just userAgent | "Wget/" `B.isPrefixOf` userAgent ->
+                redirect (DownloadR hmacs')
+            _ ->
+                return ()
+
+    -- The file has been removed, redirects to the first existing file if any.
+    redirectNext hmacs = do
+        existing <- dropRemoved hmacs
+        if null existing then notFound
+                         else redirect $ ViewR $ toPathPiece $ Hmacs existing
 
     -- Removes the non existing hmacs from the head of the list.
     dropRemoved []         = return []
@@ -104,11 +108,11 @@ getViewR hmacs' = do
 
     -- If there is more than one file, links contains the list of hmacs for
     -- the previous and for the next file.
-    links | null (tail hmacs) = Nothing
-          | otherwise         =
-        let previous = last hmacs : init hmacs
-            next     = tail hmacs ++ [head hmacs]
-        in Just (joinHmacs previous, joinHmacs next)
+    getLinks hmacs@(_:_:_) =
+        let previous = toPathPiece $ Hmacs $ last hmacs : init hmacs
+            next     = toPathPiece $ Hmacs $ tail hmacs ++ [head hmacs]
+        in Just (previous, next)
+    getLinks _             = Nothing
 
     -- This is used in hamlet templates because they only supports functions
     -- in expressions, not operators.
@@ -117,33 +121,25 @@ getViewR hmacs' = do
     if' False _ b = b
 
 -- | Updates some attributes about an upload. Returns a 204 No content on
--- success, a 400 Bad Request if the POST data are invalids, a 404 Not found if
+-- success, a 400 Bad Request if the POST data are invalid, a 404 Not found if
 -- doesn't exists or 403 if the user isn't allowed to remove the upload.
-patchViewR :: Hmac -> Handler ()
-patchViewR hmac = do
-    ((res, _), _) <- runFormPost form
+patchViewR :: Text -> Handler ()
+patchViewR hmacTxt = do
+    ((res, _), _) <- runFormPostNoToken form
 
-    withFormSuccess res $ \(mTitle, mPublic) -> do
-        mAdminKey <- getAdminKey
-        case mAdminKey of
-            Just adminKey -> runDB $ do
-                Entity uploadId upload <- getBy404 $ UniqueUploadHmac hmac
-                if isAdmin upload mAdminKey
-                    then 
-                        update uploadId $ catMaybe [
-                              (UpdateTitle =.)  <$> mTitle
-                            , (UpdatePublic =.) <$> mPublic
-                            ]
-                        sendNoContent
-                    else sendInvalidAdminKey
-            Nothing -> sendInvalidAdminKey
+    withFormSuccess res $ \(mDescription, mPublic) -> do
+        withUploadOwner (Hmac hmacTxt) sendNoContent $
+            update uploadId $ catMaybes [
+                  (UploadDescription =.) <$> Just <$> mDescription
+                , (UploadPublic =.) <$> mPublic
+                ]
   where
-    form = (,) <$> aopt textField titleSettings  Nothing
-               <*> aopt boolField publicSettings Nothing
+    form = renderDivs $ (,) <$> aopt textField descriptionSettings Nothing
+                            <*> aopt boolField publicSettings      Nothing
 
-    titleSettings = FieldSettings {
-          fsLabel = "Upload title", fsTooltip = Nothing, fsId = Nothing
-        , fsName = "title", fsAttrs = []
+    descriptionSettings = FieldSettings {
+          fsLabel = "Upload description", fsTooltip = Nothing, fsId = Nothing
+        , fsName = Just "description", fsAttrs = []
         }
 
     publicSettings = FieldSettings {
@@ -153,35 +149,29 @@ patchViewR hmac = do
 
 -- | Deletes an upload. Returns a 204 No content on success, a 404 Not found if
 -- doesn't exists or 403 if the user isn't allowed to remove the upload.
-deleteViewR :: Hmac -> Handler ()
-deleteViewR hmac = do
-    mAdminKey <- getAdminKey
-
-    case mAdminKey of
-        Just adminKey -> runDB $ do
-            entity@(Entity _ upload) <- getBy404 $ UniqueUploadHmac hmac
-
-            if isAdmin upload mAdminKey
-                then do removeUpload entity
-                        sendNoContent
-                else sendInvalidAdminKey
-        Nothing -> sendInvalidAdminKey
+deleteViewR :: Text -> Handler ()
+deleteViewR hmacTxt = withUploadOwner (Hmac hmacTxt) sendNoContent removeUpload
 
 -- Utilities -------------------------------------------------------------------
 
 -- | Removes an upload. Decrements its owner\'s count and remove the associated
 -- file if the file is now upload-less.
-removeUpload :: Entity Upload -> YesodDB App App ()
+removeUpload :: Entity Upload -> YesodDB App ()
 removeUpload (Entity uploadId upload) = do
+    liftIO $ print "1"
     let fileId = uploadFile upload
     delete uploadId
+    liftIO $ print "2"
     update (uploadAdminKey upload) [AdminKeyCount -=. 1]
+    liftIO $ print "3"
 
     -- TODO : Removes the comments.
 
     -- Removes the corresponding file if it was the last upload.
     file <- updateGet fileId [FileCount -=. 1]
+    liftIO $ print "4"
     when (fileCount file < 1) $ do
+        liftIO $ print "5"
         -- Removes attributes
         case fileType file of
             Image   -> do
@@ -198,8 +188,10 @@ removeUpload (Entity uploadId upload) = do
 
         -- Doesn't remove the jobs as they are kept as a log.
 
+        liftIO $ print "6"
         delete fileId
 
-        app <- lift $ getYesod
+        app <- getYesod
         let dir = uploadDir app (fileHash file)
         liftIO $ removeDirectoryRecursive dir
+        liftIO $ print "7"

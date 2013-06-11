@@ -1,0 +1,31 @@
+// Change the sharing policy of an upload asynchronously.
+function changeUploadPolicy(uploadHmac, isPublic)
+{
+    var url = "@{ViewR ""}";
+    url = url.substr(0, url.length - 1) + uploadHmac;
+
+    $.ajax({
+        type: "PATCH",
+        url: url,
+        data: { public: (isPublic ? "yes" : "no") },
+        complete: function (xhr, status) {
+            if (xhr.status == 204) {
+                $("#public_button_" + uploadHmac).toggleClass(
+                    "enabled", isPublic
+                );
+                $("#private_button_" + uploadHmac).toggleClass(
+                    "enabled", !isPublic
+                );
+            } else if (xhr.status == 403)
+                alert("You don't have the permission to modify this file.");
+            else if (xhr.status == 404)
+                alert("The file doesn't exist.");
+            else {
+                alert("Failed to change the policy of this file.");
+                var res = jQuery.parseJSON(xhr.responseText);
+                for (i = 0; i < res.length; i++)
+                    alert(res[i]);
+            }
+        }
+    });
+}

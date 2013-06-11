@@ -7,8 +7,14 @@ module JobsDaemon.Transcode (
     ) where
 
 import Import
+import Data.Conduit.Binary (sinkFile)
+import System.Directory (removeFile)
+import System.Exit (ExitCode (..))
+import Text.Printf
 
 import JobsDaemon.Util (registerJob, runDBIO)
+import Util.FFmpeg (argsWebM, argsH264, argsWebMAudio, argsMP3, encode)
+import Util.Path (ObjectType (..), uploadDir, getPath)
 
 -- | Transcodes a file and update the corresponding database entry.
 jobTranscode :: App -> FileId -> IO ()

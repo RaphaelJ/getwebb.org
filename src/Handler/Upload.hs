@@ -8,9 +8,7 @@ import Import
 import Control.Monad.Writer hiding (lift)
 import Data.Map (elems)
 
-import Network.HTTP.Types.Status (
-      mkStatus, created201, requestEntityTooLarge413
-    )
+import Network.HTTP.Types.Status (mkStatus, requestEntityTooLarge413)
 
 import Account (getUser)
 import Handler.Upload.Processing (UploadError (..), processFile)
@@ -27,7 +25,7 @@ data Options = Options {
 postUploadR :: Handler ()
 postUploadR = do
     ((res, _), _) <- runFormPostNoToken uploadForm
-    withFormSuccess res $ \~(file:_, Options public email) -> do
+    withFormSuccess res $ \ (~(file:_), Options public email) -> do
         -- Allocates an new admin key if the client doesn't have one.
         mAdminKey <- getAdminKey
         adminKeyId <- case mAdminKey of
@@ -42,7 +40,8 @@ postUploadR = do
         case eUpload of
             Right upload -> do
                 {- TODO: email -}
-                sendObjectCreated hmac (Just ViewR)
+                sendObjectCreated (uploadHmac upload)
+                                  (Just (ViewR . toPathPiece))
             Left err -> do
                 let status = case err of
                         DailyIPLimitReached -> tooManyRequests429
@@ -55,7 +54,7 @@ postUploadR = do
 uploadForm :: Html
            -- | Returns two widgets. The first one is for the files selector
            -- widget and the second for the options\' widget.
-           -> MForm App App (FormResult ([FileInfo], Options), (Widget, Widget))
+           -> MForm Handler (FormResult ([FileInfo], Options), (Widget, Widget))
 uploadForm extra = do
     tell Multipart
 

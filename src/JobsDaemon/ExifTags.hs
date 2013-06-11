@@ -1,5 +1,5 @@
-{-# LANGUAGE BangPatterns #-}
--- | Uses the JobDaemon to fetch the EXIF tags of an image in background.
+{-# LANGUAGE BangPatterns, ScopedTypeVariables #-}
+-- | Uses the JobDaemon to fetch EXIF tags of an image in background.
 module JobsDaemon.ExifTags (
       exifTags
     -- * Job
@@ -9,8 +9,15 @@ module JobsDaemon.ExifTags (
     ) where
 
 import Import
+import qualified Control.Exception as E
+import Control.Monad
+import qualified Data.Text as T
+
+import Graphics.Exif (fromFile, allTags)
+import Graphics.Exif.Internals (tagFromName, tagTitle)
 
 import JobsDaemon.Util (registerJob, runDBIO)
+import Util.Path (ObjectType (..), uploadDir, getPath)
 
 -- | Reads EXIF tags from the image. Returns an empty list if the image doesn't
 -- support EXIF tags.
@@ -36,7 +43,7 @@ jobExifTags app fileId = do
     tags <- exifTags path
 
     when (not $ null tags) $ runDBIO app $ do
-        mFile <- get fileId -- Fails if the file doesn't exist.
+        mFile <- get fileId
         case mFile of
             Just _  -> error "File doesn't exists anymore"
             Nothing ->
@@ -45,4 +52,5 @@ jobExifTags app fileId = do
 
 -- | Adds a file to the background EXIF tags extracting queue.
 putFile :: App -> FileId -> [JobId] -> IO JobId
-putFile app fileId deps = registerJob app fileId deps (jobExifTags app fileId)
+putFile app fileId deps = registerJob app fileId ExifTags deps 
+                                      (jobExifTags app fileId)

@@ -48,7 +48,7 @@
 <div #page>
     <ul #browser>
         $forall (upload, iconUrl) <- topImages
-          $with hmac <- uploadHmac upload
+          $with Hmac hmac <- uploadHmac upload
            $with name <- uploadName upload
             <li .hint hint=#{wrappedText name 60}>
                 <a href=@{ViewR hmac}>

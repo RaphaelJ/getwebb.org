@@ -13,7 +13,6 @@ import System.FilePath
 import System.IO
 
 import Control.Monad.Trans.Either
-import Database.Persist (PersistValue (..))
 import Database.Persist.Sql (Single (..), rawSql)
 import qualified Data.ByteString.Lazy as B
 import Data.Digest.Pure.SHA (sha1, showDigest)
@@ -27,7 +26,7 @@ import Handler.Upload.Media (processMedia)
 import qualified JobsDaemon.Compression as C
 import Util.API (ToAPIError (..))
 import Util.Hmac (newHmac)
-import Util.Path (getFileSize, uploadDir, newTmpFile, getPath)
+import Util.Path (ObjectType (..), getFileSize, uploadDir, newTmpFile, getPath)
 
 import System.TimeIt (timeIt)
 

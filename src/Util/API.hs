@@ -3,7 +3,7 @@
 module Util.API (
       APIError (..), ToAPIError (..)
     , sendObjectCreated, sendNoContent, sendErrorResponse, sendInvalidAdminKey
-    , withFormSuccess
+    , withFormSuccess, withUploadOwner
     ) where
 
 import Import
@@ -65,3 +65,24 @@ withFormSuccess (FormSuccess a)    f = f a
 withFormSuccess (FormFailure errs) _ = sendErrorResponse badRequest400 errs
 withFormSuccess FormMissing        _ = 
     sendErrorResponse badRequest400 ["Missing Form." :: Text]
+
+-- | Executes the inner database transaction and then the action if the current
+-- user is an admin of the upload. Returns a 403 status code if the user is not
+-- the owner of the upload and a 404 status code if the upload doesn't exists.
+withUploadOwner :: Hmac -> Handler b -> (Entity Upload -> YesodDB App a)
+                -> Handler b
+withUploadOwner hmac onSuccess transac = do
+    mAdminKey <- getAdminKey
+
+    case mAdminKey of
+        Just _  -> do
+            success <- runDB $ do
+                entity@(Entity _ upload) <- getBy404 $ UniqueUploadHmac hmac
+
+                if isAdmin upload mAdminKey then transac entity >> return True
+                                            else return False
+
+            if success then onSuccess
+                        else sendInvalidAdminKey
+        Nothing -> sendInvalidAdminKey
+    

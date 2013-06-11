@@ -3,10 +3,12 @@
 module Util.Extras (
       Extras (..), getFileExtras, getUploadStats
     , getIcon, getImage, getMiniature, getAudioSources, getArchive
+    , getUploadOwner
     ) where
 
 import Import
 
+import Control.Monad.Trans.Maybe
 import Data.Char (toLower)
 import Data.Maybe
 import qualified Data.Set as S
@@ -14,6 +16,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import System.FilePath (takeExtension)
 
+import Account (Avatar, getAvatar)
 import Handler.Download (downloadRoute, getBufferEntry)
 import Handler.Upload.Archive (archiveTree, treeToHtml)
 import Util.Path (ObjectType (..))
@@ -148,3 +151,10 @@ getArchive rdr upload (ArchiveExtras files) =
     let rdr' archiveHmac = downloadRoute rdr upload (CompressedFile archiveHmac)
     in Just $ treeToHtml rdr' (archiveTree files)
 getArchive _   _      _                     = Nothing
+
+-- | Returns the account and of avatar of the user who uploaded the file.
+getUploadOwner :: Upload -> YesodDB App (Maybe (Entity User, Avatar))
+getUploadOwner upload = runMaybeT $ do
+    user   <- MaybeT $ getBy $ UniqueUserAdminKey $ uploadAdminKey upload
+    avatar <- MaybeT $ getAvatar $ entityVal user
+    return (user, avatar)

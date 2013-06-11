@@ -161,7 +161,6 @@ body {
         }
 
         #comments {
-            display: none;
             position: absolute;
             z-index: 10;
             height: 550px;
@@ -257,19 +256,19 @@ body {
                         position: absolute;
                         top: 10px;
                         left: 90px;
-                        height: 70px;
-                        width: 390px;
+                        height: 60px;
+                        width: 380px;
                         resize: none;
                     }
 
                     #chars_left {
                         position: absolute;
                         bottom: 20px;
-                        right: 140px;
+                        right: 145px;
 
                         font-size: 1.3em;
                         font-weight: 700;
-                        color: #609E22;
+                        color: #80AE2B;
                     }
 
                     #chars_left.negative {

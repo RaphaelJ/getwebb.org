@@ -15,15 +15,13 @@ import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
 import qualified Data.Set as S
 import qualified Data.Text as T
 import System.Directory
-import System.Exit (ExitCode (..))
 import System.FilePath ((<.>), takeDirectory, takeFileName)
 import System.IO (hClose)
-import Text.Printf
 
 import Control.Monad.Trans.Resource (register, release)
 import qualified Data.Aeson as J
 import Data.Conduit (($$+-))
-import Data.Conduit.Binary (sinkFile, sinkHandle)
+import Data.Conduit.Binary (sinkHandle)
 import qualified Data.HashMap.Strict as H
 import qualified Data.Vector as V
 import Network.HTTP.Conduit (http, parseUrl, responseBody)
@@ -33,15 +31,11 @@ import qualified Sound.TagLib as ID3
 import System.Posix.Files (createSymbolicLink, removeLink)
 import qualified Vision.Image as I
 
-
-import Handler.Upload.FFmpeg (
-      MediaInfo (..), MediaDuration (..), argsWebMAudio, argsMP3
-    , argsWebM, argsH264, encode, getInfo
-    )
 import Handler.Upload.Image (miniature)
 import qualified JobsDaemon.Compression as C
 import qualified JobsDaemon.Transcode   as T
-import Util.Path (uploadDir, getPath, newTmpFile)
+import Util.FFmpeg (MediaInfo (..), MediaDuration (..), getInfo)
+import Util.Path (ObjectType (..), getPath, newTmpFile)
 
 encodeVideos :: Bool
 encodeVideos = False
@@ -200,7 +194,7 @@ processMedia path ext fileId | not (ext `S.member` extensions) = return False
                 (tmp, hTmp) <- liftIO $ newTmpFile app "cover_"
 
                 request <- liftIO $ parseUrl $ T.unpack coverUrl
-                lift $ do
+                liftResourceT $ do
                     closeTmp <- register $ hClose hTmp
                     imgResponse <- http request (httpManager app)
                     responseBody imgResponse $$+- sinkHandle hTmp

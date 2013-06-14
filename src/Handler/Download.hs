@@ -3,7 +3,7 @@
 -- accesses.
 module Handler.Download (
     -- * Page handler
-      getDownloadR
+      getDownloadR, getDownloadMiniatureR
     -- * Transmission utilities
     , trackedBS, lazyBSToSource
     -- * URL utilities
@@ -237,7 +237,7 @@ getDownloadR hmacs' = do
         mArchive <- lookupGetParam "archive"
         case mArchive of
             Just hmac -> return $! Just (CompressedFile (Hmac hmac))
-            Nothing   -> parseType <$> lookupGetParam "type"
+            Nothing   -> parseType <$> lookupGetParam "t"
 
     -- Parses the file type from the URL parameter.
     parseType Nothing            = Just Original
@@ -290,6 +290,9 @@ getDownloadR hmacs' = do
     splitCommas xs = let (ys, zs) = break (== ',') xs
                      in ys : splitCommas (dropWhile (== ' ') $ drop 1 zs)
 
+getDownloadMiniatureR :: Text -> Handler ()
+getDownloadMiniatureR = undefined
+
 -- | Wraps a 'L.ByteString' so each generated 'L.Chunk' size is commited to the
 -- given action. Executes the finalizer when the full 'L.ByteString' has been
 -- consumed.
@@ -324,12 +327,12 @@ downloadRoute :: (Route App -> [(Text, Text)] -> Text) -> Upload -> ObjectType
 downloadRoute urlRdr upload obj =
     urlRdr' $ case obj of
         Original                   -> []
-        Miniature                  -> [("type", "miniature")]
-        WebMAudio                  -> [("type", "awebm")]
-        MP3                        -> [("type", "mp3")]
-        WebMVideo                  -> [("type", "vwebm")]
-        MKV                        -> [("type", "mkv")]
-        Display _                  -> [("type", "display")]
+        Miniature                  -> [("t", "miniature")]
+        WebMAudio                  -> [("t", "awebm")]
+        MP3                        -> [("t", "mp3")]
+        WebMVideo                  -> [("t", "vwebm")]
+        MKV                        -> [("t", "mkv")]
+        Display _                  -> [("t", "display")]
         CompressedFile (Hmac hmac) -> [("archive", hmac)]
   where
     Hmac hmacTxt = uploadHmac upload

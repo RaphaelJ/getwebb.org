@@ -40,14 +40,33 @@ a:hover {
     clear: both;
 }
 
-.errors {
+.errors, .notice {
     margin: 5px 0;
     padding: 5px 10px;
     background-color: #C56154;
     border-radius: 2px;
-    box-shadow: 2px 2px 0 0 #9A4C41;
 
     color: white;
+    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.2);
+
+    a {
+        color: white;
+        text-decoration: underline;
+    }
+
+    a:hover {
+        text-decoration: none;
+    }
+}
+
+.errors {
+    background-color: #C56154;
+    box-shadow: 2px 2px 0 0 #9A4C41;
+}
+
+.notice {
+    background-color: #CD6427;
+    box-shadow: 2px 2px 0 0 #AE5D2F;
 }
 
 /* Forms */

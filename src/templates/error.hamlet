@@ -8,4 +8,4 @@
 
             <p>
                 Return to our <a href="@{HomeR}">home page</a> or to the
-                <a href="javascript: history.go(-1);">last page</a> you visited.
+                <a href="javascript: history.go(-1);">last page you visited</a>.

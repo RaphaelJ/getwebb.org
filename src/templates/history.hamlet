@@ -29,6 +29,20 @@
             <div .errors>
                 You don't have uploaded any file yet.
         $else
+            $if orphans > 0
+                <p .notice>
+                    $if orphans == 1
+                        One of the following uploads is linked to this computer.
+                    $else
+                        #{PrettyNumber orphans} of the following uploads are
+                        linked to this computer.
+
+                    <br />
+                    <a href=@{HistoryFusionR}>
+                        Click here
+                    to associate these with your account so they will be
+                    available everywhere.
+
             <ul #uploads>
                 $forall (upload, file, icon) <- uploads
                  $with Hmac hmacTxt <- uploadHmac upload

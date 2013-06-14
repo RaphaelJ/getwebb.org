@@ -3,6 +3,7 @@
 
 /                       HomeR           GET
 /d/#Text                DownloadR       GET
+/d/#Text/mini           DownloadMiniatureR       GET
 /u                      UploadR         POST
 /v/#Text                ViewR           GET PATCH DELETE
 
@@ -11,5 +12,6 @@
 /comment/#Hmac/down     CommentDownR    PUT
 
 /history                HistoryR        GET
+/history/fusion         HistoryFusionR  GET
 
 /account                AccountR        Account getAccount

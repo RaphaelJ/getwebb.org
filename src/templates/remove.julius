@@ -18,7 +18,6 @@ function removeUpload(uploadHmac)
                     document.location.href = document.location.href;
                 } else {
                     alert("Failed to remove the file.");
-                    alert(xhr.responseText);
                     var res = jQuery.parseJSON(xhr.responseText);
                     for (i = 0; i < res.length; i++)
                         alert(res[i]);

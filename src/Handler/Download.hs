@@ -233,24 +233,6 @@ getDownloadR hmacs' = do
             finalizer = incrementViewCount app uploadId
         liftIO $ trackedBS bwTracker finalizer bs
 
-    -- Returns the type of the requested item or Nothing of the type is invalid.
-    parseQuery = do
-        mArchive <- lookupGetParam "archive"
-        case mArchive of
-            Just hmac -> return $! Just (CompressedFile (Hmac hmac))
-            Nothing   -> parseType <$> lookupGetParam "t"
-
-    -- Parses the file type from the URL parameter.
-    parseType Nothing            = Just Original
-    parseType (Just "")          = Just Original
-    parseType (Just "miniature") = Just Miniature
-    parseType (Just "awebm")     = Just WebMAudio
-    parseType (Just "mp3")       = Just MP3
-    parseType (Just "vwebm")     = Just WebMVideo
-    parseType (Just "mkv")       = Just MKV
-    parseType (Just "display")   = Just (Display undefined)
-    parseType _                  = Nothing
-
     -- Tries to open the file given its type (original, miniature ...).
     -- 404 Not found if doesn't exists.
     safeOpenFile file requestType = do
@@ -291,33 +273,92 @@ getDownloadR hmacs' = do
     splitCommas xs = let (ys, zs) = break (== ',') xs
                      in ys : splitCommas (dropWhile (== ' ') $ drop 1 zs)
 
+-- | Responds with the miniature of the upload.
 getDownloadMiniatureR :: Hmac -> Handler ()
-getDownloadMiniatureR hmac = do
-    openUpload hmac Miniature
+getDownloadMiniatureR = sendRawUploadObject Miniature typePng
+
+-- | Responds with the WebM audio file of the upload.
+getDownloadWebMAR :: Hmac -> Handler ()
+getDownloadWebMAR = sendRawUploadObject WebMAudio "audio/webm"
+
+-- | Responds with the MP3 file of the upload.
+getDownloadMP3R :: Hmac -> Handler ()
+getDownloadMP3R = sendRawUploadObject MP3 "audio/mpeg"
+
+-- | Responds with the WebM video file of the upload.
+getDownloadWebMVR :: Hmac -> Handler ()
+getDownloadWebMVR = sendRawUploadObject WebMVideo "video/webm"
+
+-- | Responds with the MKV video file of the upload.
+getDownloadMKVR :: Hmac -> Handler ()
+getDownloadMKVR = sendRawUploadObject MKV "video/x-matroska"
+
+-- | Responds with the displayable version of the file of the upload.
+getDownloadDisplayableR :: Hmac -> Hmac -> Handler ()
+getDownloadDisplayableR = do
+    (uploadId, h, displayType) <- runDB $ do
+        entity@(Entity _ upload) <- getBy404 $ UniqueUploadHmac hmac
+
+        let fileId = uploadFile upload
+        Just file <- get fileId
+        when (fileType file /= Image)
+            notFound
+
+        Just (Entity _ attrs) <- getBy $ UniqueImageAttrs fileId
+
+        case imageAttrsDisplayable attrs of
+            Just displayType ->
+                -- Opens the file inside the transaction to ensure data
+                -- consistency.
+                h <- lift $ safeOpenFile file (Display displayType)
+
+                return (uploadId, h, displayType)
+            Nothing -> notFound
+
+    let mime = case displayType of PNG -> typePng
+                                   JPG -> typeJpeg
+                                   GIF -> typeGif
+    streamFileHandle uploadId mime h
+
+-- | Responds with a file contained in the upload.
+getDownloadArchiveR :: Hmac -> Hmac -> Handler ()
+getDownloadArchiveR = sendRawUploadObject WebMVideo "video/webm"
 
 -- | Search the upload in the database. Returns and open the associated file.
 -- Returns a 404 error if the upload doesn't exist.
 openUpload :: Hmac -> ObjectType -> Handler (Entity Upload, File, Handle)
-openUpload hmac requestType = runDB $ do
+openUpload hmac objType = runDB $ do
     entity@(Entity _ upload) <- getBy404 $ UniqueUploadHmac hmac
     Just file <- get $ uploadFile upload
 
     -- Opens the file inside the transaction to ensure data consistency.
-    h <- safeOpenFile file requestType
+    h <- safeOpenFile file
 
     return (file, entity, h)
   where
     -- Tries to open the file given its type (original, miniature ...).
     -- 404 Not found if doesn't exists.
-    safeOpenFile file requestType = do
+    safeOpenFile file = do
         app <- getYesod
         let dir = uploadDir app (fileHash file)
-            path = getPath dir requestType
+            path = getPath dir objType
 
         eH <- liftIO $ E.try (openBinaryFile path ReadMode)
         case eH of
             Right h                     -> return h
             Left (_ :: E.SomeException) -> notFound
+
+streamRawUploadObject :: ObjectType -> ContentType -> Hmac -> Handler ()
+streamRawUploadObject objType mime hmac = do
+    (Entity uploadId upload, file, h) <- openUpload hmac objType
+    streamFileHandle uploadId mime h
+
+streamFileHandle :: UploadId -> ContentType -> Handle -> Handler ()
+streamFileHandle uploadId mime h = do
+    bs   <- liftIO (L.hGetContents h) >>= getTrackedBS uploadId
+    size <- word64 <$> liftIO (hFileSize h)
+
+    streamByteString [h] bs mime (Just size)
 
 -- | Wraps a 'L.ByteString' so each generated 'L.Chunk' size is commited to the
 -- given action. Executes the finalizer when the full 'L.ByteString' has been

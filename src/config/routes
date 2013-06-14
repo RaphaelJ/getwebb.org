@@ -1,10 +1,17 @@
 /static                 StaticR                 Static getStatic
 /robots.txt             RobotsR                 GET
 
-/                       HomeR                   GET
+/                       UploadR                 GET POST
+
 /d/#Text                DownloadR               GET
 /d/#Hmac/mini           DownloadMiniatureR      GET
-/u                      UploadR                 POST
+/d/#Hmac/awebm          DownloadWebMAR          GET
+/d/#Hmac/mp3            DownloadMP3R            GET
+/d/#Hmac/vwebm          DownloadWebMVR          GET
+/d/#Hmac/mkv            DownloadMKVR            GET
+/d/#Hmac/display        DownloadDisplayableR    GET
+/d/#Hmac/archive/#Hmac  DownloadArchiveR        GET
+
 /v/#Text                ViewR                   GET PATCH DELETE
 
 /comments/#Hmac         CommentsR               GET POST

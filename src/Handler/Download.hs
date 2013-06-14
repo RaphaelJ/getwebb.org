@@ -75,7 +75,7 @@ getDownloadR hmacs' = do
             -- Opens the file inside the transaction to ensure data consistency.
             h <- lift $ safeOpenFile file requestType
 
-            return (file, uploadId, upload, h)
+            return (file, entityuploadId, upload, h)
 
         bs' <- liftIO $ L.hGetContents h
         allowGzip <- getGzipClientSupport
@@ -213,7 +213,7 @@ getDownloadR hmacs' = do
 
     -- Responds to the client with the ByteString content and closes the
     -- handlers afterwards.
-    streamByteString :: [Handle] -> L.ByteString -> C.ByteString -> Maybe Word64
+    streamByteString :: [Handle] -> L.ByteString -> ContentType -> Maybe Word64
                      -> Handler ()
     streamByteString hs bs mime mSize = do
         neverExpires
@@ -222,15 +222,16 @@ getDownloadR hmacs' = do
             addHeader "Content-Length" (T.pack $ show size)
 
         let source = lazyBSToSource (mapM_ hClose hs) bs
-        sendResponse (mime, ContentSource source)
+        respondSource mime source
 
-    -- | Wraps the original ByteString so each transmitted chunk size is
-    -- commited to the upload's total amount of transferred bytes.
+    -- Wraps the original ByteString so each transmitted chunk size is commited
+    -- to the upload's total amount of transferred bytes.
     -- Updates the upload's last view after the stream has been fully streamed.
     getTrackedBS uploadId bs = do
         app <- getYesod
         let bwTracker = addBandwidth app uploadId
-        liftIO $ trackedBS bwTracker (incrementViewCount app uploadId) bs
+            finalizer = incrementViewCount app uploadId
+        liftIO $ trackedBS bwTracker finalizer bs
 
     -- Returns the type of the requested item or Nothing of the type is invalid.
     parseQuery = do
@@ -290,8 +291,33 @@ getDownloadR hmacs' = do
     splitCommas xs = let (ys, zs) = break (== ',') xs
                      in ys : splitCommas (dropWhile (== ' ') $ drop 1 zs)
 
-getDownloadMiniatureR :: Text -> Handler ()
-getDownloadMiniatureR = undefined
+getDownloadMiniatureR :: Hmac -> Handler ()
+getDownloadMiniatureR hmac = do
+    openUpload hmac Miniature
+
+-- | Search the upload in the database. Returns and open the associated file.
+-- Returns a 404 error if the upload doesn't exist.
+openUpload :: Hmac -> ObjectType -> Handler (Entity Upload, File, Handle)
+openUpload hmac requestType = runDB $ do
+    entity@(Entity _ upload) <- getBy404 $ UniqueUploadHmac hmac
+    Just file <- get $ uploadFile upload
+
+    -- Opens the file inside the transaction to ensure data consistency.
+    h <- safeOpenFile file requestType
+
+    return (file, entity, h)
+  where
+    -- Tries to open the file given its type (original, miniature ...).
+    -- 404 Not found if doesn't exists.
+    safeOpenFile file requestType = do
+        app <- getYesod
+        let dir = uploadDir app (fileHash file)
+            path = getPath dir requestType
+
+        eH <- liftIO $ E.try (openBinaryFile path ReadMode)
+        case eH of
+            Right h                     -> return h
+            Left (_ :: E.SomeException) -> notFound
 
 -- | Wraps a 'L.ByteString' so each generated 'L.Chunk' size is commited to the
 -- given action. Executes the finalizer when the full 'L.ByteString' has been

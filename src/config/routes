@@ -1,17 +1,17 @@
-/static                 StaticR         Static getStatic
-/robots.txt             RobotsR         GET
+/static                 StaticR                 Static getStatic
+/robots.txt             RobotsR                 GET
 
-/                       HomeR           GET
-/d/#Text                DownloadR       GET
-/d/#Text/mini           DownloadMiniatureR       GET
-/u                      UploadR         POST
-/v/#Text                ViewR           GET PATCH DELETE
+/                       HomeR                   GET
+/d/#Text                DownloadR               GET
+/d/#Hmac/mini           DownloadMiniatureR      GET
+/u                      UploadR                 POST
+/v/#Text                ViewR                   GET PATCH DELETE
 
-/comments/#Hmac         CommentsR       GET POST
-/comment/#Hmac/up       CommentUpR      PUT
-/comment/#Hmac/down     CommentDownR    PUT
+/comments/#Hmac         CommentsR               GET POST
+/comment/#Hmac/up       CommentUpR              PUT
+/comment/#Hmac/down     CommentDownR            PUT
 
-/history                HistoryR        GET
-/history/fusion         HistoryFusionR  GET
+/history                HistoryR                GET
+/history/fusion         HistoryFusionR          GET
 
-/account                AccountR        Account getAccount
+/account                AccountR                Account getAccount

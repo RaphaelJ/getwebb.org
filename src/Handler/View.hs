@@ -19,9 +19,7 @@ import Text.Julius (rawJS)
 
 import Account (avatarRoute)
 import Handler.Comment (maxCommentLength, commentForm)
-import Util.API (
-      sendNoContent, sendInvalidAdminKey, withFormSuccess, withUploadOwner
-    )
+import Util.API (sendNoContent, withFormSuccess, withUploadOwner)
 import Util.Date (getDiffTime)
 import Util.Pretty (
       PrettyNumber (..), PrettyFileSize (..), PrettyDuration (..)

@@ -39,7 +39,7 @@ getHistoryR = do
                 let fileId = uploadFile upload
                 Just file <- get fileId
                 extras <- getFileExtras (Entity fileId file)
-                return (upload, file, getIcon rdr upload extras)
+                return (upload, file, getIcon upload extras)
 
             return (uploads', orphans)
         Nothing -> return ([], 0)

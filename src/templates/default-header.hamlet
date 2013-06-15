@@ -1,6 +1,6 @@
 <header>
     <nav>
-        <a #logo href=@{HomeR}>
+        <a #logo href=@{UploadR}>
             g<span class="etwebb">etwebb</span>
 
         <span #free_file_sharing>
@@ -10,27 +10,27 @@
             $case currentPage
                 $of NewUpload
                     <li .active>
-                        <a href=@{HomeR}>New upload
+                        <a href=@{UploadR}>New upload
                     <li>
-                        <a href=@{HomeR}>Browse
+                        <a href=@{UploadR}>Browse
                     <li>
                         <a href=@{HistoryR}>Upload history
                             <span .count #count_history>
                                 #{PrettyNumber countHistory}
                 $of History
                     <li>
-                        <a href=@{HomeR}>New upload
+                        <a href=@{UploadR}>New upload
                     <li>
-                        <a href=@{HomeR}>Browse
+                        <a href=@{UploadR}>Browse
                     <li .active>
                         <a href=@{HistoryR}>Upload history
                             <span .count #count_history>
                                 #{PrettyNumber countHistory}
                 $of _
                     <li>
-                        <a href=@{HomeR}>New upload
+                        <a href=@{UploadR}>New upload
                     <li>
-                        <a href=@{HomeR}>Browse
+                        <a href=@{UploadR}>Browse
                     <li>
                         <a href=@{HistoryR}>Upload history
                             <span .count #count_history>

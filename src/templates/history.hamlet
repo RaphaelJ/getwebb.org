@@ -51,7 +51,7 @@
                         <a href=@{ViewR hmacTxt} hint=#{name}>
                             <h4>#{wrappedText name 28}
 
-                            <img  alt="File icon" src="#{icon}" />
+                            <img  alt="File icon" src="@{icon}" />
 
                             <div .info>
                                 $if uploadPublic upload

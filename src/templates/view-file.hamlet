@@ -2,7 +2,7 @@
     <div #left_pane>
      $with hmacTxt <- toPathPiece hmac
         <a .icon_link href=@{DownloadR hmacTxt}>
-            <img .icon alt="File icon" src="#{icon}" />
+            <img .icon alt="File icon" src="@{icon}" />
 
         <h1 hint=#{uploadName upload}>
             #{wrappedName}
@@ -15,7 +15,7 @@
                     $if mediaAttrsTranscoded medExtras
                         <audio controls>
                             $forall (audioUrl, audioMime) <- audioSources
-                                <source src=#{audioUrl}
+                                <source src=@{audioUrl}
                                         type=#{C.unpack audioMime}>
                     $else
                         <div .transcoding>

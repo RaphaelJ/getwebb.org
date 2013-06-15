@@ -52,7 +52,7 @@
            $with name <- uploadName upload
             <li .hint hint=#{wrappedText name 60}>
                 <a href=@{ViewR hmac}>
-                    <img src=#{iconUrl} alt=#{name} />
+                    <img src=@{iconUrl} alt=#{name} />
 
         <a .big_button href=#>
             Browse public files

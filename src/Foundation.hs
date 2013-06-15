@@ -156,7 +156,7 @@ instance Yesod App where
             addScriptRemote "http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"
         hamletToRepHtml $(hamletFile "templates/default-layout.hamlet")
       where
-        getCurrentPage (Just HomeR)    = NewUpload
+        getCurrentPage (Just UploadR)  = NewUpload
         getCurrentPage (Just HistoryR) = History
         getCurrentPage _               = Other
 

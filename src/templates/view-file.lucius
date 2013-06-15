@@ -63,7 +63,7 @@
 
             .archive_content {
                 max-width: 100%;
-                max-height: 350px;
+                max-height: 420px;
                 overflow: auto;
 
                 ul {

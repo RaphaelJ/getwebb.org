@@ -35,7 +35,6 @@ import Handler.Comment
 import Handler.Download
 import qualified Handler.Download as D
 import Handler.History
-import Handler.Home
 import Handler.Upload
 import Handler.View
 

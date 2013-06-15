@@ -17,9 +17,9 @@ import Data.Time.Clock (UTCTime)
 import System.FilePath (takeExtension)
 
 import Account (Avatar, getAvatar)
-import Handler.Download (downloadRoute, getBufferEntry)
+import Handler.Download (getBufferEntry)
 import Handler.Upload.Archive (archiveTree, treeToHtml)
-import Util.Path (ObjectType (..))
+import Util.Hmac (Hmac (..))
 
 -- | Used to retrieve the attributes about each file type from the database.
 data Extras = ImageExtras ImageAttrs [ExifTag]
@@ -66,29 +66,29 @@ getUploadStats (Entity uploadId upload) = do
         Nothing -> (views, lastView, bw)
 
 -- | Returns the URL to the file icon corresponding to the type of the file.
-getIcon :: (Route App -> [(Text, Text)] -> Text) -> Upload -> Extras -> Text
-getIcon rdr upload extras =
+getIcon :: Upload -> Extras -> Route App
+getIcon upload extras =
     case extras of
-        _   | Just miniature <- getMiniature rdr upload extras
-                        -> miniature
-        AudioExtras _ _ -> rdr' img_types_audio_png
-        VideoExtras _   -> rdr' img_types_video_png
-        ArchiveExtras _ -> rdr' img_types_archive_png
+        _   | Just miniature <- getMiniature hmac extras -> miniature
+        AudioExtras _ _ -> StaticR img_types_audio_png
+        VideoExtras _   -> StaticR img_types_video_png
+        ArchiveExtras _ -> StaticR img_types_archive_png
         _                -- Selects from extension.
-            | ext == ".pdf"                   -> rdr' img_types_pdf_png
-            | ext `S.member` extsArchives     -> rdr' img_types_archive_png
-            | ext `S.member` extsAudio        -> rdr' img_types_audio_png
-            | ext `S.member` extsCode         -> rdr' img_types_code_png
-            | ext `S.member` extsExecutable   -> rdr' img_types_executable_png
-            | ext `S.member` extsImage        -> rdr' img_types_image_png
-            | ext `S.member` extsPresentation -> rdr' img_types_presentation_png
-            | ext `S.member` extsSpreadsheet  -> rdr' img_types_spreadsheet_png
-            | ext `S.member` extsText         -> rdr' img_types_text_png
-            | ext `S.member` extsVector       -> rdr' img_types_vector_png
-            | ext `S.member` extsVideo        -> rdr' img_types_video_png
-            | otherwise                       -> rdr' img_types_unknown_png
+            | ext == ".pdf"                   -> StaticR img_types_pdf_png
+            | ext `S.member` extsArchives     -> StaticR img_types_archive_png
+            | ext `S.member` extsAudio        -> StaticR img_types_audio_png
+            | ext `S.member` extsCode         -> StaticR img_types_code_png
+            | ext `S.member` extsExecutable   -> StaticR img_types_executable_png
+            | ext `S.member` extsImage        -> StaticR img_types_image_png
+            | ext `S.member` extsPresentation -> StaticR img_types_presentation_png
+            | ext `S.member` extsSpreadsheet  -> StaticR img_types_spreadsheet_png
+            | ext `S.member` extsText         -> StaticR img_types_text_png
+            | ext `S.member` extsVector       -> StaticR img_types_vector_png
+            | ext `S.member` extsVideo        -> StaticR img_types_video_png
+            | otherwise                       -> StaticR img_types_unknown_png
   where
-    rdr' ressource = rdr (StaticR ressource) []
+    hmac = uploadHmac upload
+
     ext = map toLower $ takeExtension $ T.unpack $ uploadName upload
 
     extsArchives = S.fromDistinctAscList [".7z", ".bz", ".deb", ".gz", ".pkg"
@@ -115,42 +115,35 @@ getIcon rdr upload extras =
         , ".flv", ".mov", ".mp4", ".mpg", ".ogv", ".swf", ".vob", ".webm"
         , ".wmv"]
 
-    -- Returns the URL to the displayable image if the file has one.
-getImage :: (Route App -> [(Text, Text)] -> Text) -> Upload -> Extras
-         -> Maybe Text
-getImage rdr upload (ImageExtras attrs _) =
+-- Returns the URL to the displayable image if the file has one.
+getImage :: Hmac -> Extras -> Maybe (Route App)
+getImage hmac@(Hmac hmacTxt) (ImageExtras attrs _) =
     case imageAttrsDisplayable attrs of
-        Just t  -> Just $ downloadRoute rdr upload (Display t)
-        Nothing -> Just $ downloadRoute rdr upload Original
-getImage _   _      _                     = Nothing
+        Just _  -> Just $ DownloadDisplayableR hmac
+        Nothing -> Just $ DownloadR            hmacTxt
+getImage _                   _                     = Nothing
 
 -- | Returns the URL to the miniature if the file has one.
-getMiniature :: (Route App -> [(Text, Text)] -> Text) -> Upload -> Extras
-             -> Maybe Text
-getMiniature rdr upload (ImageExtras _ _) =
-    Just $ downloadRoute rdr upload Miniature
-getMiniature rdr upload (AudioExtras _ (Just attrs))
-    | audioAttrsMiniature attrs           =
-        Just $ downloadRoute rdr upload Miniature
-getMiniature _   _      _                 = Nothing
+getMiniature :: Hmac -> Extras -> Maybe (Route App)
+getMiniature hmac (ImageExtras _ _) = Just $ DownloadMiniatureR hmac
+getMiniature hmac (AudioExtras _ (Just attrs))
+    | audioAttrsMiniature attrs     = Just $ DownloadMiniatureR hmac
+getMiniature _    _                 = Nothing
 
 -- | Returns the URL to every HTML5 audio files which can be displayed in the
 -- browser with thier mime-types.
-getAudioSources :: (Route App -> [(Text, Text)] -> Text) -> Upload -> Extras
-                -> [(Text, ContentType)]
-getAudioSources rdr upload (AudioExtras _ _) = [
-      (downloadRoute rdr upload WebMAudio, "audio/webm")
-    , (downloadRoute rdr upload MP3      , "audio/mpeg")
-    ]
-getAudioSources _   _      _                 = []
+getAudioSources :: Hmac -> Extras -> [(Route App, ContentType)]
+getAudioSources hmac (AudioExtras _ _) =
+    [ (DownloadWebMAR hmac, "audio/webm"), (DownloadMP3R   hmac, "audio/mpeg") ]
+getAudioSources _    _                 = []
 
 -- | Returns the content of the archive as a hierarchical HTML structure.
-getArchive :: (Route App -> [(Text, Text)] -> Text) -> Upload -> Extras
+getArchive :: (Route App -> [(Text, Text)] -> Text) -> Hmac -> Extras
            -> Maybe Html
-getArchive rdr upload (ArchiveExtras files) =
-    let rdr' archiveHmac = downloadRoute rdr upload (CompressedFile archiveHmac)
-    in Just $ treeToHtml rdr' (archiveTree files)
-getArchive _   _      _                     = Nothing
+getArchive rdr hmac (ArchiveExtras files) =
+    let rdr' archiveHmac = rdr (DownloadArchiveR hmac archiveHmac) []
+    in Just $ treeToHtml rdr' $ archiveTree files
+getArchive _   _    _                     = Nothing
 
 -- | Returns the account and of avatar of the user who uploaded the file.
 getUploadOwner :: Upload -> YesodDB App (Maybe (Entity User, Avatar))

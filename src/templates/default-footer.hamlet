@@ -2,16 +2,16 @@
     <div #footer_content>
         <p #copyright>
             © 2013&nbsp;
-            <span .getwebb>
+            <a .getwebb href="@{UploadR}">
                 getwebb
 
         <p #info>
             <!--Icons by P.J. Onori, O. Frolov, J. Wieser, M. Zlatar, A. Ramadan, D. Ullrich
             &amp; A. Whitcroft Graphicons-->
-            <a href="@{HomeR}">
+            <a href="@{UploadR}">
                 Credits
             &nbsp;•&nbsp;
-            <a href="@{HomeR}">
+            <a href="@{UploadR}">
                 API
             &nbsp;•&nbsp;
             <a href="https://github.com/RaphaelJ/getwebb.org">

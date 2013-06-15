@@ -7,5 +7,5 @@
                 <p>#{msg}
 
             <p>
-                Return to our <a href="@{HomeR}">home page</a> or to the
+                Return to our <a href="@{UploadR}">home page</a> or to the
                 <a href="javascript: history.go(-1);">last page you visited</a>.

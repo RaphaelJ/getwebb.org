@@ -38,7 +38,6 @@ library
                      Handler.Comment
                      Handler.Download
                      Handler.History
-                     Handler.Home
                      Handler.Upload
                      Handler.Upload.Archive
                      Handler.Upload.Image

@@ -1,23 +1,58 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | Processes the upload form.
-module Handler.Upload (Options (..), postUploadR, uploadForm)
+-- | Shows and processes the upload form.
+module Handler.Upload (Options (..), getUploadR, postUploadR, uploadForm)
     where
 
 import Import
 
 import Control.Monad.Writer hiding (lift)
 import Data.Map (elems)
+import qualified Data.Text as T
 
+import Database.Persist.Sql (rawSql)
 import Network.HTTP.Types.Status (mkStatus, requestEntityTooLarge413)
+import Text.Julius (rawJS)
 
 import Account (getUser)
 import Handler.Upload.Processing (UploadError (..), processFile)
 import Util.API (sendObjectCreated, sendErrorResponse, withFormSuccess)
+import Util.Hmac (Hmac (..))
+import Util.Pretty (PrettyFileSize (..), wrappedText)
 
+-- | Options which can be selected by the user when uploading a file.
 data Options = Options {
       optPublic :: Bool
     , optEmail  :: Maybe Text
     } deriving (Show, Read)
+
+-- | Shows the home page with the upload form.
+getUploadR :: Handler Html
+getUploadR = do
+    ((filesWidget, optsWidget), enctype) <- generateFormPost uploadForm
+
+    topImages <- runDB getTopImages
+
+    extras <- getExtra
+    let maxFileSize    = extraMaxFileSize extras
+    let maxRequestSize = extraMaxRequestSize extras
+
+    defaultLayout $ do
+        setTitle "Free file sharing | getwebb"
+        $(widgetFile "upload")
+  where
+    -- Searchs the ten most popular images. Returns a list of uploads and the
+    -- URL to their miniatures.
+    getTopImages = do
+        let sql = T.unlines [
+                  "SELECT ??"
+                , "FROM Upload AS upload"
+                , "INNER JOIN File AS f ON f.id = upload.file"
+                , "WHERE f.type = 'Image' AND upload.public = 1"
+                , "LIMIT 38;"
+                ]
+        imgs <- rawSql sql []
+
+        return [ (i, DownloadMiniatureR (uploadHmac i)) | Entity _ i <- imgs ]
 
 -- | Uploads a file to the server. Returns a 201 Created with a JSON object
 -- which contains the id of the upload, or a 400/413/429 with a JSON array of

@@ -31,7 +31,7 @@
 
                 .public_button, .private_button {
                     border-color: rgba(0, 0, 0, 0.4);
-                    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+                    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
 
                     color: white;
                 }
@@ -59,7 +59,7 @@
 
                     border-radius: 4px;
                     border: 1px solid rgba(0, 0, 0, 0.3);
-                    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+                    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
 
                     font-size: 15px;
                     color: white;
@@ -259,7 +259,6 @@
     margin: 0 auto;
 
     ul#browser {
-        background-color: black;
         width: 950px;
         height: 100px;
         padding: 0;
@@ -275,7 +274,7 @@
             line-height: 0;
 
             img {
-                opacity: 0.5;
+                opacity: 0.6;
                 width: 50px;
             }
             img:hover {

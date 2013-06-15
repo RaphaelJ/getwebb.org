@@ -26,7 +26,7 @@ $with headersHeight <- if' (isJust links) 67 37
 
         <div #left_pane>
             <a href=@{DownloadR hmacTxt} title="View image in full resolution">
-                <img #image src=#{fromJust $ image} alt=#{uploadName upload}>
+                <img #image src=@{fromJust $ image} alt=#{uploadName upload}>
 
             <img .qrcode alt="QR Code to this page"
                 src="http://chart.googleapis.com/chart?cht=qr&chs=150x150&chl=@{ViewR hmacTxt}"/>

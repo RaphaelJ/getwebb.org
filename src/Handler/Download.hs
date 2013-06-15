@@ -2,12 +2,10 @@
 -- | Streams files to clients. Use a daemon to buffer statistics and save disk
 -- accesses.
 module Handler.Download (
-    -- * Page handler
-      getDownloadR, getDownloadMiniatureR
-    -- * Transmission utilities
-    , trackedBS, lazyBSToSource
-    -- * URL utilities
-    , downloadRoute
+    -- * Page handlers
+      getDownloadR, getDownloadMiniatureR, getDownloadWebMAR, getDownloadMP3R
+    , getDownloadWebMVR, getDownloadMKVR, getDownloadDisplayableR
+    , getDownloadArchiveR
     -- * Views daemon buffer management
     , ViewsBuffer, ViewsBufferEntry, viewsCommitDelay, newBuffer
     , incrementViewCount, addBandwidth, getBufferEntry
@@ -35,11 +33,9 @@ import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import System.IO (Handle, IOMode (..), openBinaryFile, hFileSize, hClose)
 
-import Blaze.ByteString.Builder (Builder, fromByteString)
 import qualified Codec.Archive.Zip as Z
 import Codec.Compression.GZip (decompress)
-import Control.Monad.Trans.Resource (ResourceT)
-import Data.Conduit (Source, Flush (Chunk), addCleanup, yield)
+import Data.Conduit (addCleanup)
 import Network.Mime (defaultMimeLookup)
 import Network.Wai (requestHeaders)
 import System.IO.Unsafe (unsafeInterleaveIO)
@@ -48,120 +44,47 @@ import JobsDaemon.Util (runDBIO)
 import Util.Hmac (Hmac (..), Hmacs (..))
 import Util.Path (ObjectType (..), uploadDir, getPath)
 
--- | Streams the content of a file over HTTP.
-getDownloadR :: Text -> Handler ()
-getDownloadR hmacs' = do
-    -- TODO: Return a 304 status if the browser sends us a if-modified-since
-    -- header.
+-- TODO: Return a 304 status if the browser sends us a if-modified-since
+-- header.
 
+-- Handlers --------------------------------------------------------------------
+
+-- | Responds with the file content if only one upload is requested.
+-- Responds with a zip archive containing each upload if a list of upload has
+-- been requested.
+getDownloadR :: Text -> Handler TypedContent
+getDownloadR hmacs' =
     case fromPathPiece hmacs' of
-        Just (Hmacs [hmac])       -> do
-            query <- parseQuery
-            case query of
-                Just (Display _)               -> streamDisplayable hmac
-                Just (CompressedFile archiveHmac) ->
-                    streamArchiveFile hmac archiveHmac
-                Just requestType               -> streamFile hmac requestType
-                Nothing                        -> notFound
-        Just (Hmacs hmacs@(_:_))  -> streamFiles hmacs
-        _                         -> notFound
+        Just (Hmacs [hmac])      -> streamFile hmac
+        Just (Hmacs hmacs@(_:_)) -> streamFiles hmacs
+        _                        -> notFound
   where
     -- Streams a simple file to the client.
-    streamFile hmac requestType = do
-        (file, uploadId, upload, h) <- runDB $ do
-            Entity uploadId upload <- getBy404 $ UniqueUploadHmac hmac
-            Just file <- get $ uploadFile upload
-
-            -- Opens the file inside the transaction to ensure data consistency.
-            h <- lift $ safeOpenFile file requestType
-
-            return (file, entityuploadId, upload, h)
+    streamFile hmac = do
+        ((Entity uploadId upload), file, h) <- openUpload hmac Original
 
         bs' <- liftIO $ L.hGetContents h
         allowGzip <- getGzipClientSupport
 
-        -- Doesn't decompress a compressed file if the client's supports GZip.
-        (bs, size) <- case (requestType, fileCompressed file) of
-            (Original, Just compressedSize)
-                | allowGzip -> do
+        -- Doesn't decompress a compressed file if the client supports GZip.
+        (bs, size) <- case fileCompressed file of
+            Just compressedSize | allowGzip -> do
                     addHeader "Content-Encoding" "gzip"
                     return (bs', compressedSize)
-                | otherwise -> do
+                                | otherwise -> do
                     return (decompress bs', fileSize file)
-            (Original, Nothing) -> do
-                return (bs', fileSize file)
-            (_, _) -> do -- Non-original files are not compressed.
-                size <- liftIO $ hFileSize h
-                return (bs', word64 size)
+            Nothing                         -> return (bs', fileSize file)
 
         trackedBs <- getTrackedBS uploadId bs
 
-        let mime = requestMime requestType (uploadName upload)
+        let mime = defaultMimeLookup (uploadName upload)
         streamByteString [h] trackedBs mime (Just size)
-
-    -- Streams a displayable image to the client.
-    streamDisplayable hmac = do
-        (uploadId, upload, h, displayType) <- runDB $ do
-            Entity uploadId upload <- getBy404 $ UniqueUploadHmac hmac
-
-            let fileId = uploadFile upload
-            Just file <- get fileId
-            when (fileType file /= Image) $
-                lift notFound
-
-            Just (Entity _ attrs)  <- getBy $ UniqueImageAttrs fileId
-
-            let mDisplayType = imageAttrsDisplayable attrs
-            when (isNothing mDisplayType) $
-                lift notFound
-
-            let Just displayType = mDisplayType
-
-            -- Opens the file inside the transaction to ensure data consistency.
-            h <- lift $ safeOpenFile file (Display displayType)
-
-            return (uploadId, upload, h, displayType)
-
-        bs <- liftIO (L.hGetContents h) >>= getTrackedBS uploadId
-        size <- liftIO $ word64 <$> hFileSize h
-
-        let mime = requestMime (Display displayType) (uploadName upload)
-        streamByteString [h] bs mime (Just size)
-
-    -- Decompresses and streams a file inside an archive to the client.
-    streamArchiveFile hmac archiveHmac = do
-        (file, uploadId, archiveFile, h) <- runDB $ do
-            Entity uploadId upload <- getBy404 $ UniqueUploadHmac hmac
-            Entity _ archiveFile <- getBy404 $ UniqueArchiveFileHmac archiveHmac
-
-            when (archiveFileFile archiveFile /= uploadFile upload) $
-                lift notFound
-
-            Just file <- get $ uploadFile upload
-
-            -- Opens the file inside the transaction to ensure data consistency.
-            h <- lift $ safeOpenFile file Original
-
-            return (file, uploadId, archiveFile, h)
-
-        fileBs'<- liftIO $ L.hGetContents h
-
-        let fileBs = if isJust (fileCompressed file)
-                then decompress fileBs'
-                else fileBs'
-            path = archiveFilePath archiveFile
-            Just entry = Z.findEntryByPath (T.unpack path) $ Z.toArchive fileBs
-            mime = defaultMimeLookup path
-            size = word64 $ Z.eUncompressedSize entry
-
-        bs <- getTrackedBS uploadId (Z.fromEntry entry)
-        streamByteString [h] bs mime (Just size)
 
     -- Streams a set of file inside a .zip archive.
     streamFiles hmacs = do
         uploads' <- runDB $ do
             -- The archive can't contains two files with the same name.
-            -- Thus a mutable Map is used to count the number of occurence of
+            -- Thus a mutable Map is used to count the number of occurrences of
             -- each name.
             ioNames <- liftIO $ newIORef (M.empty :: M.Map Text Int)
 
@@ -170,14 +93,14 @@ getDownloadR hmacs' = do
                 mUpload <- getBy $ UniqueUploadHmac hmac
                 case mUpload of
                     Just entity@(Entity _ upload) -> do
-                        Just file <- get $ uploadFile upload
+                        file <- getJust $ uploadFile upload
 
                         -- Adds a suffix to duplicates filenames.
                         names <- liftIO $ readIORef ioNames
                         let name' = uploadName upload
                             name = case name' `M.lookup` names of
                                 Just n  ->
-                                    name' <> "_" <> (T.pack $ show $ n + 1)
+                                    name' <> "_" <> (T.pack (show (n + 1)))
                                 Nothing -> name'
                             names' = M.insertWith (+) name' 1 names
                         liftIO $ writeIORef ioNames names'
@@ -189,7 +112,8 @@ getDownloadR hmacs' = do
                         return $! Just (name, entity, file, h)
                     Nothing ->
                         return Nothing
-        let uploads = take 15 {-FIXME: Space leak-} $ catMaybes $ uploads'
+
+        let uploads = take 15 {- FIXME: Space leak -} $ catMaybes $ uploads'
 
         when (null uploads)
             notFound
@@ -211,40 +135,6 @@ getDownloadR hmacs' = do
         bs <- liftIO (L.hGetContents h) >>= getTrackedBS uploadId . decompress'
         return $! Z.addEntryToArchive (Z.toEntry name' epoch bs) archive
 
-    -- Responds to the client with the ByteString content and closes the
-    -- handlers afterwards.
-    streamByteString :: [Handle] -> L.ByteString -> ContentType -> Maybe Word64
-                     -> Handler ()
-    streamByteString hs bs mime mSize = do
-        neverExpires
-
-        whenJust mSize $ \size ->
-            addHeader "Content-Length" (T.pack $ show size)
-
-        let source = lazyBSToSource (mapM_ hClose hs) bs
-        respondSource mime source
-
-    -- Wraps the original ByteString so each transmitted chunk size is commited
-    -- to the upload's total amount of transferred bytes.
-    -- Updates the upload's last view after the stream has been fully streamed.
-    getTrackedBS uploadId bs = do
-        app <- getYesod
-        let bwTracker = addBandwidth app uploadId
-            finalizer = incrementViewCount app uploadId
-        liftIO $ trackedBS bwTracker finalizer bs
-
-    -- Tries to open the file given its type (original, miniature ...).
-    -- 404 Not found if doesn't exists.
-    safeOpenFile file requestType = do
-        app <- getYesod
-        let dir = uploadDir app (fileHash file)
-            path = getPath dir requestType
-
-        eH <- liftIO $ E.try (openBinaryFile path ReadMode)
-        case eH of
-            Right h                     -> return h
-            Left (_ :: E.SomeException) -> notFound
-
     -- Returns true if the browser supports the gzip encoding.
     getGzipClientSupport = do
         headers <- requestHeaders <$> waiRequest
@@ -254,19 +144,6 @@ getDownloadR hmacs' = do
                 in return $ "gzip" `elem` encodings
             Nothing -> return False
 
-    -- Returns the mimetype depending on the request type and the file
-    -- extension.
-    requestMime Original       filename = defaultMimeLookup filename
-    requestMime Miniature      _        = typePng
-    requestMime WebMAudio      _        = "audio/webm"
-    requestMime MP3            _        = "audio/mpeg"
-    requestMime WebMVideo      _        = "video/webm"
-    requestMime MKV            _        = "video/x-matroska"
-    requestMime (Display PNG)  _        = typePng
-    requestMime (Display JPG)  _        = typeJpeg
-    requestMime (Display GIF)  _        = typeGif
-    requestMime _              _        = undefined
-
     -- Splits a string on commas and removes spaces.
     splitCommas :: String -> [String]
     splitCommas [] = []
@@ -274,40 +151,40 @@ getDownloadR hmacs' = do
                      in ys : splitCommas (dropWhile (== ' ') $ drop 1 zs)
 
 -- | Responds with the miniature of the upload.
-getDownloadMiniatureR :: Hmac -> Handler ()
-getDownloadMiniatureR = sendRawUploadObject Miniature typePng
+getDownloadMiniatureR :: Hmac -> Handler TypedContent
+getDownloadMiniatureR = streamRawUploadObject Miniature typePng
 
 -- | Responds with the WebM audio file of the upload.
-getDownloadWebMAR :: Hmac -> Handler ()
-getDownloadWebMAR = sendRawUploadObject WebMAudio "audio/webm"
+getDownloadWebMAR :: Hmac -> Handler TypedContent
+getDownloadWebMAR = streamRawUploadObject WebMAudio "audio/webm"
 
 -- | Responds with the MP3 file of the upload.
-getDownloadMP3R :: Hmac -> Handler ()
-getDownloadMP3R = sendRawUploadObject MP3 "audio/mpeg"
+getDownloadMP3R :: Hmac -> Handler TypedContent
+getDownloadMP3R = streamRawUploadObject MP3 "audio/mpeg"
 
 -- | Responds with the WebM video file of the upload.
-getDownloadWebMVR :: Hmac -> Handler ()
-getDownloadWebMVR = sendRawUploadObject WebMVideo "video/webm"
+getDownloadWebMVR :: Hmac -> Handler TypedContent
+getDownloadWebMVR = streamRawUploadObject WebMVideo "video/webm"
 
 -- | Responds with the MKV video file of the upload.
-getDownloadMKVR :: Hmac -> Handler ()
-getDownloadMKVR = sendRawUploadObject MKV "video/x-matroska"
+getDownloadMKVR :: Hmac -> Handler TypedContent
+getDownloadMKVR = streamRawUploadObject MKV "video/x-matroska"
 
 -- | Responds with the displayable version of the file of the upload.
-getDownloadDisplayableR :: Hmac -> Hmac -> Handler ()
-getDownloadDisplayableR = do
+getDownloadDisplayableR :: Hmac -> Handler TypedContent
+getDownloadDisplayableR hmac = do
     (uploadId, h, displayType) <- runDB $ do
-        entity@(Entity _ upload) <- getBy404 $ UniqueUploadHmac hmac
+        Entity uploadId upload <- getBy404 $ UniqueUploadHmac hmac
 
         let fileId = uploadFile upload
-        Just file <- get fileId
+        file <- getJust fileId
         when (fileType file /= Image)
             notFound
 
         Just (Entity _ attrs) <- getBy $ UniqueImageAttrs fileId
 
         case imageAttrsDisplayable attrs of
-            Just displayType ->
+            Just displayType -> do
                 -- Opens the file inside the transaction to ensure data
                 -- consistency.
                 h <- lift $ safeOpenFile file (Display displayType)
@@ -320,45 +197,101 @@ getDownloadDisplayableR = do
                                    GIF -> typeGif
     streamFileHandle uploadId mime h
 
--- | Responds with a file contained in the upload.
-getDownloadArchiveR :: Hmac -> Hmac -> Handler ()
-getDownloadArchiveR = sendRawUploadObject WebMVideo "video/webm"
+-- | Responds with a file contained in an archive of an upload.
+getDownloadArchiveR :: Hmac -> Hmac -> Handler TypedContent
+getDownloadArchiveR hmac archiveHmac = do
+    (file, uploadId, archiveFile, h) <- runDB $ do
+        Entity uploadId upload <- getBy404 $ UniqueUploadHmac hmac
+        Entity _ archiveFile   <- getBy404 $ UniqueArchiveFileHmac archiveHmac
 
--- | Search the upload in the database. Returns and open the associated file.
--- Returns a 404 error if the upload doesn't exist.
-openUpload :: Hmac -> ObjectType -> Handler (Entity Upload, File, Handle)
-openUpload hmac objType = runDB $ do
-    entity@(Entity _ upload) <- getBy404 $ UniqueUploadHmac hmac
-    Just file <- get $ uploadFile upload
+        when (archiveFileFile archiveFile /= uploadFile upload)
+            notFound
 
-    -- Opens the file inside the transaction to ensure data consistency.
-    h <- safeOpenFile file
+        file <- getJust $ uploadFile upload
 
-    return (file, entity, h)
-  where
-    -- Tries to open the file given its type (original, miniature ...).
-    -- 404 Not found if doesn't exists.
-    safeOpenFile file = do
-        app <- getYesod
-        let dir = uploadDir app (fileHash file)
-            path = getPath dir objType
+        -- Opens the file inside the transaction to ensure data consistency.
+        h <- lift $ safeOpenFile file Original
 
-        eH <- liftIO $ E.try (openBinaryFile path ReadMode)
-        case eH of
-            Right h                     -> return h
-            Left (_ :: E.SomeException) -> notFound
+        return (file, uploadId, archiveFile, h)
 
-streamRawUploadObject :: ObjectType -> ContentType -> Hmac -> Handler ()
+    fileBs'<- liftIO $ L.hGetContents h
+
+    let fileBs = case fileCompressed file of Just _  -> decompress fileBs'
+                                             Nothing -> fileBs'
+        path = archiveFilePath archiveFile
+        Just entry = Z.findEntryByPath (T.unpack path) $ Z.toArchive fileBs
+        mime = defaultMimeLookup path
+        size = word64 $ Z.eUncompressedSize entry
+
+    bs <- getTrackedBS uploadId (Z.fromEntry entry)
+    streamByteString [h] bs mime (Just size)
+
+-- HTTP streaming --------------------------------------------------------------
+
+streamRawUploadObject :: ObjectType -> ContentType -> Hmac
+                      -> Handler TypedContent
 streamRawUploadObject objType mime hmac = do
-    (Entity uploadId upload, file, h) <- openUpload hmac objType
+    (Entity uploadId _, _, h) <- openUpload hmac objType
     streamFileHandle uploadId mime h
 
-streamFileHandle :: UploadId -> ContentType -> Handle -> Handler ()
+streamFileHandle :: UploadId -> ContentType -> Handle -> Handler TypedContent
 streamFileHandle uploadId mime h = do
     bs   <- liftIO (L.hGetContents h) >>= getTrackedBS uploadId
     size <- word64 <$> liftIO (hFileSize h)
 
     streamByteString [h] bs mime (Just size)
+
+-- | Responds to the client with the ByteString content and closes the handlers
+-- afterwards.
+streamByteString :: [Handle] -> L.ByteString -> ContentType -> Maybe Word64
+                    -> Handler TypedContent
+streamByteString hs bs mime mSize = do
+    neverExpires
+
+    whenJust mSize $ \size ->
+        addHeader "Content-Length" (T.pack $ show size)
+
+    respondSource mime $ addCleanup finalizer $ sendChunkLBS bs
+  where
+    finalizer _ = liftIO $ mapM_ hClose hs
+
+-- Utilities -------------------------------------------------------------------
+
+-- | Searches the upload in the database. Returns and open the associated file.
+-- Returns a 404 error if the upload doesn't exist.
+openUpload :: Hmac -> ObjectType -> Handler (Entity Upload, File, Handle)
+openUpload hmac objType = runDB $ do
+    entity@(Entity _ upload) <- getBy404 $ UniqueUploadHmac hmac
+    file                     <- getJust $ uploadFile upload
+
+    -- Opens the file inside the transaction to ensure data consistency.
+    h <- lift $ safeOpenFile file objType
+
+    return (entity, file, h)
+  where
+
+-- Tries to open the file given its type (original, miniature ...).
+-- 404 Not found if doesn't exists.
+safeOpenFile :: File -> ObjectType -> Handler Handle
+safeOpenFile file objType = do
+    app <- getYesod
+    let dir = uploadDir app (fileHash file)
+        path = getPath dir objType
+
+    eH <- liftIO $ E.try (openBinaryFile path ReadMode)
+    case eH of
+        Right h                     -> return h
+        Left (_ :: E.SomeException) -> notFound
+
+-- | Wraps the original ByteString so each transmitted chunk size is commited
+-- to the upload's total amount of transferred bytes.
+-- Updates the upload's last view after the stream has been fully streamed.
+getTrackedBS :: UploadId -> L.ByteString -> Handler L.ByteString
+getTrackedBS uploadId bs = do
+    app <- getYesod
+    let bwTracker = addBandwidth app uploadId
+        finalizer = incrementViewCount app uploadId
+    liftIO $ trackedBS bwTracker finalizer bs
 
 -- | Wraps a 'L.ByteString' so each generated 'L.Chunk' size is commited to the
 -- given action. Executes the finalizer when the full 'L.ByteString' has been
@@ -374,36 +307,6 @@ trackedBS bwTracker finalizer =
         bwTracker $ word64 $ S.length b
         bs' <- lazyGo bs
         return $! L.Chunk b bs'
-
--- Creates a source which seeds the given 'L.ByteString' and which executes the
--- given finalizer when the source has been closed.
-lazyBSToSource :: IO () -> L.ByteString -> Source (ResourceT IO) (Flush Builder)
-lazyBSToSource finalizer =
-    addCleanup finalizer' . go . L.toChunks
-  where
-    go []     = return ()
-    go (b:bs) = do
-        yield $ Chunk $ fromByteString b
-        go bs
-
-    finalizer' _ = liftIO $ finalizer
-
--- | Returns the URL to the given file for its specified type.
-downloadRoute :: (Route App -> [(Text, Text)] -> Text) -> Upload -> ObjectType
-              -> Text
-downloadRoute urlRdr upload obj =
-    urlRdr' $ case obj of
-        Original                   -> []
-        Miniature                  -> [("t", "miniature")]
-        WebMAudio                  -> [("t", "awebm")]
-        MP3                        -> [("t", "mp3")]
-        WebMVideo                  -> [("t", "vwebm")]
-        MKV                        -> [("t", "mkv")]
-        Display _                  -> [("t", "display")]
-        CompressedFile (Hmac hmac) -> [("archive", hmac)]
-  where
-    Hmac hmacTxt = uploadHmac upload
-    urlRdr' = urlRdr (DownloadR hmacTxt)
 
 -- -----------------------------------------------------------------------------
 

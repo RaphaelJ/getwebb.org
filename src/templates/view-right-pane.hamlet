@@ -17,10 +17,10 @@
 
     <div .share>
         <a .facebook_button
-            href="https://www.facebook.com/dialog/feed?app_id=#{facebookAppId}&link=@{ViewR hmacTxt}&picture=#{icon}&name=#{wrappedName}&redirect_uri=#{currUrl}">
+            href="https://www.facebook.com/dialog/feed?app_id=#{facebookAppId}&link=@{ViewR hmacTxt}&picture=@{icon}&name=#{wrappedName}&redirect_uri=@{currUrl}">
             Share
         <a .twitter_button
-            href="https://twitter.com/intent/tweet?text=#{wrappedName}&url=@{ViewR hmacTxt}&via=GetwebbFiles&original_referer=#{currUrl}">
+            href="https://twitter.com/intent/tweet?text=#{wrappedName}&url=@{ViewR hmacTxt}&via=GetwebbFiles&original_referer=@{currUrl}">
             Tweet
 
     <div .clear_float>
@@ -58,13 +58,13 @@
             $maybe imageUrl <- image
                 <h4>Image with link
                 <input type=text
-                       value="<a href='@{ViewR hmacTxt}'><img alt='#{wrappedName}' src='#{imageUrl}' /></a>"
+                       value="<a href='@{ViewR hmacTxt}'><img alt='#{wrappedName}' src='@{imageUrl}' /></a>"
                        onclick="this.select()" />
 
             $maybe miniatureUrl <- miniature
                 <h4>Miniature with link
                 <input type=text
-                       value="<a href='@{ViewR hmacTxt}'><img alt='#{wrappedName}' src='#{miniatureUrl}' /></a>"
+                       value="<a href='@{ViewR hmacTxt}'><img alt='#{wrappedName}' src='@{miniatureUrl}' /></a>"
                        onclick="this.select()" />
 
         <div #codes_bbcode style="display: none">
@@ -79,13 +79,13 @@
             $maybe imageUrl <- image
                 <h4>Image with link
                 <input type=text
-                       value="[url=@{ViewR hmacTxt}][img]#{imageUrl}[/img][/url]"
+                       value="[url=@{ViewR hmacTxt}][img]@{imageUrl}[/img][/url]"
                        onclick="this.select()" />
 
             $maybe miniatureUrl <- miniature
                 <h4>Miniature with link
                 <input type=text
-                       value="[url=@{ViewR hmacTxt}][img]#{miniatureUrl}[/img][/url]"
+                       value="[url=@{ViewR hmacTxt}][img]@{miniatureUrl}[/img][/url]"
                        onclick="this.select()" />
 
         <div #codes_markdown style="display: none">
@@ -99,13 +99,13 @@
             $maybe imageUrl <- image
                 <h4>Image with link
                 <input type=text
-                       value="[@{ViewR hmacTxt}](![#{wrappedName}](#{imageUrl}))"
+                       value="[@{ViewR hmacTxt}](![#{wrappedName}](@{imageUrl}))"
                        onclick="this.select()" />
 
             $maybe miniatureUrl <- miniature
                 <h4>Miniature with link
                 <input type=text
-                       value="[@{ViewR hmacTxt}](![#{wrappedName}](#{miniatureUrl}))"
+                       value="[@{ViewR hmacTxt}](![#{wrappedName}](@{miniatureUrl}))"
                        onclick="this.select()" />
 
     <div .stats>

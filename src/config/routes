@@ -14,7 +14,7 @@
 
 /v/#Text                ViewR                   GET PATCH DELETE
 
-/comments/#Hmac         CommentsR               GET POST
+/v/#Hmac/comments       CommentsR               GET POST
 /comment/#Hmac/up       CommentUpR              PUT
 /comment/#Hmac/down     CommentDownR            PUT
 

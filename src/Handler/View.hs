@@ -57,7 +57,7 @@ getViewR hmacs' = do
             app <- getYesod
             mAdminKey <- getAdminKey
             rdr <- getUrlRenderParams
-            currUrl <- (flip rdr [] . fromJust) <$> getCurrentRoute
+            Just currUrl <- getCurrentRoute
             stats <- getUploadStats entity
             facebookAppId <- extraFacebook <$> getExtra
             (commentWidget, commentEnctype) <- generateFormPost commentForm
@@ -65,11 +65,11 @@ getViewR hmacs' = do
             let name = uploadName upload
                 wrappedName = wrappedText name 50
                 links = getLinks hmacs
-                icon = getIcon rdr upload extras
-                image = getImage rdr upload extras
-                miniature = getMiniature rdr upload extras
-                audioSources = getAudioSources rdr upload extras
-                archive = getArchive rdr upload extras
+                icon = getIcon upload extras
+                image = getImage hmac extras
+                miniature = getMiniature hmac extras
+                audioSources = getAudioSources hmac extras
+                archive = getArchive rdr hmac extras
             uploadDiffTime <- getDiffTime $ uploadCreated upload
 
             defaultLayout $ do

@@ -17,7 +17,7 @@ import System.Directory (removeDirectoryRecursive)
 import Text.Hamlet (shamlet)
 import Text.Julius (rawJS)
 
-import Account (avatarRoute)
+import Account
 import Handler.Comment (maxCommentLength, commentForm)
 import Util.API (sendNoContent, withFormSuccess, withUploadOwner)
 import Util.Date (getDiffTime)
@@ -56,6 +56,7 @@ getViewR hmacs' = do
 
             app <- getYesod
             mAdminKey <- getAdminKey
+            mUser <- getUser
             rdr <- getUrlRenderParams
             Just currUrl <- getCurrentRoute
             stats <- getUploadStats entity

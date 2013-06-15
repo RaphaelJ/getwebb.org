@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Foundation where
 
@@ -11,6 +11,7 @@ import qualified Data.ByteString.Char8 as S8
 import qualified Data.Map as M
 import Data.Text (Text, pack, unpack)
 import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Typeable (Typeable)
 import Data.Word
 import System.FilePath ((</>))
 
@@ -256,6 +257,7 @@ instance YesodAccount App where
 -- owner.
 data AdminKeyValue = AdminKeyUser (Entity AdminKey) (Maybe (Entity AdminKey))
                    | AdminKeyAnon (Entity AdminKey)
+                   deriving (Typeable)
 
 adminKeySessionKey :: Text
 adminKeySessionKey = "ADMIN_KEY"
@@ -271,7 +273,7 @@ setAdminKey = setSession adminKeySessionKey . pack . show
 -- | Returns the admin key(s). Checks that it exists in the database or returns
 -- 'Nothing' if the client doesn\'t have an 'AdminKey' yet.
 getAdminKey :: Handler (Maybe AdminKeyValue)
-getAdminKey = runMaybeT $
+getAdminKey = cached $ runMaybeT $
         do
         (Entity _ user, _) <- MaybeT getUser
         MaybeT $ runDB $ runMaybeT $ do
@@ -280,7 +282,8 @@ getAdminKey = runMaybeT $
             lift $ AdminKeyUser (Entity keyId key) <$> getCookieKey
     <|> (AdminKeyAnon <$> MaybeT (runDB getCookieKey))
   where
-    -- Retrieves the AdminKey in the browser's session, if any.
+    -- Retrieves the AdminKey in the browser's session from the database, if
+    -- any.
     getCookieKey = runMaybeT $ do
         keyId' <- MaybeT $ lift $ lookupSession adminKeySessionKey
         let keyId = read $ unpack keyId'

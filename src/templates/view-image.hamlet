@@ -35,16 +35,24 @@ $with headersHeight <- if' (isJust links) 67 37
 
         <div #comments>
             <div #new_comment>
-                <div .avatar>
-                    <img src="https://irs1.4sqi.net/img/user/60x60/4Y4NMGQF0LPZYSJN.jpg">
+                $case mUser
+                  $of Just (user, avatar)
+                    <div .avatar>
+                        <img src=@{avatarRoute app avatar} alt="Avatar" />
 
-                <form method=post action="" enctype=#{commentEnctype}>
-                    ^{commentWidget}
-                    <input #submit_comment .big_button type=submit 
-                            value=Publish />
-                    <span #chars_left 
-                            title="Number of remaining characters.">
-                        #{maxCommentLength}
+                    <form method=post action="" enctype=#{commentEnctype}>
+                        ^{commentWidget}
+                        <input #submit_comment .big_button type=submit
+                               value=Publish />
+                        <span #chars_left
+                              title="Number of remaining characters.">
+                            #{maxCommentLength}
+                  $of Nothing
+                    <p .not_connected>
+                        <a href=@{AccountR SignInR}>Sign in
+                        or
+                        <a href=@{AccountR RegisterR}>register
+                        to write a comment.
 
             <ul>
                 <li>

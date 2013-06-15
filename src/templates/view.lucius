@@ -12,7 +12,7 @@
 
     #links {
         margin: auto;
-        width: 950px;
+        width: 1000px;
 
         #previous, #download_all, #next {
             display: block;

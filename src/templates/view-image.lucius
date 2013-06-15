@@ -232,6 +232,12 @@ body {
                 background-color: rgba(0, 0, 0, 0.05);
                 border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 
+                .not_connected {
+                    height: 60px;
+                    line-height: 60px;
+                    text-align: center;
+                }
+
                 .avatar {
                     position: absolute;
                     top: 10px;

@@ -30,13 +30,13 @@ data AvatarResult = AvatarResult {
     }
 
 -- | Displays the sign in and the register forms in the default layout.
-getSettingsR :: YesodAccount parent => AccountHandler parent RepHtml
+getSettingsR :: YesodAccount parent => AccountHandler parent Html
 getSettingsR = do
     (Entity _ user, avatar) <- lift redirectAuth
     (widget, enctype) <- lift $ generateFormPost $ settingsForm user avatar
     displaySettings user avatar widget enctype
 
-postSettingsR :: YesodAccount parent => AccountHandler parent RepHtml
+postSettingsR :: YesodAccount parent => AccountHandler parent Html
 postSettingsR = do
     (Entity userId user, avatar) <- lift redirectAuth
     ((res, widget), enctype) <- lift $ runFormPost $ settingsForm user avatar
@@ -93,7 +93,7 @@ postSettingsR = do
 
 displaySettings :: YesodAccount parent => AccountUser parent -> Avatar
                 -> ParentWidget parent () -> Enctype
-                -> AccountHandler parent RepHtml
+                -> AccountHandler parent Html
 displaySettings user avatar widget enctype = do
     toParent <- getRouteToParent
     app <- lift getYesod

@@ -351,7 +351,7 @@ a.toggle_button_right {
 }
 
 #page {
-    width: 950px;
+    width: 1000px;
     margin: 10px auto 0 auto;
 
     background-color: #F0F0F0;
@@ -468,7 +468,7 @@ footer {
     }
 }
 
-@media (max-width: 950px) {
+@media (max-width: 1000px) {
     .no_mobile {
         display: none;
     }

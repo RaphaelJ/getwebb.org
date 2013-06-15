@@ -26,7 +26,7 @@
     }
 }
 
-@media (max-width: 950px) {
+@media (max-width: 1000px) {
     #home_screen #error_box {
         width: 100%;
         background-color: rgba(255, 255, 255, 0.15);

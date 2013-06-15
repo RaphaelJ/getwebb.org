@@ -48,7 +48,7 @@ getUploadR = do
                 , "FROM Upload AS upload"
                 , "INNER JOIN File AS f ON f.id = upload.file"
                 , "WHERE f.type = 'Image' AND upload.public = 1"
-                , "LIMIT 38;"
+                , "LIMIT 40;"
                 ]
         imgs <- rawSql sql []
 

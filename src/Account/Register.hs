@@ -15,13 +15,13 @@ import Account.Util (newUser, setUserId, redirectNoAuth)
 import Settings (widgetFile)
 
 -- | Displays the register form in the default layout.
-getRegisterR :: YesodAccount parent => AccountHandler parent RepHtml
+getRegisterR :: YesodAccount parent => AccountHandler parent Html
 getRegisterR = do
     lift redirectNoAuth
     lift (generateFormPost registerForm) >>= showForm
 
 -- | Tries to register the user.
-postRegisterR :: YesodAccount parent => AccountHandler parent RepHtml
+postRegisterR :: YesodAccount parent => AccountHandler parent Html
 postRegisterR = do
     lift redirectNoAuth
     ((res, widget), enctype) <- lift (runFormPost registerForm)
@@ -37,7 +37,7 @@ postRegisterR = do
 
 -- | Responds with the register form in the default layout.
 showForm :: YesodAccount parent => (ParentWidget parent (), Enctype)
-         -> AccountHandler parent RepHtml
+         -> AccountHandler parent Html
 showForm (widget, enctype) = do
     toParent <- getRouteToParent
     lift $ defaultLayout $ do

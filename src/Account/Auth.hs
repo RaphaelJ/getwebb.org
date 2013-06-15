@@ -13,13 +13,13 @@ import Account.Util (validateUser, setUserId, unsetUserId, redirectNoAuth)
 import Settings (widgetFile)
 
 -- | Displays the sign in form in the default layout.
-getSignInR :: YesodAccount parent => AccountHandler parent RepHtml
+getSignInR :: YesodAccount parent => AccountHandler parent Html
 getSignInR = do
     lift redirectNoAuth
     lift (generateFormPost signInForm) >>= showForm
 
 -- | Tries to sign in the user.
-postSignInR :: YesodAccount parent => AccountHandler parent RepHtml
+postSignInR :: YesodAccount parent => AccountHandler parent Html
 postSignInR = do
     lift redirectNoAuth
     ((res, widget), enctype) <- lift (runFormPost signInForm)
@@ -38,7 +38,7 @@ getSignOutR = lift $ do
 
 -- | Responds with the sign in and the register forms in the default layout.
 showForm :: YesodAccount parent =>
-            (ParentWidget parent (), Enctype) -> AccountHandler parent RepHtml
+            (ParentWidget parent (), Enctype) -> AccountHandler parent Html
 showForm (widget, enctype) = do
     toParent <- getRouteToParent
     lift $ defaultLayout $ do

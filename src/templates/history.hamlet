@@ -49,11 +49,11 @@
                   $with name <- uploadName upload
                     <li>
                         <a href=@{ViewR hmacTxt} hint=#{name}>
-                            <h4>#{wrappedText name 28}
+                            <h4>#{wrappedText name 32}
 
                             <img  alt="File icon" src="@{icon}" />
 
-                            <div .info>
+                            <div .public_private_buttons>
                                 $if uploadPublic upload
                                     <button #public_button_#{hmacTxt}
                                             .public_button .enabled type=button
@@ -77,6 +77,7 @@
                                             hint="Upload will NOT be published in the public gallery">
                                         Private
 
+                            <div .info>
                                 <div .size>
                                     <span .value>#{PrettyFileSize (fileSize file)}
                                 <div .date>

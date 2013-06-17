@@ -101,7 +101,6 @@
             img {
                 width: 50px;
                 height: 50px;
-                border-radius: 2px;
                 float: left;
                 margin-right: 5px;
             }

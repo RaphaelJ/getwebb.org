@@ -53,7 +53,7 @@
 
                             <img  alt="File icon" src="@{icon}" />
 
-                            <div .public_private_buttons>
+                            <div .public_private_buttons .buttons>
                                 $if uploadPublic upload
                                     <button #public_button_#{hmacTxt}
                                             .public_button .enabled type=button

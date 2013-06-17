@@ -150,6 +150,11 @@ body {
                 text-shadow: none;
             }
 
+            .toggle_button_left:hover, .toggle_button_central:hover,
+            .toggle_button_right:hover {
+                background-color: rgba(255, 255, 255, 0.2);
+            }
+
             .toggle_button:active, .toggle_button.enabled,
             .toggle_button_left:active, .toggle_button_left.enabled,
             .toggle_button_central:active, .toggle_button_central.enabled,
@@ -163,20 +168,100 @@ body {
         #comments {
             position: absolute;
             z-index: 10;
-            height: 550px;
+            height: 600px;
             width: 620px;
-            bottom: 0;
+            bottom: 1px;
             left: 0;
+            padding: 0;
 
             background-color: #F0F0F0;
             box-shadow: 1px -1px 2px rgba(0, 0, 0, 0.4);
 
             font-size: 0.85em;
 
+            #new_comment {
+                position: relative;
+                height: 80px;
+                padding: 5px;
+                margin-bottom: 10px;
+
+                background-color: rgba(0, 0, 0, 0.1);
+
+                .not_connected {
+                    height: 60px;
+                    line-height: 60px;
+                    text-align: center;
+                }
+
+                .avatar {
+                    position: absolute;
+                    top: 10px;
+                    left: 10px;
+
+                    img {
+                        width: 60px;
+                        height: 60px;
+                    }
+                }
+
+                form {
+                    div {
+                        display: inline;
+                    }
+
+                    label {
+                        display: none;
+                    }
+
+                    textarea {
+                        position: absolute;
+                        top: 10px;
+                        left: 90px;
+                        height: 60px;
+                        width: 380px;
+                        resize: none;
+                    }
+
+                    #chars_left {
+                        position: absolute;
+                        bottom: 10px;
+                        right: 145px;
+
+                        font-size: 1.3em;
+                        font-weight: 700;
+                        color: #80AE2B;
+                    }
+
+                    #chars_left.negative {
+                        color: #AE3737;
+                    }
+
+                    input[type="submit"] {
+                        position: absolute;
+                        top: 7px;
+                        left: 495px;
+                        width: 115px;
+                    }
+                }
+            }
+
+            #new_comment:after {
+                content: "";
+                display: block;
+                height: 0;
+                width: 0;
+                position: absolute;
+                bottom: -20px;
+                left: 10px;
+
+                border: 10px solid transparent;
+                border-top-color: rgba(0, 0, 0, 0.1);
+            }
+
             ul {
                 margin: 0;
                 padding: 0;
-                height: 450px;
+                height: 500px;
 
                 overflow-y: auto;
 
@@ -219,73 +304,26 @@ body {
                                 text-decoration: none;
                                 opacity: 1.0;
                             }
+
+                            a.enabled {
+                                opacity: 1;
+                            }
+
+                            a.upvote.enabled {
+                                color: #89B630;
+                            }
+
+                            a.downvote.enabled {
+                                color: #B65234;
+                            }
+
+                            .count {
+                                background-color: rgba(60, 150, 180, 0.2);
+                                padding: 1px 3px;
+                                box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.2);
+                                font-size: 0.9em;
+                            }
                         }
-                    }
-                }
-            }
-
-            #new_comment {
-                position: relative;
-                height: 80px;
-                padding: 10px;
-
-                background-color: rgba(0, 0, 0, 0.05);
-                border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-
-                .not_connected {
-                    height: 60px;
-                    line-height: 60px;
-                    text-align: center;
-                }
-
-                .avatar {
-                    position: absolute;
-                    top: 10px;
-                    left: 10px;
-
-                    img {
-                        width: 60px;
-                        height: 60px;
-                    }
-                }
-
-                form {
-                    div {
-                        display: inline;
-                    }
-
-                    label {
-                        display: none;
-                    }
-
-                    textarea {
-                        position: absolute;
-                        top: 10px;
-                        left: 90px;
-                        height: 60px;
-                        width: 380px;
-                        resize: none;
-                    }
-
-                    #chars_left {
-                        position: absolute;
-                        bottom: 20px;
-                        right: 145px;
-
-                        font-size: 1.3em;
-                        font-weight: 700;
-                        color: #80AE2B;
-                    }
-
-                    #chars_left.negative {
-                        color: #AE3737;
-                    }
-
-                    input[type="submit"] {
-                        position: absolute;
-                        top: 7px;
-                        left: 495px;
-                        width: 115px;
                     }
                 }
             }

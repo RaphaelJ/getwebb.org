@@ -42,17 +42,22 @@ ul#uploads {
             height: 100px;
         }
 
+        .public_private_buttons, .info {
+            margin-left: 110px;
+        }
+
+        .public_button, .private_button, .info {
+            font-size: 0.9em;
+        }
+
         .public_private_buttons {
+            font-size: 0;
+
             .public_button, .private_button {
                 padding: 4px 7px;
 
-                font-size: 0.9em;
+                font-size: 9pt;
             }
-        }
-
-        .info, .public_private_buttons {
-            margin-left: 110px;
-            font-size: 0.9em;
         }
     }
 }

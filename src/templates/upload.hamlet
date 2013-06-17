@@ -10,7 +10,7 @@
                             method="post" action="@{UploadR}">
                 <h2>Select some files to upload
 
-                <div #public_private>
+                <div #public_private .buttons>
                     <button #public_button .public_button
                             type=button onclick="uploadPublic(true);"
                             hint="Uploaded files will be published in the public gallery">

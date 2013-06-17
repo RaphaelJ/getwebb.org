@@ -182,6 +182,10 @@ a.big_button, a.big_button:hover {
     box-shadow: none;
 }
 
+.buttons {
+    font-size: 0;
+}
+
 .toggle_button, .toggle_button_left, .toggle_button_central,
 .toggle_button_right, .public_button, .private_button {
     padding: 5px;
@@ -221,11 +225,6 @@ a.toggle_button_right {
 .toggle_button {
     border-radius: 2px;
     border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.toggle_button_left, .toggle_button_central, .toggle_button_right,
-.public_button, .private_button {
-    float: left;
 }
 
 .toggle_button_left, .public_button {

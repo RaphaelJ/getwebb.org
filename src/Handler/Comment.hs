@@ -9,6 +9,7 @@ module Handler.Comment (
 import Import
 
 import Control.Monad
+import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
 import Data.Maybe
 import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
@@ -32,19 +33,25 @@ maxCommentLength = 400
 
 -- Handler ---------------------------------------------------------------------
 
--- | Returns the comments of an upload in JSON.
+-- | Returns the comments of an upload in a JSON array.
+-- Reads two optional GET values :
+-- * @n@ which indicates the number of comments to return ;
+-- * @after@ 
 getCommentsR :: Hmac -> Handler Value
 getCommentsR hmac = do
     mNComments <- lookupGetParam "n"
-    mMaxScore  <- lookupGetParam "max_score"
     let nComments = maybe defaultNComments
                           (max 0 . min maxNComments . read . T.unpack)
                           mNComments
-        maxScore  = (max 0 . read . T.unpack) <$> mMaxScore
 
     comments <- runDB $ do
         Entity uploadId _ <- getBy404 $ UniqueUploadHmac hmac
-        retrieveComments uploadId nComments maxScore
+
+        mAfter <- runMaybeT $ do
+            afterHmac <- MaybeT $ lookupGetParam "after"
+            MaybeT $ getBy $ UniqueCommentHmac afterHmac
+
+        retrieveComments uploadId mAfter (Just nComments)
 
     return $ array comments
 
@@ -118,20 +125,26 @@ voteComment voteType hmac = do
                          , CommentScore     =. score upvotes downvotes ]
 
 -- | Retrieves a set of comments from the database.
-retrieveComments :: UploadId -> Maybe CommentId -> Maybe Int
+retrieveComments :: UploadId -> Maybe (Entity Comment) -> Maybe Int
                  -> YesodDB App [(Entity Comment, User)]
 retrieveComments uploadId mAfter mNComments = do
-    case mAfter of
-        Just afterId ->
-           
-        Nothing ->
-    let restrict = maybeToList ((CommentScore <.) <$> maxScore)
+    filtrs <- case mAfter of
+            Just (Entity afterId after) ->
+                return [ CommentUpload ==. uploadId
+                       , CommentScore  <=. commentScore after
+                       , CommentId     >.  afterId ]
+            Nothing      ->
+                return [ CommentUpload ==. uploadId ]
+    opts <- case mNComments of
+            Just nComments -> return [ Desc CommentScore, Asc CommentId
+                                     , LimitTo nComments ]
+            Nothing        -> return [ Desc CommentScore, Asc CommentId ]
 
-    cs <- selectList ((CommentUpload ==. uploadId) : restrict)
-                     [Desc CommentScore, LimitTo nComments]
-    forM cs $ \(Entity _ c) -> do
+
+    cs <- selectList filtrs opts
+    forM cs $ \entity@(Entity _ c) -> do
         u <- getJust $ commentUser c
-        return (c, u)
+        return (entity, u)
 
 -- | Removes a comment from the database and decrements counters.
 removeComment :: Entity CommentId -> YesodDB App ()

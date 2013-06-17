@@ -2,7 +2,7 @@
 -- | Defines a set of various functions used in API requests/responses.
 module Util.API (
       APIError (..), ToAPIError (..)
-    , sendObjectCreated, sendNoContent, sendErrorResponse, sendInvalidAdminKey
+    , sendObjectCreated, sendNoContent, sendErrorResponse, sendPermissionDenied
     , withFormSuccess, withUploadOwner
     ) where
 
@@ -53,8 +53,8 @@ sendErrorResponse status errs =
 
 -- | Responds to the client with a 403 status code and a JSON array containing
 -- the error saying that he has no ownership on the object.
-sendInvalidAdminKey :: MonadHandler m => m a
-sendInvalidAdminKey =
+sendPermissionDenied :: MonadHandler m => m a
+sendPermissionDenied =
     let msg = "You are not the owner of this resource." :: Text
     in sendErrorResponse forbidden403 [msg]
 
@@ -83,6 +83,5 @@ withUploadOwner hmac onSuccess transac = do
                                             else return False
 
             if success then onSuccess
-                        else sendInvalidAdminKey
-        Nothing -> sendInvalidAdminKey
-    
+                        else sendPermissionDenied
+        Nothing -> sendPermissionDenied

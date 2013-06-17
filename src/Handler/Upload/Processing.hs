@@ -113,7 +113,7 @@ processFile adminKeyId f public = do
                 , uploadPublic = public, uploadCreated = time
                 , uploadHostname = clientHost, uploadAdminKey = adminKeyId
                 , uploadViews = 0, uploadViewed = time
-                , uploadBandwidth = 0
+                , uploadBandwidth = 0, uploadCommentsCount = 0
                 }
 
             lift $ insertKey key upload

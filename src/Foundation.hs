@@ -224,7 +224,7 @@ instance YesodAccount App where
               userEmail = email, userName = name, userPassword = pass
             , userSalt = salt, userCreated = time, userAvatar = avatar
             , userIsAdmin = False, userAdminKey = adminKey
-            , userDefaultPublic = True
+            , userCommentsCount = 0, userDefaultPublic = True
             }
 
     emailLookup    _ = UniqueUserEmail

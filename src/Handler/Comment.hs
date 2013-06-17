@@ -12,7 +12,6 @@ import Control.Monad
 import Data.Maybe
 import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
-import Text.Printf
 
 import Account (requireAuth)
 import Util.API (sendObjectCreated, withFormSuccess)
@@ -30,6 +29,8 @@ defaultNComments = 50
 -- | Maximum length of a comment in characters.
 maxCommentLength :: Int
 maxCommentLength = 400
+
+-- Handler ---------------------------------------------------------------------
 
 -- | Returns the comments of an upload in JSON.
 getCommentsR :: Hmac -> Handler Value
@@ -58,11 +59,26 @@ postCommentsR hmac = do
         time <- liftIO $ getCurrentTime
         commentHmac <- runDB $ do
             Entity uploadId _ <- getBy404 $ UniqueUploadHmac hmac
+
             (key, commentHmac) <- newHmac HmacComment
             insertKey key $ Comment commentHmac userId uploadId msg time
                                     (score 0 0) 0 0
+            update userId   [UserCommentCount   +=. 1]
+            update uploadId [UploadCommentCount +=. 1]
             return commentHmac
         sendObjectCreated commentHmac Nothing
+
+-- | Removes a comment. Returns a 204 No content on success, a 404 Not found if
+-- doesn't exists or 403 if the user isn't allowed to remove the comment.
+deleteCommentR :: Hmac -> Handler ()
+deleteCommentR = do
+    (Entity userId _, _) <- requireAuth
+    runDB $ do
+        entity@(Entity _ comment) <- getBy404 hmac
+        when (commentUser comment /= userId)
+            sendPermissionDenied
+
+        removeComment entity
 
 -- | Votes for a comment.
 putCommentUpR :: Hmac -> Handler ()
@@ -71,6 +87,8 @@ putCommentUpR = voteComment Upvote
 -- | Votes against a comment.
 putCommentDownR :: Hmac -> Handler ()
 putCommentDownR = voteComment Downvote
+
+-- Utilities -------------------------------------------------------------------
 
 -- | Votes for or against a comment.
 voteComment :: VoteType -> Hmac -> Handler ()
@@ -99,10 +117,14 @@ voteComment voteType hmac = do
                          , CommentDownvotes =. downvotes
                          , CommentScore     =. score upvotes downvotes ]
 
--- | Retrieves a set of comments from the database 
-retrieveComments :: UploadId -> Int -> Maybe Double
-                 -> YesodDB App [(Comment, User)]
-retrieveComments uploadId nComments maxScore = do
+-- | Retrieves a set of comments from the database.
+retrieveComments :: UploadId -> Maybe CommentId -> Maybe Int
+                 -> YesodDB App [(Entity Comment, User)]
+retrieveComments uploadId mAfter mNComments = do
+    case mAfter of
+        Just afterId ->
+           
+        Nothing ->
     let restrict = maybeToList ((CommentScore <.) <$> maxScore)
 
     cs <- selectList ((CommentUpload ==. uploadId) : restrict)
@@ -110,6 +132,14 @@ retrieveComments uploadId nComments maxScore = do
     forM cs $ \(Entity _ c) -> do
         u <- getJust $ commentUser c
         return (c, u)
+
+-- | Removes a comment from the database and decrements counters.
+removeComment :: Entity CommentId -> YesodDB App ()
+removeComment (Entity commentId comment) = do
+    update userId                  [UserCommentCount   -=. 1]
+    update (commentUpload comment) [UploadCommentCount -=. 1]
+    deleteWhere [CommentVoteComment ==. commentId]
+    delete commentId
 
 -- | Creates a form to post a new comment.
 commentForm :: Form Textarea

@@ -33,6 +33,8 @@ import Util.Extras (
 import Util.Hmac (Hmac (..), Hmacs (..))
 import Util.Path (uploadDir)
 
+-- Handlers --------------------------------------------------------------------
+
 -- | Shows information about an upload.
 getViewR :: Text -> Handler RepHtml
 getViewR hmacs' = do
@@ -159,11 +161,13 @@ deleteViewR hmacTxt = withUploadOwner (Hmac hmacTxt) sendNoContent removeUpload
 -- file if the file is now upload-less.
 removeUpload :: Entity Upload -> YesodDB App ()
 removeUpload (Entity uploadId upload) = do
+    -- Removes comments.
+    comments <- selectList [CommentUpload ==. uploadId]
+    forM_ comments removeComment
+
     let fileId = uploadFile upload
     delete uploadId
     update (uploadAdminKey upload) [AdminKeyCount -=. 1]
-
-    -- TODO : Removes the comments.
 
     -- Removes the corresponding file if it was the last upload.
     file <- updateGet fileId [FileCount -=. 1]

@@ -304,15 +304,15 @@ a.toggle_button_right {
 }
 
 [hint]:hover:after {
-    padding: 3px 10px;
-    margin-top: 10px;
+    padding: 0 6px;
+    margin-top: 6px;
     margin-left: -15px;
 
     background: #2E2E2E;
     box-shadow: 1px 2px 3px rgba(0, 0, 0, 0.3);
 
     color: white;
-    font-size: 14px;
+    font-size: 12px;
     line-height: 24px;
     text-shadow: 0 -1px 0 black;
     white-space: nowrap;
@@ -321,7 +321,7 @@ a.toggle_button_right {
 [hint]:hover:before {
     margin-top: 0;
 
-    border: 5px solid transparent;
+    border: 3px solid transparent;
     border-bottom-color: #2E2E2E;
 }
 

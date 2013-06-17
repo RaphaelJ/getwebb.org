@@ -94,7 +94,7 @@ $with headersHeight <- if' (isJust links) 67 37
                             mieux comme service au client, la sympathie des serveurs est 
                             aussi toute relative... Sinon, plats corrects et abordables.
                     <div .clear_float>
-                <li>
+                <li .owner>
                     <div .avatar>
                         <img src="https://i3.ytimg.com/i/2kr0UKtwywJqOHzkwPDP4g/1.jpg">
 

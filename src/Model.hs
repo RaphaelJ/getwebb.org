@@ -27,6 +27,8 @@ User
     isAdmin Bool
     -- Links every upload of this user to this user.
     adminKey AdminKeyId
+    commentsCount Int
+    -- Settings :
     defaultPublic Bool -- True if the user want new files to be public.
     UniqueUserEmail email
     UniqueUserName name
@@ -67,6 +69,7 @@ Upload
     views Word64 default=0
     viewed UTCTime
     bandwidth Word64 default=0
+    commentsCount Int
     UniqueUploadHmac hmac
     deriving Show
 
@@ -177,6 +180,6 @@ migrateAll = do
           ("upload_hostname", "\"upload\"(\"hostname\")")
         , ("upload_admin_key", "\"upload\"(\"admin_key\")")
         , ("upload_last_view", "\"upload\"(\"viewed\")")
-        , ("comment_score", "\"comment\"(\"upload\", \"score\" DESC)")
+        , ("comment_score", "\"comment\"(\"upload\", \"score\" DESC, \"id\")")
         , ("job_completed", "\"job\"(\"completed\")")
         ]

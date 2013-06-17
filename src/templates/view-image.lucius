@@ -326,6 +326,10 @@ body {
                         }
                     }
                 }
+
+                li.owner {
+                    background-color: rgba(60, 150, 180, 0.1);
+                }
             }
         }
     }

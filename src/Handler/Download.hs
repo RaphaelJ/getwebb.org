@@ -82,11 +82,10 @@ getDownloadR hmacs' =
 
     -- Streams a set of file inside a .zip archive.
     streamFiles hmacs = do
-        uploads' <- runDB $ do
+        uploads' <- runDB $ evalStateT (M.empty :: M.Map Text Int) $ do
             -- The archive can't contains two files with the same name.
-            -- Thus a mutable Map is used to count the number of occurrences of
-            -- each name.
-            ioNames <- liftIO $ newIORef (M.empty :: M.Map Text Int)
+            -- Uses a StateT to store a Map to count the number of occurrences
+            -- of each name.
 
             forM hmacs $ \hmac -> do
                 -- Opens every file, skips non-existing/removed files.
@@ -96,14 +95,13 @@ getDownloadR hmacs' =
                         file <- getJust $ uploadFile upload
 
                         -- Adds a suffix to duplicates filenames.
-                        names <- liftIO $ readIORef ioNames
+                        names <- get
                         let name' = uploadName upload
                             name = case name' `M.lookup` names of
                                 Just n  ->
                                     name' <> "_" <> (T.pack (show (n + 1)))
                                 Nothing -> name'
-                            names' = M.insertWith (+) name' 1 names
-                        liftIO $ writeIORef ioNames names'
+                        put $ M.insertWith (+) name' 1 names
 
                         -- Opens the file inside the transaction to ensure data
                         -- consistency.

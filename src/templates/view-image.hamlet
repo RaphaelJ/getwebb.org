@@ -55,15 +55,18 @@ $with headersHeight <- if' (isJust links) 67 37
                         to write a comment.
 
             <ul>
-                <li>
-                    <div .avatar>
-                        <img src="https://lh6.googleusercontent.com/-uJExWRqWFxc/AAAAAAAAAAI/AAAAAAAAAAA/1NLEzRwAMjQ/s48-c-k/photo.jpg">
+                $forall (Entity _ comment, author', avatar, mVote) <- comments
+                 $with Entity authorId author <- author'
+                  $isOwner <- Just authorId == (entityKey . snd) <$> mOwner
+                    <li>
+                        <div .avatar>
+                            <img alt=Avatar src=@{avatarRoute app avatar}>
 
-                    <div .message>
-                        <a href="#" .author>
-                            Vincent Keunen
-                            OP
-                        <span .date>Avril 23, 2011
+                        <div .message>
+                            <a href="#" .author>
+                                Vincent Keunen
+                                OP
+                            <span .date>PrettyDiffTimeAvril 23, 2011
 
                         <span .actions>
                             <a .upvote href="#">↑ Upvote

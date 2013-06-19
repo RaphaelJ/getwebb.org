@@ -180,6 +180,7 @@ migrateAll = do
           ("upload_hostname", "\"upload\"(\"hostname\")")
         , ("upload_admin_key", "\"upload\"(\"admin_key\")")
         , ("upload_last_view", "\"upload\"(\"viewed\")")
-        , ("comment_score", "\"comment\"(\"upload\", \"score\" DESC, \"id\")")
+        , ("comment_score", "\"comment\"(\"upload\", \"score\" DESC)")
+        , ("commentvote_user", "\"comment_vote\"(\"comment\", \"user\")")
         , ("job_completed", "\"job\"(\"completed\")")
         ]

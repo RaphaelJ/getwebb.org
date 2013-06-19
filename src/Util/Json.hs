@@ -13,16 +13,20 @@ instance ToJSON User where
           "name"          .= userName u
         ]
 
-instance ToJSON (Comment, User) where
-    toJSON (c, u) = object [
-          "id"          .= commentHmac c
-        , "user"        .= u
-        , "message"     .= commentMessage c
-        , "created_at"  .= Rfc822Date (commentCreated c)
-        , "score"       .= commentScore c
-        , "upvotes"     .= commentUpvotes c
-        , "downvotes"   .= commentDownvotes c
-        ]
+instance ToJSON (Entity Comment, Entity User, Maybe VoteType) where
+    toJSON (Entity _ c, Entity _ u, mVote) = object $
+        case mVote of Just vote -> ("vote" .= show vote) : info
+                      Nothing   -> info
+      where
+        info = [
+              "id"          .= commentHmac c
+            , "user"        .= u
+            , "message"     .= commentMessage c
+            , "created_at"  .= Rfc822Date (commentCreated c)
+            , "score"       .= commentScore c
+            , "upvotes"     .= commentUpvotes c
+            , "downvotes"   .= commentDownvotes c
+            ]
 
 instance ToJSON Rfc822Date where
     toJSON = toJSON . show

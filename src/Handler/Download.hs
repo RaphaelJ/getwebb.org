@@ -21,11 +21,11 @@ import Control.Concurrent (
     )
 import qualified Control.Exception as E
 import Control.Monad
+import qualified Control.Monad.Trans.State as S
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Internal as L
-import Data.IORef (newIORef, readIORef, writeIORef)
 import qualified Data.Map as M
 import Data.Maybe
 import qualified Data.Text as T
@@ -82,7 +82,7 @@ getDownloadR hmacs' =
 
     -- Streams a set of file inside a .zip archive.
     streamFiles hmacs = do
-        uploads' <- runDB $ evalStateT (M.empty :: M.Map Text Int) $ do
+        uploads' <- runDB $ flip S.evalStateT (M.empty :: M.Map Text Int) $ do
             -- The archive can't contains two files with the same name.
             -- Uses a StateT to store a Map to count the number of occurrences
             -- of each name.
@@ -95,17 +95,17 @@ getDownloadR hmacs' =
                         file <- getJust $ uploadFile upload
 
                         -- Adds a suffix to duplicates filenames.
-                        names <- get
+                        names <- S.get
                         let name' = uploadName upload
                             name = case name' `M.lookup` names of
                                 Just n  ->
                                     name' <> "_" <> (T.pack (show (n + 1)))
                                 Nothing -> name'
-                        put $ M.insertWith (+) name' 1 names
+                        S.put $ M.insertWith (+) name' 1 names
 
                         -- Opens the file inside the transaction to ensure data
                         -- consistency.
-                        h <- lift $ safeOpenFile file Original
+                        h <- lift $ lift $ safeOpenFile file Original
 
                         return $! Just (name, entity, file, h)
                     Nothing ->

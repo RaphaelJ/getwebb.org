@@ -2,20 +2,22 @@
 module Handler.Comment (
       maxNComments, defaultNComments, maxCommentLength
     , getCommentsR, postCommentsR
-    , putCommentUpR, putCommentDownR
-    , retrieveComments, commentForm, score
+    , deleteCommentR, putCommentUpR, putCommentDownR
+    , retrieveComments, removeComment, commentForm, score
     ) where
 
 import Import
 
 import Control.Monad
-import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
 import Data.Maybe
 import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
+import Text.Printf
 
-import Account (requireAuth)
-import Util.API (sendObjectCreated, withFormSuccess)
+import Account (getUser, requireAuth)
+import Util.API (
+      sendObjectCreated, sendNoContent, sendPermissionDenied, withFormSuccess
+    )
 import Util.Hmac (Hmac, newHmac)
 import Util.Json ()
 
@@ -35,23 +37,23 @@ maxCommentLength = 400
 
 -- | Returns the comments of an upload in a JSON array.
 -- Reads two optional GET values :
--- * @n@ which indicates the number of comments to return ;
--- * @after@ 
+-- * @offset@ which indicates the number of comments to skip before returning
+--   the first one ;
+-- * @n@ which indicates the number of comments to return.
 getCommentsR :: Hmac -> Handler Value
 getCommentsR hmac = do
+    mOffset    <- fmap (max 0 . read . T.unpack) <$> lookupGetParam "offset"
     mNComments <- lookupGetParam "n"
     let nComments = maybe defaultNComments
                           (max 0 . min maxNComments . read . T.unpack)
                           mNComments
 
+    mUser <- getUser
+    let mUserId = (entityKey . fst) <$> mUser
     comments <- runDB $ do
         Entity uploadId _ <- getBy404 $ UniqueUploadHmac hmac
 
-        mAfter <- runMaybeT $ do
-            afterHmac <- MaybeT $ lookupGetParam "after"
-            MaybeT $ getBy $ UniqueCommentHmac afterHmac
-
-        retrieveComments uploadId mAfter (Just nComments)
+        retrieveComments mUserId uploadId mOffset (Just nComments)
 
     return $ array comments
 
@@ -70,22 +72,23 @@ postCommentsR hmac = do
             (key, commentHmac) <- newHmac HmacComment
             insertKey key $ Comment commentHmac userId uploadId msg time
                                     (score 0 0) 0 0
-            update userId   [UserCommentCount   +=. 1]
-            update uploadId [UploadCommentCount +=. 1]
+            update userId   [UserCommentsCount   +=. 1]
+            update uploadId [UploadCommentsCount +=. 1]
             return commentHmac
         sendObjectCreated commentHmac Nothing
 
 -- | Removes a comment. Returns a 204 No content on success, a 404 Not found if
 -- doesn't exists or 403 if the user isn't allowed to remove the comment.
 deleteCommentR :: Hmac -> Handler ()
-deleteCommentR = do
+deleteCommentR hmac = do
     (Entity userId _, _) <- requireAuth
     runDB $ do
-        entity@(Entity _ comment) <- getBy404 hmac
+        entity@(Entity _ comment) <- getBy404 $ UniqueCommentHmac hmac
         when (commentUser comment /= userId)
             sendPermissionDenied
 
-        removeComment entity
+        removeComment userId entity
+    sendNoContent
 
 -- | Votes for a comment.
 putCommentUpR :: Hmac -> Handler ()
@@ -95,9 +98,9 @@ putCommentUpR = voteComment Upvote
 putCommentDownR :: Hmac -> Handler ()
 putCommentDownR = voteComment Downvote
 
--- Utilities -------------------------------------------------------------------
-
--- | Votes for or against a comment.
+-- | Votes for or against a comment. Returns a 204 No content on success, a 404
+-- Not found if the upload doesn't exist or 403 if the user isn't allowed to
+-- vote for a comment.
 voteComment :: VoteType -> Hmac -> Handler ()
 voteComment voteType hmac = do
     (Entity userId _, _) <- requireAuth
@@ -123,34 +126,37 @@ voteComment voteType hmac = do
         update commentId [ CommentUpvotes   =. upvotes
                          , CommentDownvotes =. downvotes
                          , CommentScore     =. score upvotes downvotes ]
+    sendNoContent
+
+-- Utilities -------------------------------------------------------------------
 
 -- | Retrieves a set of comments from the database.
-retrieveComments :: UploadId -> Maybe (Entity Comment) -> Maybe Int
-                 -> YesodDB App [(Entity Comment, User)]
-retrieveComments uploadId mAfter mNComments = do
-    filtrs <- case mAfter of
-            Just (Entity afterId after) ->
-                return [ CommentUpload ==. uploadId
-                       , CommentScore  <=. commentScore after
-                       , CommentId     >.  afterId ]
-            Nothing      ->
-                return [ CommentUpload ==. uploadId ]
-    opts <- case mNComments of
-            Just nComments -> return [ Desc CommentScore, Asc CommentId
-                                     , LimitTo nComments ]
-            Nothing        -> return [ Desc CommentScore, Asc CommentId ]
+-- Can give the offset of the first comment and the number of returned comments.
+retrieveComments :: Maybe UserId -> UploadId -> Maybe Int -> Maybe Int
+                 -> YesodDB App [(Entity Comment, Entity User, Maybe VoteType)]
+retrieveComments mUserId uploadId mOffset mNComments = do
+    let opts = Desc CommentScore : catMaybes [
+                 OffsetBy <$> mOffset
+               , LimitTo  <$> mNComments
+               ]
 
-
-    cs <- selectList filtrs opts
-    forM cs $ \entity@(Entity _ c) -> do
-        u <- getJust $ commentUser c
-        return (entity, u)
+    cs <- selectList [CommentUpload ==. uploadId] opts
+    forM cs $ \entity@(Entity commentId comment) -> do
+        let authorId = commentUser comment
+        author <- Entity authorId <$> getJust authorId
+        case mUserId of
+            Just userId -> do
+                mVote <- selectFirst [ CommentVoteComment ==. commentId
+                                     , CommentVoteUser    ==. userId ] []
+                return (entity, author, (commentVoteType . entityVal) <$> mVote)
+            Nothing     ->
+                return (entity, author, Nothing)
 
 -- | Removes a comment from the database and decrements counters.
-removeComment :: Entity CommentId -> YesodDB App ()
-removeComment (Entity commentId comment) = do
-    update userId                  [UserCommentCount   -=. 1]
-    update (commentUpload comment) [UploadCommentCount -=. 1]
+removeComment :: UserId -> Entity Comment -> YesodDB App ()
+removeComment userId (Entity commentId comment) = do
+    update userId                  [UserCommentsCount   -=. 1]
+    update (commentUpload comment) [UploadCommentsCount -=. 1]
     deleteWhere [CommentVoteComment ==. commentId]
     delete commentId
 

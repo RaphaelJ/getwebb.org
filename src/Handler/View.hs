@@ -18,7 +18,9 @@ import Text.Hamlet (shamlet)
 import Text.Julius (rawJS)
 
 import Account
-import Handler.Comment (maxCommentLength, commentForm)
+import Handler.Comment (
+      maxCommentLength, commentForm, retrieveComments, removeComment
+    )
 import Util.API (sendNoContent, withFormSuccess, withUploadOwner)
 import Util.Date (getDiffTime)
 import Util.Pretty (
@@ -42,23 +44,34 @@ getViewR hmacs' = do
         Just (Hmacs hmacs@(hmac:_)) -> do
             redirectWget
 
-            (entity@(Entity _ upload), file, extras, mOwner) <- runDB $ do
+            mUser <- getUser
+            let mUserId = (entityKey . fst) <$> mUser
+
+            -- Retrieves the first file and its comments.
+            (entity, file, extras, mOwner, comments) <- runDB $ do
                 mUpload <- getBy $ UniqueUploadHmac hmac
 
                 case mUpload of
-                    Just entity@(Entity _ upload) -> do
+                    Just entity@(Entity uploadId upload) -> do
                         let fileId = uploadFile upload
                         Just file <- get fileId
 
                         mOwner <- getUploadOwner upload
                         extras <- getFileExtras (Entity fileId file)
 
-                        return (entity, file, extras, mOwner)
+                        -- Retrieves comments.
+                        comments' <- retrieveComments mUserId uploadId Nothing
+                                                     Nothing
+                        comments <- forM comments' $ \(c, author, v) -> do
+                            avatar <- getAvatar $ entityVal author
+                            return (c, author, avatar, v)
+
+                        return (entity, file, extras, mOwner, comments)
                     Nothing -> redirectNext (tail hmacs)
+            let Entity _ upload = entity
 
             app <- getYesod
             mAdminKey <- getAdminKey
-            mUser <- getUser
             rdr <- getUrlRenderParams
             Just currUrl <- getCurrentRoute
             stats <- getUploadStats entity
@@ -153,17 +166,19 @@ patchViewR hmacTxt = do
 -- | Deletes an upload. Returns a 204 No content on success, a 404 Not found if
 -- doesn't exists or 403 if the user isn't allowed to remove the upload.
 deleteViewR :: Text -> Handler ()
-deleteViewR hmacTxt = withUploadOwner (Hmac hmacTxt) sendNoContent removeUpload
+deleteViewR hmacTxt = do
+    (Entity userId _, _) <- requireAuth
+    withUploadOwner (Hmac hmacTxt) sendNoContent (removeUpload userId)
 
 -- Utilities -------------------------------------------------------------------
 
 -- | Removes an upload. Decrements its owner\'s count and remove the associated
 -- file if the file is now upload-less.
-removeUpload :: Entity Upload -> YesodDB App ()
-removeUpload (Entity uploadId upload) = do
+removeUpload :: UserId -> Entity Upload -> YesodDB App ()
+removeUpload userId (Entity uploadId upload) = do
     -- Removes comments.
-    comments <- selectList [CommentUpload ==. uploadId]
-    forM_ comments removeComment
+    comments <- selectList [CommentUpload ==. uploadId] []
+    forM_ comments (removeComment userId)
 
     let fileId = uploadFile upload
     delete uploadId

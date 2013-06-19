@@ -27,7 +27,7 @@ User
     isAdmin Bool
     -- Links every upload of this user to this user.
     adminKey AdminKeyId
-    commentsCount Int
+    commentsCount Int default=0
     -- Settings :
     defaultPublic Bool -- True if the user want new files to be public.
     UniqueUserEmail email
@@ -69,7 +69,7 @@ Upload
     views Word64 default=0
     viewed UTCTime
     bandwidth Word64 default=0
-    commentsCount Int
+    commentsCount Int default=0
     UniqueUploadHmac hmac
     deriving Show
 
@@ -80,8 +80,8 @@ Comment
     message Text
     created UTCTime
     score Double
-    upvotes Word64 default=0
-    downvotes Word64 default=0
+    upvotes Int default=0
+    downvotes Int default=0
     UniqueCommentHmac hmac
     deriving Show
 

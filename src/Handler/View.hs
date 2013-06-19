@@ -63,8 +63,11 @@ getViewR hmacs' = do
                         comments' <- retrieveComments mUserId uploadId Nothing
                                                      Nothing
                         comments <- forM comments' $ \(c, author, v) -> do
+                            let Entity _ comment = c
+                            diffTime <- getDiffTime $ commentCreated comment
+                            let isOwner = Just (entityKey author) == mUserId
                             avatar <- getAvatar $ entityVal author
-                            return (c, author, avatar, v)
+                            return (c, diffTime, author, isOwner, avatar, v)
 
                         return (entity, file, extras, mOwner, comments)
                     Nothing -> redirectNext (tail hmacs)

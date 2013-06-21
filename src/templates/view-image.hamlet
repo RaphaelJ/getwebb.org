@@ -54,40 +54,45 @@ $with headersHeight <- if' (isJust links) 67 37
                         <a href=@{AccountR RegisterR}>register
                         to write a comment.
 
-            <ul>
-                $forall (Entity _ comment, diffTime, author', avatar, isOwner, mVote) <- comments
-                 $with Entity authorId author <- author'
-                    <li #{if' isOwner "class=\"owner\"" "">
-                        <div .avatar>
-                            <img alt=Avatar src=@{avatarRoute app avatar}>
+            $case comments
+              $of []
+                <p .notice>
+                    Nobody has commented this file yet.
+              $of _
+                <ul>
+                    $forall (Entity _ comment, diffTime, author', isOwner, avatar, mVote) <- comments
+                     $with Entity authorId author <- author'
+                        <li #{if' isOwner "class=\"owner\"" "">
+                            <div .avatar>
+                                <img alt=Avatar src=@{avatarRoute app avatar}>
 
-                        <div .message>
-                            <a href="#" .author>
-                                #{userName author}
-                            <span .date>#{PrettyDiffTime diffTime}
+                            <div .message>
+                                <a href="#" .author>
+                                    #{userName author}
+                                <span .date>#{PrettyDiffTime diffTime}
 
-                        <span .actions>
-                         $with upvotes <- commentUpvotes comment
-                          $with downvotes <- commentDownvotes comment
-                            $case mVote
-                                $of Just Upvote
+                            <span .actions>
+                            $with upvotes <- commentUpvotes comment
+                             $with downvotes <- commentDownvotes comment
+                                $case mVote
+                                  $of Just Upvote
                                     <a .upvote .enabled href="#">↑ Upvote
                                         <span .count>#{PrettyNumber upvotes}
                                     <a .downvote href="#">↓ Downvote
                                         <span .count>#{PrettyNumber downvotes}
-                                $of Just Downvote
+                                  $of Just Downvote
                                     <a .upvote href="#">↑ Upvote
                                         <span .count>#{PrettyNumber upvotes}
                                     <a .downvote .enabled href="#">↓ Downvote
                                         <span .count>#{PrettyNumber downvotes}
-                                $of Nothing
+                                  $of Nothing
                                     <a .upvote href="#" .enabled>↑ Upvote
                                         <span .count>#{PrettyNumber upvotes}
                                     <a .downvote href="#">↓ Downvote
                                         <span .count>#{PrettyNumber downvotes}
 
-                        <p .content>
-                            
+                            <p .content>
+                                #{commentMessage comment}
 
 <a #comments_button onclick="this.className = 'enabled'">
     Comments

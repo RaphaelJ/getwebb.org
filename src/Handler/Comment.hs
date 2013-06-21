@@ -182,7 +182,7 @@ commentForm =
 -- | Computes the Wilson confidence score of comment.
 -- See <http://www.evanmiller.org/how-not-to-sort-by-average-rating.html>.
 score :: Int -> Int -> Double
-score upvotes downvotes | n' == 0   = 0
+score upvotes downvotes | n' == 0   = 0 -- Avoid division by 0.
                         | otherwise =
     (p + z2 / (2*n) - z * sqrt ((p * (1 - p) + z2 / (4*n)) / n)) / (1 + z2 / n)
   where

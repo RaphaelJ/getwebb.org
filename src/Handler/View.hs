@@ -66,7 +66,7 @@ getViewR hmacs' = do
                             let Entity _ comment = c
                             diffTime <- getDiffTime $ commentCreated comment
                             let isOwner = Just (entityKey author) == mUserId
-                            avatar <- getAvatar $ entityVal author
+                            Just avatar <- getAvatar $ entityVal author
                             return (c, diffTime, author, isOwner, avatar, v)
 
                         return (entity, file, extras, mOwner, comments)

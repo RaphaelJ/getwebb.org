@@ -8,3 +8,6 @@ $("#message").keyup(function (e)
     elem.toggleClass("negative", negative);
     $("#submit_comment").attr("disabled", negative ? "disabled" : null);
 });
+
+
+function newComment()

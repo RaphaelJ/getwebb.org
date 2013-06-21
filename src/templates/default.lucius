@@ -65,8 +65,8 @@ a:hover {
 }
 
 .notice {
-    background-color: #CD6427;
-    box-shadow: 2px 2px 0 0 #AE5D2F;
+    background-color: #3D94B6;
+    box-shadow: 2px 2px 0 0 #225366;
 }
 
 /* Forms */

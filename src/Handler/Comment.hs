@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards #-}
 module Handler.Comment (
-      maxNComments, defaultNComments, maxCommentLength
+      maxNComments, defaultNComments, maxCommentLength, minCommentInterval
     , getCommentsR, postCommentsR
     , deleteCommentR, putCommentUpR, putCommentDownR
     , retrieveComments, removeComment, commentForm, score
@@ -11,7 +11,7 @@ import Import
 import Control.Monad
 import Data.Maybe
 import qualified Data.Text as T
-import Data.Time.Clock (getCurrentTime)
+import Data.Time.Clock (NominalDiffTime, getCurrentTime)
 import Text.Printf
 
 import Account (getUser, requireAuth)
@@ -32,6 +32,10 @@ defaultNComments = 50
 -- | Maximum length of a comment in characters.
 maxCommentLength :: Int
 maxCommentLength = 400
+
+-- | Seconds between two comments from the same user.
+minCommentInterval :: NominalDiffTime
+minCommentInterval = 60
 
 -- Handler ---------------------------------------------------------------------
 
@@ -58,15 +62,27 @@ getCommentsR hmac = do
     return $ array comments
 
 -- | Posts a new comment. Returns a 201 Created with a JSON object indicating
--- the 'Hmac' of the comment, or a 400/404 with a JSON array of errors.
+-- the 'Hmac' of the comment, or a 400/403/404/429 with a JSON array of errors.
 postCommentsR :: Hmac -> Handler ()
 postCommentsR hmac = do
     (Entity userId _, _) <- requireAuth
-    ((res, _), _) <- runFormPostNoToken commentForm
+    ((res, _), _) <- runFormPost commentForm
 
     withFormSuccess res $ \(Textarea msg) -> do
         time <- liftIO $ getCurrentTime
         commentHmac <- runDB $ do
+            -- Checks if the user has submitted a comment too recently.
+            mRecent <- selectFirst [
+                      CommentUser    ==. userId
+                    , CommentCreated >.  addUTCTime (-minCommentInterval) time
+                    ] []
+            whenJust mRecent $ \_ ->
+                sendErrorResponse tooManyRequests429 [
+                      printf "Please wait %s between two comments."
+                             (show minCommentInterval)
+                    ]
+
+            -- Commits the comment.
             Entity uploadId _ <- getBy404 $ UniqueUploadHmac hmac
 
             (key, commentHmac) <- newHmac HmacComment
@@ -165,11 +181,9 @@ commentForm :: Form Textarea
 commentForm =
     renderDivs $ areq (check sizeCheck textareaField) messageSettings Nothing
   where
-    messageSettings =
-        let name = Just "message"
-        in FieldSettings {
-              fsLabel = "Message", fsTooltip = Nothing, fsId = name
-            , fsName = name
+    messageSettings = FieldSettings {
+              fsLabel = "Message", fsTooltip = Nothing
+            , fsId = Just "comment_message", fsName = Just "message"
             , fsAttrs = [("placeholder", "Say something about this file.")]
             }
 

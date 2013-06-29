@@ -1,5 +1,4 @@
-$with headersHeight <- if' (isJust links) 67 37
- <div #full_screen style="top: #{headersHeight}px">
+<div #full_screen style="top: #{headersHeight}px">
     <div #position_relative>
      $with hmacTxt <- toPathPiece hmac
         <div #title>
@@ -33,16 +32,17 @@ $with headersHeight <- if' (isJust links) 67 37
 
         ^{right_pane}
 
-        <div #comments>
+        <div #comments style="display: none">
             <div #new_comment>
                 $case mUser
                   $of Just (user, avatar)
                     <div .avatar>
                         <img src=@{avatarRoute app avatar} alt="Avatar" />
 
-                    <form method=post action="" enctype=#{commentEnctype}>
+                    <form #comment_form method=post enctype=#{commentEnctype}
+                          action=@{CommentsR (uploadHmac upload)}>
                         ^{commentWidget}
-                        <input #submit_comment .big_button type=submit
+                        <input #comment_submit .big_button type=submit
                                value=Publish />
                         <span #chars_left
                               title="Number of remaining characters.">
@@ -62,39 +62,39 @@ $with headersHeight <- if' (isJust links) 67 37
                 <ul>
                     $forall (Entity _ comment, diffTime, author', isOwner, avatar, mVote) <- comments
                      $with Entity authorId author <- author'
-                        <li #{if' isOwner "class=\"owner\"" "">
+                        <li class=#{if' isOwner "owner" T.empty}>
                             <div .avatar>
                                 <img alt=Avatar src=@{avatarRoute app avatar}>
 
                             <div .message>
                                 <a href="#" .author>
                                     #{userName author}
-                                <span .date>#{PrettyDiffTime diffTime}
+                                <span .date>#{PrettyDiffTime diffTime} ago
 
-                            <span .actions>
-                            $with upvotes <- commentUpvotes comment
-                             $with downvotes <- commentDownvotes comment
-                                $case mVote
-                                  $of Just Upvote
-                                    <a .upvote .enabled href="#">↑ Upvote
-                                        <span .count>#{PrettyNumber upvotes}
-                                    <a .downvote href="#">↓ Downvote
-                                        <span .count>#{PrettyNumber downvotes}
-                                  $of Just Downvote
-                                    <a .upvote href="#">↑ Upvote
-                                        <span .count>#{PrettyNumber upvotes}
-                                    <a .downvote .enabled href="#">↓ Downvote
-                                        <span .count>#{PrettyNumber downvotes}
-                                  $of Nothing
-                                    <a .upvote href="#" .enabled>↑ Upvote
-                                        <span .count>#{PrettyNumber upvotes}
-                                    <a .downvote href="#">↓ Downvote
-                                        <span .count>#{PrettyNumber downvotes}
+                                <span .actions>
+                                 $with upvotes <- commentUpvotes comment
+                                  $with downvotes <- commentDownvotes comment
+                                    $case mVote
+                                      $of Just Upvote
+                                        <a .upvote .enabled href="#">↑ Upvote
+                                            <span .count>#{PrettyNumber upvotes}
+                                        <a .downvote href="#">↓ Downvote
+                                            <span .count>#{PrettyNumber downvotes}
+                                      $of Just Downvote
+                                        <a .upvote href="#">↑ Upvote
+                                            <span .count>#{PrettyNumber upvotes}
+                                        <a .downvote .enabled href="#">↓ Downvote
+                                            <span .count>#{PrettyNumber downvotes}
+                                      $of Nothing
+                                        <a .upvote href="#">↑ Upvote
+                                            <span .count>#{PrettyNumber upvotes}
+                                        <a .downvote href="#">↓ Downvote
+                                            <span .count>#{PrettyNumber downvotes}
 
-                            <p .content>
-                                #{commentMessage comment}
+                                <p .content>
+                                    #{commentMessage comment}
 
-<a #comments_button onclick="this.className = 'enabled'">
+<span #comments_button onclick="showComments();">
     Comments
     <span .count>
-        50
+        #{PrettyNumber (uploadCommentsCount upload)}

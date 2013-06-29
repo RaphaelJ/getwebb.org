@@ -10,12 +10,14 @@ import Data.Map (elems)
 import qualified Data.Text as T
 
 import Database.Persist.Sql (rawSql)
-import Network.HTTP.Types.Status (mkStatus, requestEntityTooLarge413)
+import Network.HTTP.Types.Status (requestEntityTooLarge413)
 import Text.Julius (rawJS)
 
 import Account (getUser)
 import Handler.Upload.Processing (UploadError (..), processFile)
-import Util.API (sendObjectCreated, sendErrorResponse, withFormSuccess)
+import Util.API (
+      sendObjectCreated, sendErrorResponse, tooManyRequests429, withFormSuccess
+    )
 import Util.Hmac (Hmac (..))
 import Util.Pretty (PrettyFileSize (..), wrappedText)
 
@@ -83,7 +85,6 @@ postUploadR = do
                         FileTooLarge -> requestEntityTooLarge413
                 sendErrorResponse status [err]
   where
-    tooManyRequests429 = mkStatus 429 "Too Many Requests"
 
 -- | Creates a form for the upload and its options.
 uploadForm :: Html

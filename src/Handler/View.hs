@@ -10,6 +10,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as C
 import Data.List (head, tail, last, init)
 import Data.Maybe
+import qualified Data.Text as T
 
 import Network.HTTP.Types.Header (hUserAgent)
 import Network.Wai (requestHeaders)
@@ -89,6 +90,7 @@ getViewR hmacs' = do
                 miniature = getMiniature hmac extras
                 audioSources = getAudioSources hmac extras
                 archive = getArchive rdr hmac extras
+                headersHeight = if isJust links then 67 else 37 :: Int
             uploadDiffTime <- getDiffTime $ uploadCreated upload
 
             defaultLayout $ do
@@ -135,7 +137,7 @@ getViewR hmacs' = do
 
     -- This is used in hamlet templates because they only supports functions
     -- in expressions, not operators.
-    if' :: Bool -> Int -> Int -> Int
+    if' :: Bool -> a -> a -> a
     if' True  a _ = a
     if' False _ b = b
 

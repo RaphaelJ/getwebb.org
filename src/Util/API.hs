@@ -1,16 +1,19 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances, GeneralizedNewtypeDeriving
+           , OverloadedStrings #-}
 -- | Defines a set of various functions used in API requests/responses.
 module Util.API (
       APIError (..), ToAPIError (..)
     , sendObjectCreated, sendNoContent, sendErrorResponse, sendPermissionDenied
+    , tooManyRequests429
     , withFormSuccess, withUploadOwner
     ) where
 
 import Import
 
 import Data.String (IsString)
+import qualified Data.Text as T
 import Network.HTTP.Types.Status (
-      Status, badRequest400, created201, noContent204, forbidden403
+      Status, mkStatus, badRequest400, created201, noContent204, forbidden403
     )
 
 import Util.Hmac (Hmac)
@@ -26,6 +29,9 @@ instance ToAPIError APIError where
 
 instance ToAPIError Text where
     toAPIError = APIError
+
+instance ToAPIError [Char] where
+    toAPIError = APIError . T.pack
 
 -- | Responds to the client with a 201 Created and a JSON object containing the
 -- HMAC of the object and eventually the URL to the object.
@@ -57,6 +63,9 @@ sendPermissionDenied :: MonadHandler m => m a
 sendPermissionDenied =
     let msg = "You are not the owner of this resource." :: Text
     in sendErrorResponse forbidden403 [msg]
+
+tooManyRequests429 :: Status
+tooManyRequests429 = mkStatus 429 "Too Many Requests"
 
 -- | Executes the inner action if the form has been correctly encoded, responds
 -- with a 400 Bad request with a JSON array of errors otherwise.

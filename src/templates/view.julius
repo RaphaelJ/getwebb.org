@@ -1,13 +1,73 @@
-$("#message").keyup(function (e)
+// Decrements the number of available characters in the new comment form.
+var new_comment_text = $("#new_comment #comment_message");
+new_comment_text.keyup(function (e)
 {
-    var remain = #{rawJS $ show maxCommentLength} - $("#message").val().length;
+    var remain = #{rawJS $ show maxCommentLength} - new_comment_text.val().length;
     var elem = $("#chars_left");
     var negative = remain < 0;
 
     elem.text(remain);
     elem.toggleClass("negative", negative);
-    $("#submit_comment").attr("disabled", negative ? "disabled" : null);
+    var disabled = negative ? "disabled" : null
+    $("#new_comment #submit_comment").attr("disabled", disabled);
 });
 
+// Posts the new comment using an AJAX request.
+var comment_form = $("#new_comment #comment_form");
+comment_form.submit(function () {
+    var submit = $("#new_comment #comment_submit");
+    submit.attr("disabled", "disabled");
 
-function newComment()
+    $.ajax({
+        type: "POST",
+        url: "@{CommentsR (uploadHmac upload)}",
+        data: comment_form.serialize(),
+        complete: function (xhr, status) {
+            submit.attr("disabled", null);
+
+            if (xhr.status == 201) {
+                document.href = document.href;
+            } else if (xhr.status == 403)
+                alert("You don't have the permission to post a comment.");
+            else if (xhr.status == 404)
+                alert("The file doesn't exist.");
+            else {
+                alert("Failed to post the comment.");
+                var res = jQuery.parseJSON(xhr.responseText);
+                for (i = 0; i < res.length; i++)
+                    alert(res[i]);
+            }
+        }
+    });
+
+    return false;
+})
+
+// Votes for a comment.
+function commentUpvote(commentHmac)
+{
+    var url = "@{CommentUpR ""}";
+    url = url.substr(0, url.length - 1) + commentHmac;
+
+    $.ajax({
+        type: "PUT",
+        url: "@{CommentsR (uploadHmac upload)}",
+        data: comment_form.serialize(),
+        complete: function (xhr, status) {
+            submit.attr("disabled", null);
+
+            if (xhr.status == 201) {
+                document.href = document.href;
+            } else if (xhr.status == 403)
+                alert("You don't have the permission to post a comment.");
+            else if (xhr.status == 404)
+                alert("The file doesn't exist.");
+            else {
+                alert("Failed to post the comment.");
+                var res = jQuery.parseJSON(xhr.responseText);
+                for (i = 0; i < res.length; i++)
+                    alert(res[i]);
+            }
+        }
+    });
+}

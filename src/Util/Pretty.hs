@@ -39,7 +39,7 @@ instance ToMarkup WrappedText where
     toMarkup = toMarkup . wtTruncated
 
 -- | A new type to represent large numbers with a separator between thousands.
-newtype PrettyNumber = PrettyNumber Int
+newtype PrettyNumber = PrettyNumber Int deriving (Eq, Ord, Num)
 
 instance Show PrettyNumber where
     show (PrettyNumber n) | n < 0     = '-' : str
@@ -60,7 +60,7 @@ instance ToMarkup PrettyNumber where
 
 -- | A new type to represent file size which will be displayed in a human
 -- readable way.
-newtype PrettyFileSize = PrettyFileSize Word64
+newtype PrettyFileSize = PrettyFileSize Word64 deriving (Eq, Ord, Num)
 
 instance Show PrettyFileSize where
     show (PrettyFileSize size)
@@ -78,7 +78,7 @@ instance ToMarkup PrettyFileSize where
 
 -- | A new type to represent a media duration which will be displayed in a human
 -- readable way. The duration is encoded in centisecond.
-newtype PrettyDuration = PrettyDuration Word64
+newtype PrettyDuration = PrettyDuration Word64 deriving (Eq, Ord, Num)
 
 instance Show PrettyDuration where
     show (PrettyDuration duration)

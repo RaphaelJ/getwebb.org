@@ -1,0 +1,14 @@
+// Displays/Hides the comments and the comment form.
+function showComments()
+{
+    var button = $("#comments_button");
+    var comments = $("#comments");
+
+    if (button.hasClass("enabled")) {
+        button.toggleClass("enabled", false);
+        comments.hide();
+    } else {
+        button.toggleClass("enabled", true);
+        comments.show();
+    }
+}

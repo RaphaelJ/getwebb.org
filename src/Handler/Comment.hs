@@ -11,12 +11,13 @@ import Import
 import Control.Monad
 import Data.Maybe
 import qualified Data.Text as T
-import Data.Time.Clock (NominalDiffTime, getCurrentTime)
+import Data.Time.Clock (NominalDiffTime, addUTCTime, getCurrentTime)
 import Text.Printf
 
 import Account (getUser, requireAuth)
 import Util.API (
-      sendObjectCreated, sendNoContent, sendPermissionDenied, withFormSuccess
+      sendObjectCreated, sendNoContent, sendErrorResponse, sendPermissionDenied
+    , tooManyRequests429, withFormSuccess
     )
 import Util.Hmac (Hmac, newHmac)
 import Util.Json ()
@@ -79,7 +80,7 @@ postCommentsR hmac = do
             whenJust mRecent $ \_ ->
                 sendErrorResponse tooManyRequests429 [
                       printf "Please wait %s between two comments."
-                             (show minCommentInterval)
+                             (show minCommentInterval) :: String
                     ]
 
             -- Commits the comment.

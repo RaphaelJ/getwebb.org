@@ -83,13 +83,14 @@ postCommentsR hmac = do
                              (show minCommentInterval) :: String
                     ]
 
-            -- Commits the comment.
+            -- Commits the comment and a first upvote.
             Entity uploadId _ <- getBy404 $ UniqueUploadHmac hmac
             liftIO $ print (uploadId, hmac)
 
             (key, commentHmac) <- newHmac HmacComment
             insertKey key $ Comment commentHmac userId uploadId msg time
-                                    (score 0 0) 0 0
+                                    (score 1 0) 1 0
+            insert $ CommentVote key userId Upvote
             update userId   [UserCommentsCount   +=. 1]
             update uploadId [UploadCommentsCount +=. 1]
             return commentHmac

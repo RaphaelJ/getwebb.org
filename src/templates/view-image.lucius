@@ -301,6 +301,7 @@ body {
 
                         .actions {
                             a {
+                                margin: 0 2px;
                                 opacity: 0.6;
                             }
 
@@ -317,7 +318,7 @@ body {
                                 color: #89B630;
                             }
 
-                            a.downvote.enabled {
+                            a.downvote.enabled, a.remove {
                                 color: #B65234;
                             }
 

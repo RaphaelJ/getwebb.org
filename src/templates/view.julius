@@ -32,7 +32,10 @@ function newComment(form)
                 alert("You don't have the permission to post a comment.");
             else if (xhr.status == 404)
                 alert("The file doesn't exist.");
-            else {
+            else if (xhr.status == 429) { // Too many requests
+                var res = jQuery.parseJSON(xhr.responseText);
+                alert(res[0]);
+            } else {
                 alert("Failed to post the comment.");
                 var res = jQuery.parseJSON(xhr.responseText);
                 for (i = 0; i < res.length; i++)

@@ -40,7 +40,8 @@
                         <img src=@{avatarRoute app avatar} alt="Avatar" />
 
                     <form #comment_form method=post enctype=#{commentEnctype}
-                          action=@{CommentsR (uploadHmac upload)}>
+                          action=@{CommentsR (uploadHmac upload)}
+                          onsubmit="newComment(this, '#{uploadHmac upload}'); return false;">
                         ^{commentWidget}
                         <input #comment_submit .big_button type=submit
                                value=Publish />
@@ -60,7 +61,7 @@
                     Nobody has commented this file yet.
               $of _
                 <ul>
-                    $forall (Entity _ comment, diffTime, author', isOwner, avatar, mVote) <- comments
+                    $forall (Entity _ comment, diffTime, author', isOwner, isUser, avatar, mVote) <- comments
                      $with Entity authorId author <- author'
                         <li class=#{if' isOwner "owner" T.empty}>
                             <div .avatar>
@@ -90,6 +91,9 @@
                                             <span .count>#{PrettyNumber upvotes}
                                         <a .downvote href="#">↓ Downvote
                                             <span .count>#{PrettyNumber downvotes}
+
+                                    $if isUser
+                                        <a .remove href="#">⨯ Remove
 
                                 <p .content>
                                     #{commentMessage comment}

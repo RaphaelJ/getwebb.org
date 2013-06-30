@@ -10,11 +10,15 @@ import qualified Data.Text as T
 
 import Database.Persist.Sql (PersistFieldSql)
 import Yesod
+import Text.Blaze (ToMarkup)
 
 -- | HMACs are unique identifiers used for files, uploads, comments and archive
 -- files.
 newtype Hmac = Hmac Text
-    deriving (Eq, IsString, PersistField, PersistFieldSql, PathPiece, ToJSON)
+    deriving (
+      Eq, IsString, PersistField, PersistFieldSql, PathPiece, ToJSON
+    , ToMarkup
+    )
 
 instance Show Hmac where
     show (Hmac txt) = show txt

@@ -13,15 +13,16 @@ new_comment_text.keyup(function (e)
 });
 
 // Posts the new comment using an AJAX request.
-var comment_form = $("#new_comment #comment_form");
-comment_form.submit(function () {
+function newComment(form)
+{
     var submit = $("#new_comment #comment_submit");
     submit.attr("disabled", "disabled");
 
+    var jquery_form = $(form);
     $.ajax({
         type: "POST",
-        url: "@{CommentsR (uploadHmac upload)}",
-        data: comment_form.serialize(),
+        url: jquery_form.attr("action"),
+        data: jquery_form.serialize(),
         complete: function (xhr, status) {
             submit.attr("disabled", null);
 
@@ -39,9 +40,7 @@ comment_form.submit(function () {
             }
         }
     });
-
-    return false;
-})
+}
 
 // Votes for a comment.
 function commentUpvote(commentHmac)
@@ -51,7 +50,7 @@ function commentUpvote(commentHmac)
 
     $.ajax({
         type: "PUT",
-        url: "@{CommentsR (uploadHmac upload)}",
+        url: url,
         data: comment_form.serialize(),
         complete: function (xhr, status) {
             submit.attr("disabled", null);

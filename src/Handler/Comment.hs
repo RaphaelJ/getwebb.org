@@ -85,6 +85,7 @@ postCommentsR hmac = do
 
             -- Commits the comment.
             Entity uploadId _ <- getBy404 $ UniqueUploadHmac hmac
+            liftIO $ print (uploadId, hmac)
 
             (key, commentHmac) <- newHmac HmacComment
             insertKey key $ Comment commentHmac userId uploadId msg time

@@ -58,17 +58,20 @@ getViewR hmacs' = do
                         Just file <- get fileId
 
                         mOwner <- getUploadOwner upload
+                        let mOwnerId = (entityKey . fst) <$> mOwner
                         extras <- getFileExtras (Entity fileId file)
 
                         -- Retrieves comments.
                         comments' <- retrieveComments mUserId uploadId Nothing
-                                                     Nothing
+                                                      Nothing
                         comments <- forM comments' $ \(c, author, v) -> do
                             let Entity _ comment = c
                             diffTime <- getDiffTime $ commentCreated comment
-                            let isOwner = Just (entityKey author) == mUserId
+                            let isOwner = Just (entityKey author) == mOwnerId
+                                isUser  = Just (entityKey author) == mUserId
                             Just avatar <- getAvatar $ entityVal author
-                            return (c, diffTime, author, isOwner, avatar, v)
+                            return (c, diffTime, author, isOwner, isUser
+                                   , avatar, v)
 
                         return (entity, file, extras, mOwner, comments)
                     Nothing -> redirectNext (tail hmacs)

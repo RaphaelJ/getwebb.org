@@ -3,31 +3,46 @@ var new_comment_text = $("#new_comment #comment_message");
 new_comment_text.keyup(function (e)
 {
     var remain = #{rawJS $ show maxCommentLength} - new_comment_text.val().length;
-    var elem = $("#chars_left");
+    var chars_left = $("#chars_left");
     var negative = remain < 0;
 
-    elem.text(remain);
-    elem.toggleClass("negative", negative);
+    chars_left.text(remain);
+    chars_left.toggleClass("negative", negative);
     var disabled = negative ? "disabled" : null
-    $("#new_comment #submit_comment").attr("disabled", disabled);
+    $("#new_comment #comment_submit").attr("disabled", disabled);
 });
 
-// Posts the new comment using an AJAX request.
-function newComment(form)
+// Posts the new comment using a POST request to the form's action URI.
+function commentNew(form)
 {
-    var submit = $("#new_comment #comment_submit");
+    var jquery_form = $(form);
+    var textarea = $("textarea", form);
+    var submit   = $("input[type=submit]", form);
+    if (textarea.val().length < 1) {
+        alert("A message is required.");
+        return;
+    }
+
+    // Saves the message before disabling the form.
+    var data = jquery_form.serialize();
+
+    textarea.attr("disabled", "disabled");
     submit.attr("disabled", "disabled");
 
-    var jquery_form = $(form);
     $.ajax({
         type: "POST",
         url: jquery_form.attr("action"),
-        data: jquery_form.serialize(),
+        data: data,
         complete: function (xhr, status) {
-            submit.attr("disabled", null);
-
             if (xhr.status == 201) {
                 document.href = document.href;
+
+                // Restores the form
+                textarea.val(null);
+                textarea.keyup();
+
+                // Increments the number of comments of the upload.
+                $("#comments_count").text(prettyNumber(++commentsCount));
             } else if (xhr.status == 403)
                 alert("You don't have the permission to post a comment.");
             else if (xhr.status == 404)
@@ -37,38 +52,60 @@ function newComment(form)
                 alert(res[0]);
             } else {
                 alert("Failed to post the comment.");
-                var res = jQuery.parseJSON(xhr.responseText);
-                for (i = 0; i < res.length; i++)
-                    alert(res[i]);
+                showErrorResponse(xhr);
+            }
+
+            textarea.attr("disabled", null);
+            submit.attr("disabled", null);
+        }
+    });
+}
+
+// Removes the given comment by sending a DELETE request to the comment's URI.
+function commentRemove(commentHmac, commentUri)
+{
+    $.ajax({
+        type: "DELETE",
+        url: commentUri,
+        complete: function (xhr, status) {
+            if (xhr.status == 204) {
+                var comment = $("#comment_" + commentHmac);
+                comment.slideUp(function () {
+                    comment.remove();
+
+                    // Decrements the number of comments of the upload.
+                    $("#comments_count").text(prettyNumber(--commentsCount));
+                });
+            } else if (xhr.status == 403)
+                alert("You don't have the permission to remove for a comment.");
+            else if (xhr.status == 404)
+                alert("The comment doesn't exist.");
+            else {
+                alert("Failed to remove the comment.");
+                showErrorResponse(xhr);
             }
         }
     });
 }
 
-// Votes for a comment.
-function commentUpvote(commentHmac)
+// Votes for a comment by sending a PUT request to the given vote's URI.
+function commentUpvote(uploadHmac, voteUri)
 {
-    var url = "@{CommentUpR ""}";
-    url = url.substr(0, url.length - 1) + commentHmac;
-
     $.ajax({
         type: "PUT",
-        url: url,
-        data: comment_form.serialize(),
+        url: dest,
         complete: function (xhr, status) {
             submit.attr("disabled", null);
 
-            if (xhr.status == 201) {
+            if (xhr.status == 204) {
                 document.href = document.href;
             } else if (xhr.status == 403)
-                alert("You don't have the permission to post a comment.");
+                alert("You don't have the permission to vote for a comment.");
             else if (xhr.status == 404)
-                alert("The file doesn't exist.");
+                alert("The comment doesn't exist.");
             else {
-                alert("Failed to post the comment.");
-                var res = jQuery.parseJSON(xhr.responseText);
-                for (i = 0; i < res.length; i++)
-                    alert(res[i]);
+                alert("Failed to vote for the comment.");
+                showErrorResponse(xhr);
             }
         }
     });

@@ -1,12 +1,10 @@
-// Change the sharing policy of an upload asynchronously.
-function changeUploadPolicy(uploadHmac, isPublic)
+// Change the sharing policy of an upload asynchronously by sending a PATCH
+// request to the upload's URI.
+function uploadChangePolicy(uploadHmac, uploadUri, isPublic)
 {
-    var url = "@{ViewR ""}";
-    url = url.substr(0, url.length - 1) + uploadHmac;
-
     $.ajax({
         type: "PATCH",
-        url: url,
+        url: uploadUri,
         data: { public: (isPublic ? "yes" : "no") },
         complete: function (xhr, status) {
             if (xhr.status == 204) {
@@ -22,9 +20,7 @@ function changeUploadPolicy(uploadHmac, isPublic)
                 alert("The file doesn't exist.");
             else {
                 alert("Failed to change the policy of this file.");
-                var res = jQuery.parseJSON(xhr.responseText);
-                for (i = 0; i < res.length; i++)
-                    alert(res[i]);
+                showErrorResponse(xhr);
             }
         }
     });

@@ -111,10 +111,10 @@ instance Show PrettyDiffTime where
         | mins == 1 = "one minute"
         | s > 1     = printf "%d seconds" s
         | s == 1    = "one second"
-        | otherwise = printf "%.2f second" (realToFrac secs :: Double)
+        | otherwise = "less than one second"
       where
         (minute, hour, day, month, year)
-            = (60, minute * 60, hour * 24, day * 30, month * 12)
+            = (60, minute * 60, hour * 24, day * 30, day * 365)
         y, m, d, h, mins, s :: Int
         y = floor $ secs / year
         m = floor $ secs / month

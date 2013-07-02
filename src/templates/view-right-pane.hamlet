@@ -7,8 +7,8 @@
 
     $if isAdmin upload mAdminKey
         <div .remove>
-            <a .big_button .remove_button href="#"
-               onclick="removeUpload('#{hmacTxt}'); return false">
+            <span .big_button .remove_button
+                  onclick="uploadRemove(@{ViewR hmacTxt});">
                 Remove
 
     <div .size>
@@ -114,7 +114,7 @@
          $with ownerName <- userName owner
             <div .creator>
                 <img src=@{avatarRoute app ownerAvatar} alt=#{ownerName} />
-                Uploaded by <a href="#">#{ownerName}</a>.
+                Uploaded by <a href="#">#{wrappedText ownerName 20}</a>.
         $with (views, _, bw) <- stats
             <span .key>Totalled
             <span .value>

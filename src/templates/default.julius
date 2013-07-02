@@ -1,0 +1,117 @@
+// Contains utilities which are used all around the website.
+
+// Represents large numbers with a separator between thousands.
+function prettyNumber(n)
+{
+    var s = "";
+    var i = Math.abs(n);
+    for (var base = 0; i != 0; base++) {
+        if (base == 3) {
+            s = "," + s;
+            base = 0;
+        }
+
+        mod = i % 10;
+        i = Math.floor(i / 10);
+        s = mod.toString() + s;
+    }
+
+    if (n < 0)
+        return "-" + s;
+    else if (n == 0)
+        return 0;
+    else
+        return s;
+}
+
+// Returns a string with the speed in a human readable way.
+function prettySpeed(bytesPerSecond)
+{
+    var pow1 = 1024;
+    var pow2 = pow1 * 1024;
+    var pow3 = pow2 * 1024;
+    var pow4 = pow3 * 1024;
+
+    // Rounds the speed two number after the comma.
+    function roundSpeed(speed) {
+        return Math.round(speed * 100) / 100;
+    }
+
+    if (bytesPerSecond < 2)
+        return bytesPerSecond + " byte/s";
+    else if (bytesPerSecond < pow1)
+        return bytesPerSecond + " bytes/s";
+    else if (bytesPerSecond < pow2)
+        return roundSpeed(bytesPerSecond / pow1) + " KiB/s";
+    else if (bytesPerSecond < pow3)
+        return roundSpeed(bytesPerSecond / pow2) + " MiB/s";
+    else if (bytesPerSecond < pow4)
+        return roundSpeed(bytesPerSecond / pow2) + " GiB/s";
+    else // Boy, this is crazy fast !
+        return roundSpeed(bytesPerSecond / pow2) + " TiB/s";
+}
+
+// Represents a eslaped time an human readable way.
+function prettyDiffTime(secs)
+{
+    var minute = 60,
+        hour   = minute * 60,
+        day    = hour * 24,
+        month  = day * 30;
+        year   = day * 365;
+
+    var y    = Math.floor(secs / year),
+        m    = Math.floor(secs / month),
+        d    = Math.floor(secs / day),
+        h    = Math.floor(secs / hour),
+        mins = Math.floor(secs / minute),
+        s    = Math.floor(secs);
+
+    if (y > 1)
+        return y.toString() + " years";
+    else if (y == 1)
+        return "one year";
+    else if (m > 1)
+        return m.toString() + " months";
+    else if (m == 1)
+        return "one month";
+    else if (d > 1)
+        return d.toString() + " days";
+    else if (d == 1)
+        return "one day";
+    else if (h > 1)
+        return h.toString() + " hours";
+    else if (h == 1)
+        return "one hour";
+    else if (mins > 1)
+        return mins.toString() + " minutes";
+    else if (mins == 1)
+        return "one minute";
+    else if (s > 1)
+        return s.toString() + " seconds";
+    else if (s == 1)
+        return "one second";
+    else 
+        return "less than one second";
+}
+
+// Displays the returned errors of the AJAX request, if any, to the user.
+function showErrorResponse(xhr)
+{
+    if (xhr.responseText != "") {
+        var res = jQuery.parseJSON(xhr.responseText);
+        for (i = 0; i < res.length; i++)
+            alert(res[i]);
+    }
+}
+
+// Adds a sprintf-like method to String objects.
+// String.prototype.format = function()
+// {
+//     var formatted = this;
+//     for (var i = 0; i < arguments.length; i++) {
+//         var regexp = new RegExp('\\{'+i+'\\}', 'gi');
+//         formatted = formatted.replace(regexp, arguments[i]);
+//     }
+//     return formatted;
+// }

@@ -200,8 +200,7 @@ function uploadFiles(loaded, total, files_info, uploaded, errors)
 
         if (status == 201) { // 201 created
             info.changeStatus("uploaded", 100, uploadUrl([res.id]));
-            // TODO: Pretty print large number
-            $("#count_history").html(++countHistory);
+            $("#count_history").text(prettyNumber(++countHistory));
             uploaded.push(res.id);
         } else {
             info.changeStatus("error", 100, null);
@@ -325,33 +324,6 @@ function updateGlobalProgress(percent, step_bytes, step_elapsed)
     }
 }
 
-// Returns a string with the speed in a human readable way.
-function prettySpeed(bytesPerSecond)
-{
-    var pow1 = 1024;
-    var pow2 = pow1 * 1024;
-    var pow3 = pow2 * 1024;
-    var pow4 = pow3 * 1024;
-
-    // Rounds the speed two number after the comma.
-    function roundSpeed(speed) {
-        return Math.round(speed * 100) / 100;
-    }
-
-    if (bytesPerSecond < 2)
-        return bytesPerSecond + " byte/s";
-    else if (bytesPerSecond < pow1)
-        return bytesPerSecond + " bytes/s";
-    else if (bytesPerSecond < pow2)
-        return roundSpeed(bytesPerSecond / pow1) + " KiB/s";
-    else if (bytesPerSecond < pow3)
-        return roundSpeed(bytesPerSecond / pow2) + " MiB/s";
-    else if (bytesPerSecond < pow4)
-        return roundSpeed(bytesPerSecond / pow2) + " GiB/s";
-    else // Boy, this is crazy fast !
-        return roundSpeed(bytesPerSecond / pow2) + " TiB/s";
-}
-
 // Returns the url to the file(s) from an array of IDs.
 function uploadUrl(hmacs)
 {
@@ -359,15 +331,4 @@ function uploadUrl(hmacs)
     var viewRoute = "@{ViewR ""}";
     viewRoute = viewRoute.substr(0, viewRoute.length - 1);
     return viewRoute + hmacs.join(",");
-}
-
-// Add a sprintf-like method to String objects.
-String.prototype.format = function() 
-{
-    var formatted = this;
-    for (var i = 0; i < arguments.length; i++) {
-        var regexp = new RegExp('\\{'+i+'\\}', 'gi');
-        formatted = formatted.replace(regexp, arguments[i]);
-    }
-    return formatted;
 }

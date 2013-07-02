@@ -21,7 +21,7 @@ instance ToJSON (Entity Comment, Entity User, Maybe VoteType) where
         info = [
               "id"          .= commentHmac c
             , "user"        .= u
-            , "message"     .= commentMessage c
+            , "message"     .= (unTextarea $ commentMessage c)
             , "created_at"  .= Rfc822Date (commentCreated c)
             , "score"       .= commentScore c
             , "upvotes"     .= commentUpvotes c

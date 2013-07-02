@@ -57,23 +57,23 @@
                                 $if uploadPublic upload
                                     <button #public_button_#{hmacTxt}
                                             .public_button .enabled type=button
-                                            onclick="changeUploadPolicy('#{hmacTxt}', true); return false;"
+                                            onclick="uploadChangePolicy('#{hmacTxt}', '@{ViewR hmacTxt}', true); return false;"
                                             hint="Upload will be published in the public gallery">
                                         Public
                                     <button #private_button_#{hmacTxt}
                                             .private_button type=button
-                                            onclick="changeUploadPolicy('#{hmacTxt}', false); return false;"
+                                            onclick="uploadChangePolicy('#{hmacTxt}', '@{ViewR hmacTxt}', false); return false;"
                                             hint="Upload will NOT be published in the public gallery">
                                         Private
                                 $else
                                     <button #public_button_#{hmacTxt}
                                             .public_button type=button
-                                            onclick="changeUploadPolicy('#{hmacTxt}', true); return false;"
+                                            onclick="uploadChangePolicy('#{hmacTxt}', '@{ViewR hmacTxt}', true); return false;"
                                             hint="Upload will be published in the public gallery">
                                         Public
                                     <button #private_button_#{hmacTxt}
                                             .private_button .enabled type=button
-                                            onclick="changeUploadPolicy('#{hmacTxt}', false); return false;"
+                                            onclick="uploadChangePolicy('#{hmacTxt}', '@{ViewR hmacTxt}', false); return false;"
                                             hint="Upload will NOT be published in the public gallery">
                                         Private
 

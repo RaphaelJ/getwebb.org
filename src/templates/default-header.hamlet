@@ -37,4 +37,4 @@
                                 #{PrettyNumber countHistory}
 
             <script type="text/javascript">
-                countHistory = #{countHistory};
+                var countHistory = #{countHistory};

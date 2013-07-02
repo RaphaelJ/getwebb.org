@@ -1,13 +1,11 @@
-// Removes an upload asynchronously.
-function removeUpload(uploadHmac)
+// Removes an upload asynchronously by sending a DELETE request to the given 
+// URI.
+function uploadRemove(uploadUri)
 {
     if (confirm("Do you really want to remove this file ?")) {
-        var url = "@{ViewR ""}";
-        url = url.substr(0, url.length - 1) + uploadHmac;
-
         $.ajax({
             type: "DELETE",
-            url: url,
+            url: uploadUri,
             complete: function (xhr, status) {
                 if (xhr.status == 204)
                     document.location.href = document.location.href;

@@ -77,7 +77,7 @@ Comment
     hmac Hmac
     user UserId
     upload UploadId
-    message Text
+    message Textarea Text
     created UTCTime
     score Double
     upvotes Int default=0

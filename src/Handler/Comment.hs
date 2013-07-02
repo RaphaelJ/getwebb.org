@@ -69,7 +69,7 @@ postCommentsR hmac = do
     (Entity userId _, _) <- requireAuth
     ((res, _), _) <- runFormPost commentForm
 
-    withFormSuccess res $ \(Textarea msg) -> do
+    withFormSuccess res $ \msg -> do
         time <- liftIO $ getCurrentTime
         commentHmac <- runDB $ do
             -- Checks if the user has submitted a comment too recently.

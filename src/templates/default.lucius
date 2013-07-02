@@ -13,13 +13,14 @@ h1, h2, h3, h4 {
     font-family: 'Open Sans', Arial, sans-serif;
 }
 
-a, a:visited {
+a, a:visited, .button {
     color: #3D94B6;
     text-decoration: none;
 }
 
-a:hover {
+a:hover, .button:hover {
     text-decoration: underline;
+    cursor: pointer;
 }
 
 .getwebb {
@@ -159,6 +160,7 @@ a.big_button, a.big_button:hover {
 
 .big_button:hover {
     background: #759F27;
+    cursor: pointer;
 }
 
 .big_button:active {

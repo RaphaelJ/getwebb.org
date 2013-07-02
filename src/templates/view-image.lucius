@@ -170,8 +170,8 @@ body {
             z-index: 10;
             height: 600px;
             width: 620px;
-            bottom: 1px;
-            left: 0;
+            bottom: 0;
+            right: 0;
             padding: 0;
 
             background-color: #F0F0F0;
@@ -300,25 +300,25 @@ body {
                         }
 
                         .actions {
-                            a {
+                            .button {
                                 margin: 0 2px;
                                 opacity: 0.6;
                             }
 
-                            a:hover {
+                            .button:hover {
                                 text-decoration: none;
                                 opacity: 1.0;
                             }
 
-                            a.enabled {
+                            .button.enabled {
                                 opacity: 1;
                             }
 
-                            a.upvote.enabled {
+                            .upvote.enabled {
                                 color: #89B630;
                             }
 
-                            a.downvote.enabled, a.remove {
+                            .downvote.enabled, .remove {
                                 color: #B65234;
                             }
 
@@ -343,7 +343,7 @@ body {
 #comments_button {
     display: block;
     position: absolute;
-    left: 0;
+    right: 0;
     bottom: 0;
     z-index: 10;
 
@@ -352,9 +352,8 @@ body {
     background-image: url('@{StaticR img_comments_png}');
     background-repeat: no-repeat;
     background-position: 15px center;
-    border-right: 1px solid rgba(0, 0, 0, 0.2);
+    border-left: 1px solid rgba(0, 0, 0, 0.15);
     border-bottom: none;
-    box-shadow: 1px 0 0 rgba(255, 255, 255, 0.15);
 
     color: white;
     line-height: 25px;
@@ -363,6 +362,7 @@ body {
 }
 
 #comments_button:hover, #comments_button.enabled:hover {
+    cursor: pointer;
     text-decoration: none;
     background-color: rgba(0, 0, 0, 0.2);
 }
@@ -374,6 +374,7 @@ body {
 
 footer {
     padding: 0;
+    height: 25px;
     z-index: 5;
 
     background-color: #3D94B6;
@@ -384,9 +385,9 @@ footer {
     text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
 
     #footer_content {
-        margin-right: 15px;
+        margin-left: 15px;
 
-        text-align: right;
+        text-align: left;
 
         #copyright, #info {
             float: none;

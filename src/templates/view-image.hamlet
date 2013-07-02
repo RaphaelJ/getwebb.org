@@ -41,7 +41,7 @@
 
                     <form #comment_form method=post enctype=#{commentEnctype}
                           action=@{CommentsR (uploadHmac upload)}
-                          onsubmit="newComment(this, '#{uploadHmac upload}'); return false;">
+                          onsubmit="commentNew(this); return false;">
                         ^{commentWidget}
                         <input #comment_submit .big_button type=submit
                                value=Publish />
@@ -63,12 +63,14 @@
                 <ul>
                     $forall (Entity _ comment, diffTime, author', isOwner, isUser, avatar, mVote) <- comments
                      $with Entity authorId author <- author'
-                        <li class=#{if' isOwner "owner" T.empty}>
+                      $with commentHmac' <- commentHmac comment
+                        <li id="comment_#{commentHmac'}"
+                            class=#{if' isOwner "owner" T.empty}>
                             <div .avatar>
                                 <img alt=Avatar src=@{avatarRoute app avatar}>
 
                             <div .message>
-                                <a href="#" .author>
+                                <a .author href="#">
                                     #{userName author}
                                 <span .date>#{PrettyDiffTime diffTime} ago
 
@@ -77,28 +79,45 @@
                                   $with downvotes <- commentDownvotes comment
                                     $case mVote
                                       $of Just Upvote
-                                        <a .upvote .enabled href="#">↑ Upvote
+                                        <span .button .upvote .enabled
+                                              onclick="commentUpvote('#{commentHmac'}', '@{CommentUpR commentHmac'}')">
+                                            ↑ Upvote
                                             <span .count>#{PrettyNumber upvotes}
-                                        <a .downvote href="#">↓ Downvote
+                                        <span .button .downvote
+                                              onclick="commentUpvote('#{commentHmac'}', '@{CommentDownR commentHmac'}')">
+                                            ↓ Downvote
                                             <span .count>#{PrettyNumber downvotes}
                                       $of Just Downvote
-                                        <a .upvote href="#">↑ Upvote
+                                        <span .button .upvote
+                                              onclick="commentUpvote('#{commentHmac'}', '@{CommentUpR commentHmac'}')">
+                                            ↑ Upvote
                                             <span .count>#{PrettyNumber upvotes}
-                                        <a .downvote .enabled href="#">↓ Downvote
+                                        <span .button .downvote .enabled
+                                              onclick="commentUpvote('#{commentHmac'}', '@{CommentDownR commentHmac'}')">
+                                            ↓ Downvote
                                             <span .count>#{PrettyNumber downvotes}
                                       $of Nothing
-                                        <a .upvote href="#">↑ Upvote
+                                        <span .button .upvote
+                                              onclick="commentUpvote('#{commentHmac'}', '@{CommentUpR commentHmac'}')">
+                                            ↑ Upvote
                                             <span .count>#{PrettyNumber upvotes}
-                                        <a .downvote href="#">↓ Downvote
+                                        <span .button .downvote
+                                              onclick="commentUpvote('#{commentHmac'}', '@{CommentDownR commentHmac'}')">
+                                            ↓ Downvote
                                             <span .count>#{PrettyNumber downvotes}
 
                                     $if isUser
-                                        <a .remove href="#">⨯ Remove
+                                        <span .button .remove
+                                              onclick="commentRemove('#{commentHmac'}', '@{CommentR commentHmac'}')">
+                                            ⨯ Remove
 
                                 <p .content>
                                     #{commentMessage comment}
 
 <span #comments_button onclick="showComments();">
     Comments
-    <span .count>
+    <span #comments_count .count>
         #{PrettyNumber (uploadCommentsCount upload)}
+
+    <script type="text/javascript">
+        var commentsCount = #{uploadCommentsCount upload};

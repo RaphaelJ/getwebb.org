@@ -69,8 +69,7 @@ makeApplication conf = do
         , destination = Logger $ appLogger foundation
         }
 
-    app <- (logWare . autohead) <$> toWaiAppPlain foundation
-    return $ logWare app
+    (logWare . autohead) <$> toWaiAppPlain foundation
 
 -- | Loads up any necessary settings, creates your foundation datatype, and
 -- performs some initialization.

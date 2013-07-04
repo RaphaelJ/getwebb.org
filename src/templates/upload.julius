@@ -132,6 +132,7 @@ $("#upload_form").submit(function ()
         $("#upload_global_progress_complete").width(0);
         $("#upload_global_progress").show();
 
+        // Start uploading the files.
         uploadFiles(0, total, files_info, new Array(), new Array());
     }
 
@@ -150,7 +151,7 @@ function isImage(mime)
 // Uploads the files in files_info one by one.
 function uploadFiles(loaded, total, files_info, uploaded, errors)
 {
-    var info = files_info.shift();
+    var info = files_info.shift(); // pop() the first file.
 
     var data = new FormData();
     data.append("email", $("#upload_form input[name=email]").val());
@@ -167,6 +168,7 @@ function uploadFiles(loaded, total, files_info, uploaded, errors)
 
     var xhr = new XMLHttpRequest();
 
+    // Updates the progress bars.
     xhr.upload.addEventListener("progress", function (e) {
         var percent = Math.floor(e.loaded / e.total * 100);
 

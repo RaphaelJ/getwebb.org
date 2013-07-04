@@ -87,6 +87,7 @@ getViewR hmacs' = do
 
             let name = uploadName upload
                 wrappedName = wrappedText name 50
+                userIsOwner = ((entityKey . fst) <$> mOwner) == mUserId
                 links = getLinks hmacs
                 icon = getIcon upload extras
                 image = getImage hmac extras

@@ -36,5 +36,6 @@
                             <span .count #count_history>
                                 #{PrettyNumber countHistory}
 
-            <script type="text/javascript">
-                var countHistory = #{countHistory};
+<script type="text/javascript">
+    // Scripts variables.
+    var countHistory = #{countHistory};

@@ -15,7 +15,7 @@
 /v/#Text                ViewR                   GET PATCH DELETE
 
 /v/#Hmac/comments       CommentsR               GET POST
-/comment/#Hmac/         CommentR                DELETE
+/comment/#Hmac/         CommentR                GET DELETE
 /comment/#Hmac/up       CommentUpR              PUT
 /comment/#Hmac/down     CommentDownR            PUT
 
@@ -23,3 +23,5 @@
 /history/fusion         HistoryFusionR          GET
 
 /account                AccountR                Account getAccount
+
+/user/#Text             UserR                   GET

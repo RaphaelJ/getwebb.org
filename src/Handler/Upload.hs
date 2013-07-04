@@ -61,6 +61,10 @@ getUploadR = do
 -- errors.
 postUploadR :: Handler ()
 postUploadR = do
+    -- Allows cross-domain AJAX requests.
+    -- See <https://developer.mozilla.org/en-US/docs/HTTP/Access_control_CORS>.
+    addHeader "Access-Control-Allow-Origin" "*"
+
     ((res, _), _) <- runFormPostNoToken uploadForm
     withFormSuccess res $ \ (~(file:_), Options public email) -> do
         -- Allocates an new admin key if the client doesn't have one.
@@ -73,18 +77,18 @@ postUploadR = do
                 setAdminKey adminKeyId
                 return adminKeyId
 
+        -- Process the file.
         eUpload <- processFile adminKeyId file public
         case eUpload of
             Right upload -> do
                 {- TODO: email -}
-                sendObjectCreated (uploadHmac upload)
-                                  (Just (ViewR . toPathPiece))
+                let hmac = uploadHmac upload
+                sendObjectCreated hmac (ViewR $ toPathPiece $ hmac)
             Left err -> do
                 let status = case err of
                         DailyIPLimitReached -> tooManyRequests429
                         FileTooLarge -> requestEntityTooLarge413
                 sendErrorResponse status [err]
-  where
 
 -- | Creates a form for the upload and its options.
 uploadForm :: Html

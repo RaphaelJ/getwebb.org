@@ -2,8 +2,8 @@
 module Handler.Comment (
       maxNComments, defaultNComments, maxCommentLength, minCommentInterval
     , getCommentsR, postCommentsR
-    , deleteCommentR, putCommentUpR, putCommentDownR
-    , retrieveComments, removeComment, commentForm, score
+    , getCommentR, deleteCommentR, putCommentUpR, putCommentDownR
+    , retrieveComments, retrieveComment, removeComment, commentForm, score
     ) where
 
 import Import
@@ -90,11 +90,21 @@ postCommentsR hmac = do
             (key, commentHmac) <- newHmac HmacComment
             insertKey key $ Comment commentHmac userId uploadId msg time
                                     (score 1 0) 1 0
-            insert $ CommentVote key userId Upvote
+            insert_ $ CommentVote key userId Upvote
             update userId   [UserCommentsCount   +=. 1]
             update uploadId [UploadCommentsCount +=. 1]
             return commentHmac
-        sendObjectCreated commentHmac Nothing
+        sendObjectCreated commentHmac (CommentR commentHmac)
+
+-- | Returns the JSON object corresponding to the comment, or a 404 error.
+getCommentR :: Hmac -> Handler Value
+getCommentR hmac = do
+    mUser <- getUser
+    let mUserId = (entityKey . fst) <$> mUser
+    comment <- runDB $
+        getBy404 (UniqueCommentHmac hmac) >>=
+        retrieveComment mUserId
+    return $ toJSON comment
 
 -- | Removes a comment. Returns a 204 No content on success, a 404 Not found if
 -- doesn't exists or 403 if the user isn't allowed to remove the comment.
@@ -160,16 +170,21 @@ retrieveComments mUserId uploadId mOffset mNComments = do
                ]
 
     cs <- selectList [CommentUpload ==. uploadId] opts
-    forM cs $ \entity@(Entity commentId comment) -> do
-        let authorId = commentUser comment
-        author <- Entity authorId <$> getJust authorId
-        case mUserId of
-            Just userId -> do
-                mVote <- selectFirst [ CommentVoteComment ==. commentId
-                                     , CommentVoteUser    ==. userId ] []
-                return (entity, author, (commentVoteType . entityVal) <$> mVote)
-            Nothing     ->
-                return (entity, author, Nothing)
+    forM cs (retrieveComment mUserId)
+
+-- | Retrieves the author and the user vote of a comment.
+retrieveComment :: Maybe UserId -> Entity Comment
+                -> YesodDB App (Entity Comment, Entity User, Maybe VoteType)
+retrieveComment mUserId entity@(Entity commentId comment) = do
+    let authorId = commentUser comment
+    author <- Entity authorId <$> getJust authorId
+    case mUserId of
+        Just userId -> do
+            mVote <- selectFirst [ CommentVoteComment ==. commentId
+                                 , CommentVoteUser    ==. userId ] []
+            return (entity, author, (commentVoteType . entityVal) <$> mVote)
+        Nothing     ->
+            return (entity, author, Nothing)
 
 -- | Removes a comment from the database and decrements counters.
 removeComment :: UserId -> Entity Comment -> YesodDB App ()

@@ -35,7 +35,7 @@
         <div #comments style="display: none">
             <div #new_comment>
                 $case mUser
-                  $of Just (user, avatar)
+                  $of Just (_, avatar)
                     <div .avatar>
                         <img src=@{avatarRoute app avatar} alt="Avatar" />
 
@@ -45,7 +45,7 @@
                         ^{commentWidget}
                         <input #comment_submit .big_button type=submit
                                value=Publish />
-                        <span #chars_left
+                        <span #comment_chars_left
                               title="Number of remaining characters.">
                             #{maxCommentLength}
                   $of Nothing
@@ -70,8 +70,7 @@
                                 <img alt=Avatar src=@{avatarRoute app avatar}>
 
                             <div .message>
-                                <a .author href="#">
-                                    #{userName author}
+                                <a .author href="#">#{userName author}
                                 <span .date>#{PrettyDiffTime diffTime} ago
 
                                 <span .actions>
@@ -79,30 +78,30 @@
                                   $with downvotes <- commentDownvotes comment
                                     $case mVote
                                       $of Just Upvote
-                                        <span .button .upvote .enabled
-                                              onclick="commentUpvote('#{commentHmac'}', '@{CommentUpR commentHmac'}')">
+                                        <span .button .upvotes .enabled
+                                              onclick="commentVote('#{commentHmac'}', '@{CommentR commentHmac'}', '@{CommentUpR commentHmac'}')">
                                             ↑ Upvote
                                             <span .count>#{PrettyNumber upvotes}
-                                        <span .button .downvote
-                                              onclick="commentUpvote('#{commentHmac'}', '@{CommentDownR commentHmac'}')">
+                                        <span .button .downvotes
+                                              onclick="commentVote('#{commentHmac'}', '@{CommentR commentHmac'}', '@{CommentDownR commentHmac'}')">
                                             ↓ Downvote
                                             <span .count>#{PrettyNumber downvotes}
                                       $of Just Downvote
-                                        <span .button .upvote
-                                              onclick="commentUpvote('#{commentHmac'}', '@{CommentUpR commentHmac'}')">
+                                        <span .button .upvotes
+                                              onclick="commentVote('#{commentHmac'}', '@{CommentR commentHmac'}', '@{CommentUpR commentHmac'}')">
                                             ↑ Upvote
                                             <span .count>#{PrettyNumber upvotes}
-                                        <span .button .downvote .enabled
-                                              onclick="commentUpvote('#{commentHmac'}', '@{CommentDownR commentHmac'}')">
+                                        <span .button .downvotes .enabled
+                                              onclick="commentVote('#{commentHmac'}', '@{CommentR commentHmac'}', '@{CommentDownR commentHmac'}')">
                                             ↓ Downvote
                                             <span .count>#{PrettyNumber downvotes}
                                       $of Nothing
-                                        <span .button .upvote
-                                              onclick="commentUpvote('#{commentHmac'}', '@{CommentUpR commentHmac'}')">
+                                        <span .button .upvotes
+                                              onclick="commentVote('#{commentHmac'}', '@{CommentR commentHmac'}', '@{CommentUpR commentHmac'}')">
                                             ↑ Upvote
                                             <span .count>#{PrettyNumber upvotes}
-                                        <span .button .downvote
-                                              onclick="commentUpvote('#{commentHmac'}', '@{CommentDownR commentHmac'}')">
+                                        <span .button .downvotes
+                                              onclick="commentVote('#{commentHmac'}', '@{CommentR commentHmac'}', '@{CommentDownR commentHmac'}')">
                                             ↓ Downvote
                                             <span .count>#{PrettyNumber downvotes}
 
@@ -119,5 +118,18 @@
     <span #comments_count .count>
         #{PrettyNumber (uploadCommentsCount upload)}
 
-    <script type="text/javascript">
-        var commentsCount = #{uploadCommentsCount upload};
+
+<script type="text/javascript">
+    // Scripts variables.
+
+    var commentsCount = #{uploadCommentsCount upload};
+
+    // True if the current user is the creator of the upload.
+    var userIsOwner =
+    $if userIsOwner
+        true;
+    $else
+        false;
+
+    $maybe (_, avatar) <- mUser
+        var userAvatar = "@{avatarRoute app avatar}";

@@ -15,7 +15,7 @@ instance ToJSON User where
 
 instance ToJSON (Entity Comment, Entity User, Maybe VoteType) where
     toJSON (Entity _ c, Entity _ u, mVote) = object $
-        case mVote of Just vote -> ("vote" .= show vote) : info
+        case mVote of Just vote -> ("vote" .= voteToText vote) : info
                       Nothing   -> info
       where
         info = [
@@ -27,6 +27,9 @@ instance ToJSON (Entity Comment, Entity User, Maybe VoteType) where
             , "upvotes"     .= commentUpvotes c
             , "downvotes"   .= commentDownvotes c
             ]
+
+        voteToText Upvote   = "upvote" :: Text
+        voteToText Downvote = "downvote"
 
 instance ToJSON Rfc822Date where
     toJSON = toJSON . show

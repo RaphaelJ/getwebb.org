@@ -3,7 +3,7 @@ var new_comment_text = $("#new_comment #comment_message");
 new_comment_text.keyup(function (e)
 {
     var remain = #{rawJS $ show maxCommentLength} - new_comment_text.val().length;
-    var chars_left = $("#chars_left");
+    var chars_left = $("#comment_chars_left");
     var negative = remain < 0;
 
     chars_left.text(remain);
@@ -33,31 +33,114 @@ function commentNew(form)
         type: "POST",
         url: jquery_form.attr("action"),
         data: data,
-        complete: function (xhr, status) {
-            if (xhr.status == 201) {
-                document.href = document.href;
+        dataType: "json"
+    }).done(function (data, status, xhr) {
+        // Resets the form
+        textarea.val(null);
+        textarea.keyup();
 
-                // Restores the form
-                textarea.val(null);
-                textarea.keyup();
+        // Increments the number of comments of the upload.
+        $("#comments_count").text(prettyNumber(++commentsCount));
 
-                // Increments the number of comments of the upload.
-                $("#comments_count").text(prettyNumber(++commentsCount));
-            } else if (xhr.status == 403)
-                alert("You don't have the permission to post a comment.");
-            else if (xhr.status == 404)
-                alert("The file doesn't exist.");
-            else if (xhr.status == 429) { // Too many requests
-                var res = jQuery.parseJSON(xhr.responseText);
-                alert(res[0]);
-            } else {
-                alert("Failed to post the comment.");
-                showErrorResponse(xhr);
-            }
+        var voteUri = data.uri;
+        getComment(voteUri, function (commentData) {
+            // Removes the comment saying that nobody has commented the upload.
+            var parent = $("#comments");
+            var ul;
+            if (commentsCount == 1) {
+                parent.find("p.notice").remove();
+                ul = $("<ul>");
+                parent.append(ul);
+            } else
+                ul = parent.find("ul");
 
-            textarea.attr("disabled", null);
-            submit.attr("disabled", null);
+            // Creates a new HTML element containing the comment.
+            var li = $("<li>").attr("id", "comment_" + commentData.id)
+                              .hide()
+                              .prependTo(ul);
+            if (userIsOwner)
+                li.addClass("owner");
+
+            $("<div>").addClass("avatar")
+                      .append($("<img>", { alt: "Avatar", src: userAvatar }))
+                      .appendTo(li);
+
+            var message = $("<div>").addClass("message")
+                                    .appendTo(li);
+
+            $("<a>").addClass("author")
+                    .attr("href", "#")
+                    .text(commentData.user.name)
+                    .appendTo(message);
+            message.append(" ");
+
+            $("<span>").addClass("date")
+                       .text("few moments ago")
+                       .appendTo(message);
+            message.append(" ");
+
+            var actions = $("<span>").addClass("actions")
+                                     .appendTo(message);
+
+            $("<span>").addClass("button").addClass("upvotes")
+                       .toggleClass("enabled", commentData.vote == "upvote")
+                       .click(function () {
+                           commentVote(
+                               commentData.id, voteUri, voteUri + "/up"
+                           );
+                       })
+                       .text("↑ Upvote ")
+                       .append(
+                            $("<span>").addClass("count")
+                                       .text(commentData.upvotes)
+                       )
+                       .append(" ")
+                       .appendTo(actions);
+
+            $("<span>").addClass("button").addClass("downvotes")
+                       .toggleClass("enabled", commentData.vote == "downvote")
+                       .click(function () {
+                           commentVote(
+                               commentData.id, voteUri, voteUri + "/down"
+                           );
+                       })
+                       .text("↓ Downvote ")
+                       .append(
+                            $("<span>").addClass("count")
+                                       .text(commentData.downvotes)
+                       )
+                       .append(" ")
+                       .appendTo(actions);
+
+            $("<span>").addClass("button").addClass("remove")
+                       .click(function () {
+                           commentRemove(commentData.id, voteUri);
+                       })
+                       .text("⨯ Remove ")
+                       .appendTo(actions);
+
+            $("<p>").addClass("content")
+                    .html(escapeHtml(commentData.message))
+                    .appendTo(message);
+
+            li.slideDown();
+        });
+
+    }).fail(function (xhr, status, error) {
+        if (xhr.status == 403)
+            alert("You don't have the permission to post a comment.");
+        else if (xhr.status == 404)
+            alert("The file doesn't exist.");
+        else if (xhr.status == 429) { // Too many requests
+            var res = jQuery.parseJSON(xhr.responseText);
+            alert(res[0]);
+        } else {
+            alert("Failed to post the comment.");
+            showErrorResponse(xhr);
         }
+    }).always(function () {
+        textarea.attr("disabled", null);
+        submit.attr("disabled", null);
     });
 }
 
@@ -66,47 +149,92 @@ function commentRemove(commentHmac, commentUri)
 {
     $.ajax({
         type: "DELETE",
-        url: commentUri,
-        complete: function (xhr, status) {
-            if (xhr.status == 204) {
-                var comment = $("#comment_" + commentHmac);
-                comment.slideUp(function () {
-                    comment.remove();
+        url: commentUri
+    }).done(function (data, status, xhr) {
+        var comment = $("#comment_" + commentHmac);
+        comment.slideUp(function () {
+            comment.remove();
 
-                    // Decrements the number of comments of the upload.
-                    $("#comments_count").text(prettyNumber(--commentsCount));
-                });
-            } else if (xhr.status == 403)
-                alert("You don't have the permission to remove for a comment.");
-            else if (xhr.status == 404)
-                alert("The comment doesn't exist.");
-            else {
-                alert("Failed to remove the comment.");
-                showErrorResponse(xhr);
+            // Decrements the number of comments of the upload.
+            $("#comments_count").text(prettyNumber(--commentsCount));
+
+            if (commentsCount == 0) {
+                var parent = $("#comments");
+                parent.find("ul").remove();
+                parent.append(
+                    $("<p>").addClass("notice")
+                            .text("Nobody has commented this file yet.")
+                );
             }
+        });
+    }).fail(function (xhr, status, error) {
+        if (xhr.status == 403)
+            alert("You don't have the permission to remove for a comment.");
+        else if (xhr.status == 404)
+            alert("The comment doesn't exist.");
+        else {
+            alert("Failed to remove the comment.");
+            showErrorResponse(xhr);
         }
     });
 }
 
 // Votes for a comment by sending a PUT request to the given vote's URI.
-function commentUpvote(uploadHmac, voteUri)
+function commentVote(commentHmac, commentUri, voteUri)
 {
     $.ajax({
         type: "PUT",
-        url: dest,
-        complete: function (xhr, status) {
-            submit.attr("disabled", null);
+        url: voteUri
+    }).done(function (data, status, xhr) {
+        // Reloads the new comment status from the server.
+        getComment(commentUri, function (commentData) {
+            var comment = $("#comment_" + commentHmac.toString());
+            var upvotes = comment.find(".upvotes"),
+                downvotes = comment.find(".downvotes");
 
-            if (xhr.status == 204) {
-                document.href = document.href;
-            } else if (xhr.status == 403)
-                alert("You don't have the permission to vote for a comment.");
-            else if (xhr.status == 404)
-                alert("The comment doesn't exist.");
-            else {
-                alert("Failed to vote for the comment.");
-                showErrorResponse(xhr);
-            }
+            // Updates the number of votes.
+            upvotes.find(".count")
+                    .text(prettyNumber(commentData.upvotes));
+            downvotes.find(".count")
+                        .text(prettyNumber(commentData.downvotes));
+
+            // Updates the status of vote buttons.
+            upvotes.toggleClass(
+                "enabled", commentData.vote == "upvote"
+            );
+            downvotes.toggleClass(
+                "enabled", commentData.vote == "downvote"
+            );
+        });
+    }).fail(function (xhr, status, error) {
+        if (xhr.status == 403)
+            alert("You don't have the permission to vote for a comment.");
+        else if (xhr.status == 404)
+            alert("The comment doesn't exist.");
+        else {
+            alert("Failed to vote for the comment.");
+            showErrorResponse(xhr);
+        }
+    });
+}
+
+// Sends an asynchronous GET request to retrieve the comment.
+// Executes the callback with the JSON object corresponding to the comment as
+// argument.
+function getComment(commentUri, commentCallback)
+{
+    $.ajax({
+        type: "GET",
+        url: commentUri,
+        dataType: "json"
+    }).done(function (data, status, xhr) {
+        commentCallback(data);
+    }).fail(function (xhr, status, error) {
+        if (xhr.status == 404)
+            alert("The comment doesn't exist.");
+        else {
+            alert("Failed to retrieve the comment.");
+            showErrorResponse(xhr);
         }
     });
 }

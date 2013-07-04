@@ -91,8 +91,27 @@ function prettyDiffTime(secs)
         return s.toString() + " seconds";
     else if (s == 1)
         return "one second";
-    else 
+    else
         return "less than one second";
+}
+
+// Escapes HTML special chars (<, >, & ...) and transforms line feed in <br>.
+function escapeHtml(str)
+{
+    var buf = new Array(str.length);
+    for (var i = 0; i < str.length; i++) {
+        var c = str[i];
+        switch (c) {
+            case '<' : buf[i] = "&lt;";   break;
+            case '>' : buf[i] = "&gt;";   break;
+            case '&' : buf[i] = "&amp;";  break;
+            case '"' : buf[i] = "&quot;"; break;
+            case '\'': buf[i] = "&#39;";  break;
+            case '\n': buf[i] = "<br>";   break;
+            default  : buf[i] = c;
+        }
+    }
+    return buf.join(''); // Join is faster than immuable strings concats.
 }
 
 // Displays the returned errors of the AJAX request, if any, to the user.

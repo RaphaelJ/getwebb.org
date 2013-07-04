@@ -1,27 +1,26 @@
-// Change the sharing policy of an upload asynchronously by sending a PATCH
+// Changes the sharing policy of an upload asynchronously by sending a PATCH
 // request to the upload's URI.
 function uploadChangePolicy(uploadHmac, uploadUri, isPublic)
 {
     $.ajax({
         type: "PATCH",
         url: uploadUri,
-        data: { public: (isPublic ? "yes" : "no") },
-        complete: function (xhr, status) {
-            if (xhr.status == 204) {
-                $("#public_button_" + uploadHmac).toggleClass(
-                    "enabled", isPublic
-                );
-                $("#private_button_" + uploadHmac).toggleClass(
-                    "enabled", !isPublic
-                );
-            } else if (xhr.status == 403)
-                alert("You don't have the permission to modify this file.");
-            else if (xhr.status == 404)
-                alert("The file doesn't exist.");
-            else {
-                alert("Failed to change the policy of this file.");
-                showErrorResponse(xhr);
-            }
+        data: { public: (isPublic ? "yes" : "no") }
+    }).done(function (data, status, xhr) {
+        $("#public_button_" + uploadHmac).toggleClass(
+            "enabled", isPublic
+        );
+        $("#private_button_" + uploadHmac).toggleClass(
+            "enabled", !isPublic
+        );
+    }).fail(function (xhr, status, error) {
+        if (xhr.status == 403)
+            alert("You don't have the permission to modify this file.");
+        else if (xhr.status == 404)
+            alert("The file doesn't exist.");
+        else {
+            alert("Failed to change the policy of this file.");
+            showErrorResponse(xhr);
         }
     });
 }

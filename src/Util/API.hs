@@ -34,17 +34,15 @@ instance ToAPIError [Char] where
     toAPIError = APIError . T.pack
 
 -- | Responds to the client with a 201 Created and a JSON object containing the
--- HMAC of the object and eventually the URL to the object.
+-- HMAC of the object and the URI to the object.
 sendObjectCreated :: MonadHandler m =>
-                     Hmac -> Maybe (Hmac -> Route (HandlerSite m)) -> m a
-sendObjectCreated hmac (Just route) = do
-    url <- getUrlRender <*> pure (route hmac)
+                     Hmac -> Route (HandlerSite m) -> m a
+sendObjectCreated hmac route = do
+    url <- getUrlRender <*> pure route
     addHeader "Location" url
     sendResponseStatus created201 $ object [
-            "id" .= hmac, "url" .= url
+          "id" .= hmac, "uri" .= url
         ]
-sendObjectCreated hmac Nothing      =
-    sendResponseStatus created201 $ object [ "id" .= hmac ]
 
 -- | Responds to the client with a 204 created indicating a successful
 -- operation.

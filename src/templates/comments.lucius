@@ -1,0 +1,46 @@
+.comment .message {
+    font-size: 0.85em;
+
+    .author {
+        font-weight: bold;
+    }
+
+    .date {
+        color: rgba(0, 0, 0, 0.5);
+    }
+
+    .content {
+        margin: 5px 0;
+    }
+
+    .actions {
+        .button {
+            margin: 0 2px;
+            opacity: 0.6;
+        }
+
+        .button:hover {
+            text-decoration: none;
+            opacity: 1.0;
+        }
+
+        .button.enabled {
+            opacity: 1;
+        }
+
+        .upvotes.enabled {
+            color: #89B630;
+        }
+
+        .downvotes.enabled {
+            color: #B65234;
+        }
+
+        .count {
+            background-color: rgba(60, 150, 180, 0.2);
+            padding: 1px 3px;
+            box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.2);
+            font-size: 0.9em;
+        }
+    }
+}

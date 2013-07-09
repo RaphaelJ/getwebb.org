@@ -11,6 +11,7 @@ import qualified Data.ByteString.Char8 as C
 import Data.List (head, tail, last, init)
 import Data.Maybe
 import qualified Data.Text as T
+import Data.Time.Clock (getCurrentTime, diffUTCTime)
 
 import Network.HTTP.Types.Header (hUserAgent)
 import Network.Wai (requestHeaders)
@@ -39,7 +40,7 @@ import Util.Path (uploadDir)
 -- Handlers --------------------------------------------------------------------
 
 -- | Shows information about an upload.
-getViewR :: Text -> Handler RepHtml
+getViewR :: Text -> Handler Html
 getViewR hmacs' = do
     case fromPathPiece hmacs' of
         Just (Hmacs hmacs@(hmac:_)) -> do
@@ -64,28 +65,30 @@ getViewR hmacs' = do
                         -- Retrieves comments.
                         comments' <- retrieveComments mUserId uploadId Nothing
                                                       Nothing
-                        comments <- forM comments' $ \(c, author, v) -> do
-                            let Entity _ comment = c
-                            diffTime <- getDiffTime $ commentCreated comment
-                            let isOwner = Just (entityKey author) == mOwnerId
-                                isUser  = Just (entityKey author) == mUserId
-                            Just avatar <- getAvatar $ entityVal author
-                            return (c, diffTime, author, isOwner, isUser
-                                   , avatar, v)
+                        comments <- forM comments' $ \(c, a, mVote) -> do
+                            let Entity _        comment = c
+                                Entity authorId author  = a
+                            let isOwner = Just authorId == mOwnerId
+                                isUser  = Just authorId == mUserId
+                            Just avatar <- getAvatar author
+                            return ( comment, author, isOwner, isUser, avatar
+                                   , mVote)
 
                         return (entity, file, extras, mOwner, comments)
                     Nothing -> redirectNext (tail hmacs)
-            let Entity _ upload = entity
 
             app <- getYesod
             mAdminKey <- getAdminKey
+            currentTime <- liftIO getCurrentTime
             rdr <- getUrlRenderParams
             Just currUrl <- getCurrentRoute
-            stats <- getUploadStats entity
             facebookAppId <- extraFacebook <$> getExtra
+
             (commentWidget, commentEnctype) <- generateFormPost commentForm
 
-            let name = uploadName upload
+            stats <- getUploadStats entity
+            let Entity _ upload = entity
+                name = uploadName upload
                 wrappedName = wrappedText name 50
                 userIsOwner = ((entityKey . fst) <$> mOwner) == mUserId
                 links = getLinks hmacs
@@ -104,7 +107,8 @@ getViewR hmacs' = do
                         Image -> $(widgetFile "view-image")
                         _     -> $(widgetFile "view-file")
 
-                $(widgetFile "remove")
+                $(widgetFile "upload-remove")
+                $(widgetFile "comments")
                 $(widgetFile "view")
         _  -> notFound
   where

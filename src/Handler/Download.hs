@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 -- | Streams files to clients. Use a daemon to buffer statistics and save disk
 -- accesses.
 module Handler.Download (
@@ -6,30 +6,18 @@ module Handler.Download (
       getDownloadR, getDownloadMiniatureR, getDownloadWebMAR, getDownloadMP3R
     , getDownloadWebMVR, getDownloadMKVR, getDownloadDisplayableR
     , getDownloadArchiveR
-    -- * Views daemon buffer management
-    , ViewsBuffer, ViewsBufferEntry, viewsCommitDelay, newBuffer
-    , incrementViewCount, addBandwidth, getBufferEntry
-    -- * Starting the daemon
-    , viewsDaemon, forkViewsDaemon
     ) where
 
 import Import
 
-import Control.Concurrent (
-      ThreadId, MVar, forkIO, newMVar, newEmptyMVar, readMVar, modifyMVar_
-    , takeMVar, tryPutMVar, swapMVar, threadDelay
-    )
 import qualified Control.Exception as E
 import Control.Monad
 import qualified Control.Monad.Trans.State as S
-import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
-import qualified Data.ByteString.Lazy.Internal as L
 import qualified Data.Map as M
 import Data.Maybe
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import System.IO (Handle, IOMode (..), openBinaryFile, hFileSize, hClose)
 
@@ -38,9 +26,8 @@ import Codec.Compression.GZip (decompress)
 import Data.Conduit (addCleanup)
 import Network.Mime (defaultMimeLookup)
 import Network.Wai (requestHeaders)
-import System.IO.Unsafe (unsafeInterleaveIO)
 
-import JobsDaemon.Util (runDBIO)
+import Handler.Download.ViewsCache (getTrackedBS)
 import Util.Hmac (Hmac (..), Hmacs (..))
 import Util.Path (ObjectType (..), uploadDir, getPath)
 
@@ -281,121 +268,3 @@ safeOpenFile file objType = do
         Right h                     -> return h
         Left (_ :: E.SomeException) -> notFound
 
--- | Wraps the original ByteString so each transmitted chunk size is commited
--- to the upload's total amount of transferred bytes.
--- Updates the upload's last view after the stream has been fully streamed.
-getTrackedBS :: UploadId -> L.ByteString -> Handler L.ByteString
-getTrackedBS uploadId bs = do
-    app <- getYesod
-    let bwTracker = addBandwidth app uploadId
-        finalizer = incrementViewCount app uploadId
-    liftIO $ trackedBS bwTracker finalizer bs
-
--- | Wraps a 'L.ByteString' so each generated 'L.Chunk' size is commited to the
--- given action. Executes the finalizer when the full 'L.ByteString' has been
--- consumed.
-trackedBS :: (Word64 -> IO ()) -> IO () -> L.ByteString -> IO L.ByteString
-trackedBS bwTracker finalizer =
-    lazyGo . L.toChunks
-  where
-    lazyGo = unsafeInterleaveIO . go
-
-    go []     = finalizer >> return L.Empty
-    go (b:bs) = do
-        bwTracker $ word64 $ S.length b
-        bs' <- lazyGo bs
-        return $! L.Chunk b bs'
-
--- -----------------------------------------------------------------------------
-
--- | Temporary buffer for the count of views, the last view and the bandwidth
--- which have not been commited yet to the database. The second MVar is used to
--- signal that at least a file view has been added to the buffer.
-type ViewsBuffer = (MVar (M.Map UploadId ViewsBufferEntry), MVar ())
-type ViewsBufferEntry = (Word64, Maybe UTCTime, Word64)
-
--- | Initialises a new view buffer to be inserted in the foundation type.
-newBuffer :: IO ViewsBuffer
-newBuffer = do
-    buffer <- newMVar M.empty
-    signal <- newEmptyMVar
-    return (buffer, signal)
-
--- | Updates the buffer to increment by one the number of views and to update
--- the last view date.
-incrementViewCount :: App -> UploadId -> IO ()
-incrementViewCount app uploadId = do
-    let (buffer, signal) = viewsBuffer app
-
-    -- Updates the buffer atomically.
-    time <- getCurrentTime
-    modifyMVar_ buffer $ \accum -> do
-        return $! M.insertWith f uploadId (1, Just time, 0) accum
-
-    -- Signals to the daemon that at least an entry has been added to the 
-    -- buffer.
-    _ <- signal `tryPutMVar` ()
-    return ()
-  where
-    f (_, time, _) (!c, _, !bw) = let !c' = c + 1
-                                  in (c', time, bw)
-
--- | Adds the number of bytes to the uncommited amount of bandwidth.
-addBandwidth :: App -> UploadId -> Word64 -> IO ()
-addBandwidth app uploadId !len = do
-    let (buffer, signal) = viewsBuffer app
-
-    -- Updates the buffer atomically.
-    liftIO $ modifyMVar_ buffer $ \accum -> do
-        return $! M.insertWith f uploadId (0, Nothing, len) accum
-
-    -- Signal to the daemon at least an entry has been added to the buffer.
-    _ <- liftIO $ signal `tryPutMVar` ()
-    return ()
-  where
-    f _ (!c, !time, !bw) = let !bw' = bw + len
-                           in (c, time, bw')
-
--- | Returns the buffer entry for the given upload. 'Nothing' if the database is
--- up to date.
-getBufferEntry :: UploadId -> Handler (Maybe ViewsBufferEntry)
-getBufferEntry uploadId = do
-    app <- getYesod
-    let (buffer, _) = viewsBuffer app
-    accum <- liftIO $ readMVar buffer
-    return $! uploadId `M.lookup` accum
-
--- | Delay in microseconds at which the views buffer is commited to the
--- database.
-viewsCommitDelay :: Int
-viewsCommitDelay = 5 * 10^(6 :: Int) -- Every five seconds.
-
--- | Accumulates the view count and the last view for each file to batch update
--- the database every few seconds (saves a lot of disk accesses).
-viewsDaemon :: App -> IO ()
-viewsDaemon app = do
-    let (buffer, signal) = viewsBuffer app
-    forever $ do
-        -- Waits for at least a file view
-        takeMVar signal
-
-        -- Resets the buffer.
-        oldBuffer <- buffer `swapMVar` M.empty
-
-        -- Inserts the old buffer in the database.
-        runDBIO app $ do
-            forM_ (M.assocs oldBuffer) $ \(uploadId, (views, mViewed, bw)) ->
-                case mViewed of
-                    Just viewed -> update uploadId [
-                          UploadViews +=. views, UploadViewed =. viewed
-                        , UploadBandwidth +=. bw
-                        ]
-                    Nothing -> update uploadId [
-                         UploadViews +=. views, UploadBandwidth +=. bw
-                        ]
-
-        threadDelay viewsCommitDelay
-
--- | Forks the view buffer daemon on a new thread and returns its 'ThreadId'.
-forkViewsDaemon :: App -> IO ThreadId
-forkViewsDaemon = forkIO . viewsDaemon

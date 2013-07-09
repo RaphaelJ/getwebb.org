@@ -1,0 +1,105 @@
+// Javascript actions corresponding to the buttons over a comment.
+
+// Votes for a comment by sending a PUT request to the given vote's URI.
+function commentVote(commentHmac, commentUri, voteUri)
+{
+    $.ajax({
+        type: "PUT",
+        url: voteUri
+    }).done(function (data, status, xhr) {
+        // Reloads the new comment status from the server.
+        getComment(commentUri, function (commentData) {
+            var comment = $("#comment_" + commentHmac.toString());
+            var upvotes = comment.find(".upvotes"),
+                downvotes = comment.find(".downvotes");
+
+            // Updates the number of votes.
+            upvotes.find(".count")
+                   .text(prettyNumber(commentData.upvotes));
+            downvotes.find(".count")
+                     .text(prettyNumber(commentData.downvotes));
+
+            // Updates the status of vote buttons.
+            upvotes.toggleClass(
+                "enabled", commentData.vote == "upvote"
+            );
+            downvotes.toggleClass(
+                "enabled", commentData.vote == "downvote"
+            );
+        });
+    }).fail(function (xhr, status, error) {
+        if (xhr.status == 403)
+            alert("You don't have the permission to vote for a comment.");
+        else if (xhr.status == 404)
+            alert("The comment doesn't exist.");
+        else {
+            alert("Failed to vote for the comment.");
+            showErrorResponse(xhr);
+        }
+    });
+}
+
+// Removes the given comment by sending a DELETE request to the comment's URI.
+function commentRemove(commentHmac, commentUri, successCallback)
+{
+    if (!confirm("Do you really want to remove this comment ?"))
+        return;
+
+    $.ajax({
+        type: "DELETE",
+        url: commentUri
+    }).done(function (data, status, xhr) {
+        var comment = $("#comment_" + commentHmac);
+        comment.slideUp(function () {
+            comment.remove();
+
+            if (successCallback != undefined)
+                successCallback();
+        });
+    }).fail(function (xhr, status, error) {
+        if (xhr.status == 403)
+            alert("You don't have the permission to remove for a comment.");
+        else if (xhr.status == 404)
+            alert("The comment doesn't exist.");
+        else {
+            alert("Failed to remove the comment.");
+            showErrorResponse(xhr);
+        }
+    });
+}
+
+// Sends an asynchronous GET request to retrieve the comment.
+// Executes the callback with the JSON object corresponding to the comment as
+// argument.
+function getComment(commentUri, commentCallback)
+{
+    $.ajax({
+        type: "GET",
+        url: commentUri,
+        dataType: "json"
+    }).done(function (data, status, xhr) {
+        commentCallback(data);
+    }).fail(function (xhr, status, error) {
+        if (xhr.status == 404)
+            alert("The comment doesn't exist.");
+        else {
+            alert("Failed to retrieve the comment.");
+            showErrorResponse(xhr);
+        }
+    });
+}
+
+function decrementCommentCount()
+{
+    // Decrements the number of comments of the upload.
+    $("#comments_count").text(prettyNumber(--commentsCount));
+
+    if (commentsCount == 0) {
+        var parent = $("#comments");
+        parent.find("ul").remove();
+        parent.append(
+            $("<p>").addClass("notice")
+                    .text("Nobody has commented this file yet.")
+        );
+    }
+}

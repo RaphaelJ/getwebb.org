@@ -1,0 +1,63 @@
+<nav .user_bar>
+    ^{userBarWidget}
+
+<img .profile_avatar alt=Avatar src=@{avatarRoute app profileAvatar}>
+
+$case profilePage
+  $of PublicGallery
+    <h1>Gallery of #{wrappedUserName profile}
+  $of Comments
+    <h1>Comments of #{wrappedUserName profile}
+
+$maybe bio <- userBio profile
+    <p .bio>#{bio}
+
+<table .info>
+    <tr>
+        <th>Member for
+        <td>#{PrettyDiffTime profileDiffCreated}
+
+    <tr>
+        <th>Uploads
+        <td>#{PrettyNumber profileUploadsCount}
+
+    <tr>
+        <th>Comments
+        <td>#{PrettyNumber $ userCommentsCount profile}
+
+    $maybe website <- userWebsite profile
+        <tr>
+            <th>Website
+            <td>
+                <a href=#{website} target=_blank>
+                    #{wrappedText website 40}
+
+    $maybe location <- userLocation profile
+        <tr>
+            <th>Location
+            <td>
+                #{wrappedText location 40}
+
+<div .clear_float>
+
+<nav .profile_bar>
+ $with profileName <- userName profile
+    <ul>
+        $case profilePage
+          $of PublicGallery
+            <li>
+                <a .enabled href=@{UserGalleryR profileName}>
+                    Public gallery
+            <li>
+                <a href=@{UserCommentsR profileName}>
+                    Comments
+          $of Comments
+            <li>
+                <a href=@{UserGalleryR profileName}>
+                    Public gallery
+            <li>
+                <a .enabled href=@{UserCommentsR profileName}>
+                    Comments
+
+    <div .clear_float>
+

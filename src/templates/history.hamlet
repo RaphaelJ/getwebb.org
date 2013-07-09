@@ -1,27 +1,6 @@
 <div #page>
-    <div #page_content>
-        <nav>
-            <ul>
-                $maybe (Entity _ user, avatar) <- mUser
-                    <li>
-                        <a href=@{AccountR SettingsR}>
-                            <img .avatar alt="User avatar"
-                                 src=@{avatarRoute app avatar} />
-                            #{wrappedText (userName user) 40}
-                    <li>
-                        <a href=@{AccountR SettingsR}>
-                            Settings
-                    <li>
-                        <a href=@{AccountR SignOutR}>
-                            Sign out
-                $nothing
-                    <li>
-                        <a href=@{AccountR SignInR}>
-                            Sign in
-                    <li>
-                        <strong>
-                            <a href=@{AccountR RegisterR}>
-                                Register
+    <div .page_content>
+        ^{userBarWidget}
 
         <h1>Upload history
 
@@ -43,43 +22,60 @@
                     to associate these with your account so they will be
                     available everywhere.
 
-            <ul #uploads>
+            <ul .uploads>
                 $forall (upload, file, icon) <- uploads
                  $with Hmac hmacTxt <- uploadHmac upload
                   $with name <- uploadName upload
-                    <li>
+                    <li .upload id=upload_#{hmacTxt}>
                         <a href=@{ViewR hmacTxt} hint=#{name}>
                             <h4>#{wrappedText name 32}
 
                             <img  alt="File icon" src="@{icon}" />
 
-                            <div .public_private_buttons .buttons>
-                                $if uploadPublic upload
-                                    <button #public_button_#{hmacTxt}
-                                            .public_button .enabled type=button
-                                            onclick="uploadChangePolicy('#{hmacTxt}', '@{ViewR hmacTxt}', true); return false;"
-                                            hint="Upload will be published in the public gallery">
-                                        Public
-                                    <button #private_button_#{hmacTxt}
-                                            .private_button type=button
-                                            onclick="uploadChangePolicy('#{hmacTxt}', '@{ViewR hmacTxt}', false); return false;"
-                                            hint="Upload will NOT be published in the public gallery">
-                                        Private
-                                $else
-                                    <button #public_button_#{hmacTxt}
-                                            .public_button type=button
-                                            onclick="uploadChangePolicy('#{hmacTxt}', '@{ViewR hmacTxt}', true); return false;"
-                                            hint="Upload will be published in the public gallery">
-                                        Public
-                                    <button #private_button_#{hmacTxt}
-                                            .private_button .enabled type=button
-                                            onclick="uploadChangePolicy('#{hmacTxt}', '@{ViewR hmacTxt}', false); return false;"
-                                            hint="Upload will NOT be published in the public gallery">
-                                        Private
 
                             <div .info>
+                                <div .public_private_buttons .buttons>
+                                    $if uploadPublic upload
+                                        <button #public_button_#{hmacTxt}
+                                                .public_button .enabled type=button
+                                                onclick="uploadChangePolicy('#{hmacTxt}', '@{ViewR hmacTxt}', true); return false;"
+                                                hint="Upload will be published in the public gallery">
+                                            Public
+                                        <button #private_button_#{hmacTxt}
+                                                .private_button type=button
+                                                onclick="uploadChangePolicy('#{hmacTxt}', '@{ViewR hmacTxt}', false); return false;"
+                                                hint="Upload will NOT be published in the public gallery">
+                                            Private
+                                    $else
+                                        <button #public_button_#{hmacTxt}
+                                                .public_button type=button
+                                                onclick="uploadChangePolicy('#{hmacTxt}', '@{ViewR hmacTxt}', true); return false;"
+                                                hint="Upload will be published in the public gallery">
+                                            Public
+                                        <button #private_button_#{hmacTxt}
+                                                .private_button .enabled type=button
+                                                onclick="uploadChangePolicy('#{hmacTxt}', '@{ViewR hmacTxt}', false); return false;"
+                                                hint="Upload will NOT be published in the public gallery">
+                                            Private
+
+                                <span .button .remove
+                                      onclick="uploadRemove('@{ViewR hmacTxt}', uploadFadeOut('#{hmacTxt}')); return false;">
+                                    ⨯ Remove
+
                                 <div .size>
                                     <span .value>#{PrettyFileSize (fileSize file)}
+                                <div .views>
+                                 $with views <- int $ uploadViews upload
+                                    $if views > 1
+                                        <span .value>
+                                            #{PrettyNumber views}
+                                        <span .key>views
+                                    $elseif views == 1
+                                        <span .value>one
+                                        <span .key>view
+                                    $else
+                                        <span .value>no
+                                        <span .key>view
                                 <div .date>
                                  $with uploaded <- uploadCreated upload
                                   $with diffTime <- diffUTCTime currentTime uploaded

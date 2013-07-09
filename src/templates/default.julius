@@ -114,6 +114,12 @@ function escapeHtml(str)
     return buf.join(''); // Join is faster than immuable strings concats.
 }
 
+// Location.reload() can't be passed as a callback function.
+function reloadPage()
+{
+    location.reload();
+}
+
 // Displays the returned errors of the AJAX request, if any, to the user.
 function showErrorResponse(xhr)
 {

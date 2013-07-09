@@ -1,8 +1,0 @@
-.big_button.remove_button {
-    background-color: #B71B17;
-    border: 1px solid #631311;
-}
-
-.big_button.remove_button:hover {
-    background-color: #9E1814;
-}

@@ -1,7 +1,7 @@
 <div #page>
     <div #left_pane>
      $with hmacTxt <- toPathPiece hmac
-        <a .icon_link href=@{DownloadR hmacTxt}>
+        <a href=@{DownloadR hmacTxt}>
             <img .icon alt="File icon" src="@{icon}" />
 
         <h1 hint=#{uploadName upload}>
@@ -31,7 +31,7 @@
             $of AudioExtras medExtras mAudExtras
                 <div .information>
                     <h3>Media information
-                    <table>
+                    <table .info>
                         <tbody>
                             <tr>
                                 <th>

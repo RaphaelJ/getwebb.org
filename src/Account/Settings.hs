@@ -23,7 +23,6 @@ import Account.Avatar (
     )
 import Account.Util (redirectAuth)
 import Settings (widgetFile)
-import Util.Pretty (wrappedText)
 
 data AvatarResult = AvatarResult {
       arPersonalAvatar :: Bool, arFile :: Maybe FileInfo
@@ -32,13 +31,13 @@ data AvatarResult = AvatarResult {
 -- | Displays the sign in and the register forms in the default layout.
 getSettingsR :: YesodAccount parent => AccountHandler parent Html
 getSettingsR = do
-    (Entity _ user, avatar) <- lift redirectAuth
+    (userEntity@(Entity _ user), avatar) <- lift redirectAuth
     (widget, enctype) <- lift $ generateFormPost $ settingsForm user avatar
-    displaySettings user avatar widget enctype
+    displaySettings userEntity avatar widget enctype
 
 postSettingsR :: YesodAccount parent => AccountHandler parent Html
 postSettingsR = do
-    (Entity userId user, avatar) <- lift redirectAuth
+    (userEntity@(Entity userId user), avatar) <- lift redirectAuth
     ((res, widget), enctype) <- lift $ runFormPost $ settingsForm user avatar
 
     app <- lift getYesod
@@ -79,7 +78,7 @@ postSettingsR = do
             redirectSignIn
         _ -> return widget
 
-    displaySettings user avatar widget' enctype
+    displaySettings userEntity avatar widget' enctype
   where
     replaceAvatar userId user oldAvatar img = do
         oldAvatarId <- lift $ getAvatarId user
@@ -91,10 +90,10 @@ postSettingsR = do
 
     redirectSignIn = getYesod >>= redirect . signInDest
 
-displaySettings :: YesodAccount parent => AccountUser parent -> Avatar
+displaySettings :: YesodAccount parent => Entity (AccountUser parent) -> Avatar
                 -> ParentWidget parent () -> Enctype
                 -> AccountHandler parent Html
-displaySettings user avatar widget enctype = do
+displaySettings userEntity avatar widget enctype = do
     toParent <- getRouteToParent
     app <- lift getYesod
     lift $ defaultLayout $ do

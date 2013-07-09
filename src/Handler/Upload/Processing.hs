@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Handles the whole processing of a recently uploaded file.
 module Handler.Upload.Processing (
-      UploadError (..), processFile, moveToTmp, hashFile, moveToUpload
+      UploadError (..), processFile, score, moveToTmp, hashFile, moveToUpload
     ) where
 
 import Import
@@ -17,7 +17,8 @@ import Database.Persist.Sql (Single (..), rawSql)
 import qualified Data.ByteString.Lazy as B
 import Data.Digest.Pure.SHA (sha1, showDigest)
 import qualified Data.Text as T
-import Data.Time.Clock (getCurrentTime, addUTCTime)
+import Data.Time.Clock (UTCTime, getCurrentTime, addUTCTime)
+import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Network.Wai (remoteHost)
 
 import Handler.Upload.Archive (processArchive)
@@ -112,8 +113,9 @@ processFile adminKeyId f public = do
                 , uploadName = fileName f, uploadDescription = Nothing
                 , uploadPublic = public, uploadCreated = time
                 , uploadHostname = clientHost, uploadAdminKey = adminKeyId
-                , uploadViews = 0, uploadViewed = time
-                , uploadBandwidth = 0, uploadCommentsCount = 0
+                , uploadScore = score time 0, uploadViews = 0
+                , uploadViewed = time, uploadBandwidth = 0
+                , uploadCommentsCount = 0
                 }
 
             lift $ insertKey key upload
@@ -170,6 +172,17 @@ processFile adminKeyId f public = do
         addr <- remoteHost <$> waiRequest
         (Just host, _) <- liftIO $ getNameInfo [NI_NUMERICHOST] True False addr
         return $ T.pack $ host
+
+-- | Computes the score of an upload given its number of views.
+-- The score is computed so an upload must gain an order of magnitude (10 times)
+-- of views to get the same score as two days younger upload.
+-- See <http://amix.dk/blog/post/19588>.
+score :: UTCTime -> Word64 -> Double
+score created views =
+    logBase 10 views' + (created' / (48 * 3600))
+  where
+    created' = realToFrac $ utcTimeToPOSIXSeconds created
+    views'   = fromIntegral $ max 1 views
 
 -- | Moves the uploaded file to a temporary file with a @upload_@ prefix.
 -- Returns the temporary file name.

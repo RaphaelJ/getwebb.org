@@ -61,17 +61,18 @@
                     Nobody has commented this file yet.
               $of _
                 <ul>
-                    $forall (Entity _ comment, diffTime, author', isOwner, isUser, avatar, mVote) <- comments
-                     $with Entity authorId author <- author'
+                    $forall (comment, author, isOwner, isUser, avatar, mVote) <- comments
                       $with commentHmac' <- commentHmac comment
                         <li id="comment_#{commentHmac'}"
-                            class=#{if' isOwner "owner" T.empty}>
+                            class="comment #{if' isOwner "owner" T.empty}">
                             <div .avatar>
                                 <img alt=Avatar src=@{avatarRoute app avatar}>
 
                             <div .message>
                                 <a .author href="#">#{userName author}
-                                <span .date>#{PrettyDiffTime diffTime} ago
+                                <span .date>
+                                 $with diffTime <- diffUTCTime currentTime (commentCreated comment)
+                                    #{PrettyDiffTime diffTime} ago
 
                                 <span .actions>
                                  $with upvotes <- commentUpvotes comment
@@ -107,7 +108,7 @@
 
                                     $if isUser
                                         <span .button .remove
-                                              onclick="commentRemove('#{commentHmac'}', '@{CommentR commentHmac'}')">
+                                              onclick="commentRemove('#{commentHmac'}', '@{CommentR commentHmac'}', decrementCommentCount)">
                                             ⨯ Remove
 
                                 <p .content>

@@ -33,9 +33,10 @@ import Settings
 import Account
 import Handler.Comment
 import Handler.Download
-import qualified Handler.Download as D
+import qualified Handler.Download.ViewsCache as VC
 import Handler.History
 import Handler.Upload
+import Handler.User
 import Handler.View
 
 import qualified JobsDaemon.Daemon as J
@@ -58,6 +59,7 @@ makeApplication conf = do
     -- Starts the background processes.
     let nJobsThreads = extraJobsThreads $ appExtra conf
     _ <- J.forkJobsDaemon nJobsThreads foundation
+    _ <- VC.forkViewsCacheDaemon foundation
 
     -- Initialize the logging middleware
     logWare <- mkRequestLogger def {
@@ -88,10 +90,10 @@ makeFoundation conf = do
 
     -- Initialises the concurrent queues.
     jQueue <- J.newQueue
-    vBuffer <- D.newBuffer
+    vCache <- VC.newCache
 
     let foundation = App conf s account p manager dbconf logger key jQueue
-                         vBuffer
+                         vCache
 
     -- Performs database migrations using our application's logging settings.
     let migrations = migrateAccount >> migrateAll

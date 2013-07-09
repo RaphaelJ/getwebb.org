@@ -1,23 +1,22 @@
 {-# LANGUAGE OverloadedStrings, PatternGuards #-}
--- | Functions to retrieve meta-data and statistics from a file/upload.
+-- | Helpers to retrieve meta-data and statistics from a file/upload.
 module Util.Extras (
       Extras (..), getFileExtras, getUploadStats
     , getIcon, getImage, getMiniature, getAudioSources, getArchive
-    , getUploadOwner
+    , getUploadInfo, getUploadsInfo, getUploadOwner
     ) where
 
 import Import
 
 import Control.Monad.Trans.Maybe
 import Data.Char (toLower)
-import Data.Maybe
 import qualified Data.Set as S
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import System.FilePath (takeExtension)
 
 import Account (Avatar, getAvatar)
-import Handler.Download (getBufferEntry)
+import Handler.Download.ViewsCache (ViewsCacheEntry (..), getCacheEntry)
 import Handler.Upload.Archive (archiveTree, treeToHtml)
 import Util.Hmac (Hmac (..))
 
@@ -59,10 +58,12 @@ getUploadStats (Entity uploadId upload) = do
         lastView = uploadViewed upload
         bw = uploadBandwidth upload
 
-    mBuffer <- getBufferEntry uploadId
-    return $! case mBuffer of
-        Just (bufViews, mBuffLastView, bufBw) ->
-            (views + bufViews, fromMaybe lastView mBuffLastView, bw + bufBw)
+    mEntry <- getCacheEntry uploadId
+    return $! case mEntry of
+        Just (ViewsCacheEntry (Just (cacheViews, cacheLastView)) cacheBw) ->
+            (views + cacheViews, cacheLastView, cacheBw)
+        Just (ViewsCacheEntry Nothing                            cacheBw) ->
+            (views, lastView, bw + cacheBw)
         Nothing -> (views, lastView, bw)
 
 -- | Returns the URL to the file icon corresponding to the type of the file.
@@ -144,6 +145,20 @@ getArchive rdr hmac (ArchiveExtras files) =
     let rdr' archiveHmac = rdr (DownloadArchiveR hmac archiveHmac) []
     in Just $ treeToHtml rdr' $ archiveTree files
 getArchive _   _    _                     = Nothing
+
+-- | Fetches the database to retrieve the corresponding file and icon URL for
+-- an upload.
+getUploadInfo :: Entity Upload -> YesodDB App (Upload, File, Route App)
+getUploadInfo (Entity _ upload) = do
+    let fileId = uploadFile upload
+    Just file <- get fileId
+    extras    <- getFileExtras (Entity fileId file)
+    return (upload, file, getIcon upload extras)
+
+-- | Fetches the database to retrieve the corresponding file and icon URL for
+-- each upload.
+getUploadsInfo :: [Entity Upload] -> YesodDB App [(Upload, File, Route App)]
+getUploadsInfo = mapM getUploadInfo
 
 -- | Returns the account and of avatar of the user who uploaded the file.
 getUploadOwner :: Upload -> YesodDB App (Maybe (Entity User, Avatar))

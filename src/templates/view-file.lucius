@@ -35,13 +35,8 @@
         }
 
         .information {
-            table {
+            table.info {
                 margin-left: 10px;
-                text-align: left;
-
-                th {
-                    padding: 0 15px 0 0;
-                }
             }
 
             .lastfm_link {
@@ -57,7 +52,7 @@
             }
 
             a.lastfm_link:hover {
-                text-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
+                text-decoration: underline;
             }
 
             .archive_content {
@@ -112,7 +107,5 @@
         float: right;
         background-color: rgba(0, 0, 0, 0.05);
         border-left: 1px solid rgba(0, 0, 0, 0.1);
-
-        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
     }
 }

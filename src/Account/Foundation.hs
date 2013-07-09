@@ -86,6 +86,10 @@ class (Yesod parent, YesodPersist parent, RenderMessage parent FormMessage
     -- | Used to change the avatar\' ID of the user.
     accountAvatarIdField :: parent -> EntityField (AccountUser parent) AvatarNum
 
+    -- | Navigation widget contained in the top of the settings page.
+    accountSettingsWidget :: parent -> Entity (AccountUser parent) -> Avatar
+                          -> WidgetT parent IO ()
+
     -- | Form used on the settings page and which is added to the avatar form.
     accountSettingsForm :: (MonadHandler m, HandlerSite m ~ parent) =>
                            AccountUser parent

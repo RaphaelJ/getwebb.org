@@ -8,7 +8,7 @@
     $if isAdmin upload mAdminKey
         <div .remove>
             <span .big_button .remove_button
-                  onclick="uploadRemove(@{ViewR hmacTxt});">
+                  onclick="uploadRemove('@{ViewR hmacTxt}', reloadPage);">
                 Remove
 
     <div .size>
@@ -110,11 +110,12 @@
 
     <div .stats>
         <h3>Statistics
-        $maybe (Entity ownerId owner, ownerAvatar) <- mOwner
+        $maybe (Entity _ owner, ownerAvatar) <- mOwner
          $with ownerName <- userName owner
             <div .creator>
                 <img src=@{avatarRoute app ownerAvatar} alt=#{ownerName} />
-                Uploaded by <a href="#">#{wrappedText ownerName 20}</a>.
+                Uploaded
+                by <a href=@{UserGalleryR ownerName}>#{wrappedText ownerName 20}</a>.
         $with (views, _, bw) <- stats
             <span .key>Totalled
             <span .value>

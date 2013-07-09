@@ -1,0 +1,23 @@
+// Removes an upload asynchronously by sending a DELETE request to the given
+// URI.
+function uploadRemove(uploadUri, onSuccess)
+{
+    if (!confirm("Do you really want to remove this file ?"))
+        return;
+
+    $.ajax({
+        type: "DELETE",
+        url: uploadUri
+    }).done(function (data, status, xhr) {
+        onSuccess();
+    }).fail(function (xhr, status, error) {
+        if (xhr.status == 403)
+            alert("You don't have the permission to remove this file.");
+        else if (xhr.status == 404) {
+            alert("The file has already been removed.");
+        } else {
+            alert("Failed to remove the file.");
+            showErrorResponse(xhr);
+        }
+    });
+}

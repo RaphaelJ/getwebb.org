@@ -3,16 +3,14 @@
 module Foundation where
 
 import Prelude
-import Control.Applicative ((<$>), (<|>))
-import Control.Concurrent (MVar)
+import Control.Applicative ((<$>), (<*>), (<|>))
 import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
 import qualified Data.ByteString.Lazy as B
 import qualified Data.ByteString.Char8 as S8
-import qualified Data.Map as M
-import Data.Text (Text, pack, unpack)
-import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Text (Text)
+import qualified Data.Text as T
+import Data.Time.Clock (getCurrentTime)
 import Data.Typeable (Typeable)
-import Data.Word
 import System.FilePath ((</>))
 
 import Yesod
@@ -32,10 +30,11 @@ import Text.Hamlet (shamlet, hamletFile)
 import qualified Web.ClientSession as S
 
 import Account
+import Handler.Download.ViewsCache.Type (ViewsCache)
 import JobsDaemon.Type (JobsQueue)
 import Model
 import Util.Hmac.Type (Hmac)
-import Util.Pretty (PrettyNumber (..))
+import Util.Pretty (PrettyNumber (..), wrappedText)
 
 -- | The site argument for your application. This can be a good place to
 -- keep settings and values requiring initialisation before your application
@@ -51,8 +50,7 @@ data App = App {
     , appLogger     :: Logger
     , encryptKey    :: B.ByteString
     , jobsQueue     :: JobsQueue
-    , viewsBuffer   :: (MVar (M.Map UploadId (Word64, Maybe UTCTime, Word64))
-                       , MVar ())   -- ^ Used by Handler.Download.
+    , viewsCache    :: ViewsCache
     }
 
 -- Set up i18n messages. See the message folder.
@@ -84,8 +82,12 @@ type Form x = Html -> MForm (HandlerT App IO) (FormResult x, Widget)
 encryptKeyFile :: FilePath
 encryptKeyFile = "config/client_session_key.aes"
 
--- | Used to change the state of the navigation bar.
+-- | Used to change the state of the main navigation bar.
 data CurrentPage = NewUpload | History | Other deriving (Eq)
+
+-- | Used to change the state of the user navigation bar.
+data CurrentUserPage = UserProfile UserId | UserHistory | UserSettings
+    deriving (Eq)
 
 -- Please see the documentation for the Yesod typeclass. There are a number
 -- of settings which can be configured by overriding methods here.
@@ -208,11 +210,16 @@ instance RenderMessage App FormMessage where
 
 -- Accounts --------------------------------------------------------------------
 
-data UserSettings = UserSettings { usDefaultPublic :: Bool }
+data UserAccountSettings = UserAccountSettings {
+      usBio           :: Maybe Textarea
+    , usLocation      :: Maybe Text
+    , usWebsite       :: Maybe Text
+    , usDefaultPublic :: Bool
+    }
 
 instance YesodAccount App where
     type AccountUser     App = User
-    type AccountSettings App = UserSettings
+    type AccountSettings App = UserAccountSettings
 
     signInDest  _ = HistoryR
     signOutDest _ = HistoryR
@@ -224,7 +231,9 @@ instance YesodAccount App where
               userEmail = email, userName = name, userPassword = pass
             , userSalt = salt, userCreated = time, userAvatar = avatar
             , userIsAdmin = False, userAdminKey = adminKey
-            , userCommentsCount = 0, userDefaultPublic = True
+            , userCommentsCount = 0, userBio = Nothing
+            , userLocation = Nothing, userWebsite = Nothing
+            , userDefaultPublic = True
             }
 
     emailLookup    _ = UniqueUserEmail
@@ -238,13 +247,36 @@ instance YesodAccount App where
 
     accountAvatarIdField _ = UserAvatar
 
-    accountSettingsForm user =
-        UserSettings <$> areq checkBoxField
-                              "Set uploads as public by default"
-                              (Just (userDefaultPublic user))
+    accountSettingsWidget app user avatar = do
+        let mUser           = Just (user, avatar)
+            currentUserPage = UserSettings
+        $(widgetFile "user-bar")
 
-    accountSettingsSave userId (UserSettings defaultPublic) =
-        update userId [UserDefaultPublic =. defaultPublic]
+    accountSettingsForm user = UserAccountSettings
+        <$> aopt bioField bioSettings (Just (userBio user))
+        <*> aopt textField "Location" (Just (userLocation user))
+        <*> aopt websiteField "Website" (Just (userWebsite user))
+        <*> areq checkBoxField "Set uploads as public by default"
+                 (Just (userDefaultPublic user))
+      where
+        bioField = checkBool (\(Textarea bio) -> T.length bio <= 400)
+                             (bioTooLong :: Text) textareaField
+        bioTooLong = "Your biography can't be longer than 400 characters."
+        bioSettings = FieldSettings {
+              fsLabel = "Say something about yourself"
+            , fsTooltip = Just "or let empty."
+            , fsId = Nothing, fsName = Nothing, fsAttrs = []
+        }
+
+        websiteField = checkBool ("http://" `T.isPrefixOf`)
+                                 (websiteNotUrl :: Text) textField
+        websiteNotUrl = "The website's URL must start with http://"
+
+    accountSettingsSave userId (UserAccountSettings bio location site privacy) =
+        update userId [ UserBio           =. bio
+                      , UserLocation      =. location
+                      , UserWebsite       =. site
+                      , UserDefaultPublic =. privacy ]
 
     avatarsDir _ = Settings.staticDir </> "avatars"
     avatarsDirRoute _ path = StaticR $ StaticRoute ("avatars" : path) []
@@ -268,7 +300,7 @@ newAdminKey = insert $ AdminKey 0
 
 -- | Sets the 'AdminKey' in the user's session cookie.
 setAdminKey :: AdminKeyId -> Handler ()
-setAdminKey = setSession adminKeySessionKey . pack . show
+setAdminKey = setSession adminKeySessionKey . T.pack . show
 
 -- | Returns the admin key(s). Checks that it exists in the database or returns
 -- 'Nothing' if the client doesn\'t have an 'AdminKey' yet.
@@ -286,7 +318,7 @@ getAdminKey = cached $ runMaybeT $
     -- any.
     getCookieKey = runMaybeT $ do
         keyId' <- MaybeT $ lift $ lookupSession adminKeySessionKey
-        let keyId = read $ unpack keyId'
+        let keyId = read $ T.unpack keyId'
         key    <- MaybeT $ get keyId
         return $ Entity keyId key
 

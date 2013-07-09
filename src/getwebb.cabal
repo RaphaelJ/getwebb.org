@@ -37,12 +37,16 @@ library
 
                      Handler.Comment
                      Handler.Download
+                     Handler.Download.ViewsCache
+                     Handler.Download.ViewsCache.Type
+                     Handler.Gallery
                      Handler.History
                      Handler.Upload
                      Handler.Upload.Archive
                      Handler.Upload.Image
                      Handler.Upload.Media
                      Handler.Upload.Processing
+                     Handler.User
                      Handler.View
 
                      JobsDaemon.Compression
@@ -73,7 +77,7 @@ library
         cpp-options:   -DDEVELOPMENT
         ghc-options:   -Wall -O0
     else
-        ghc-options:   -Wall -O2 -fllvm
+        ghc-options:   -Wall -O2
 
     extensions: TemplateHaskell
                 QuasiQuotes

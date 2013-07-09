@@ -1,0 +1,59 @@
+#page {
+    .profile_avatar {
+        float: left;
+        width: 80px;
+        height: 80px;
+    }
+
+    h1, .bio, table.info {
+        margin-left: 95px;
+    }
+
+    .bio, table.info {
+        font-size: 0.9em;
+    }
+
+    .bio {
+        max-width: 550px;
+        opacity: 0.7;
+    }
+
+    nav.profile_bar {
+        margin: 15px 0;
+        background-color: rgba(0, 0, 0, 0.03);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        border-radius: 2px;
+
+        font-family: 'Open Sans', Arial, sans-serif;
+
+        ul {
+            margin: 0;
+            padding: 0 5px;
+
+            li {
+                display: inline-block;
+
+                a {
+                    display: inline-block;
+                    height: 40px;
+                    padding: 0 15px;
+                    margin: 0;
+
+                    line-height: 40px;
+                    color: #2D2D2D;
+                }
+
+                a:hover {
+                    background-color: rgba(0, 0, 0, 0.05);
+
+                    text-decoration: none;
+                }
+
+                a:active, a.enabled {
+                    background-color: rgba(0, 0, 0, 0.04);
+                    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.15);
+                }
+            }
+        }
+    }
+}

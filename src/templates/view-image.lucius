@@ -9,7 +9,6 @@ body {
     right: 0;
     bottom: 25px;
     background-color: #0F252F;
-    background: -webkit-radial-gradient(center, #0F83B2, black) fixed;
     background: radial-gradient(ellipse at center, #0F83B2, black) fixed;
 
     #position_relative {
@@ -177,15 +176,15 @@ body {
             background-color: #F0F0F0;
             box-shadow: 1px -1px 2px rgba(0, 0, 0, 0.4);
 
-            font-size: 0.85em;
-
             #new_comment {
                 position: relative;
                 height: 80px;
                 padding: 5px;
                 margin-bottom: 10px;
 
-                background-color: rgba(0, 0, 0, 0.1);
+                background-color: rgba(0, 0, 0, 0.05);
+
+                font-size: 0.85em;
 
                 .not_connected {
                     height: 60px;
@@ -255,7 +254,7 @@ body {
                 left: 10px;
 
                 border: 10px solid transparent;
-                border-top-color: rgba(0, 0, 0, 0.1);
+                border-top-color: rgba(0, 0, 0, 0.05);
             }
 
             .notice {
@@ -286,49 +285,6 @@ body {
 
                     .message {
                         margin-left: 55px;
-
-                        .author {
-                            font-weight: bold;
-                        }
-
-                        .date {
-                            color: rgba(0, 0, 0, 0.5);
-                        }
-
-                        .content {
-                            margin: 5px 0;
-                        }
-
-                        .actions {
-                            .button {
-                                margin: 0 2px;
-                                opacity: 0.6;
-                            }
-
-                            .button:hover {
-                                text-decoration: none;
-                                opacity: 1.0;
-                            }
-
-                            .button.enabled {
-                                opacity: 1;
-                            }
-
-                            .upvotes.enabled {
-                                color: #89B630;
-                            }
-
-                            .downvotes.enabled, .remove {
-                                color: #B65234;
-                            }
-
-                            .count {
-                                background-color: rgba(60, 150, 180, 0.2);
-                                padding: 1px 3px;
-                                box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.2);
-                                font-size: 0.9em;
-                            }
-                        }
                     }
                 }
 

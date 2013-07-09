@@ -4,11 +4,10 @@ module Handler.History (getHistoryR, getHistoryFusionR)
 
 import Import
 
-import Control.Monad
 import Data.Time.Clock (getCurrentTime, diffUTCTime)
 
 import Account
-import Util.Extras (getFileExtras, getIcon)
+import Util.Extras (getUploadsInfo)
 import Util.Hmac (Hmac (..))
 import Util.Pretty (
       PrettyDiffTime (..), PrettyFileSize (..), PrettyNumber (..), wrappedText
@@ -35,11 +34,7 @@ getHistoryR = do
                         ([UploadAdminKey ==. a], 0)
             uploads <- selectList selectFilters [Desc UploadId]
 
-            uploads' <- forM uploads $ \(Entity _ upload) -> do
-                let fileId = uploadFile upload
-                Just file <- get fileId
-                extras <- getFileExtras (Entity fileId file)
-                return (upload, file, getIcon upload extras)
+            uploads' <- getUploadsInfo uploads
 
             return (uploads', orphans)
         Nothing -> return ([], 0)
@@ -47,9 +42,12 @@ getHistoryR = do
     app <- getYesod
     currentTime <- liftIO $ getCurrentTime
     defaultLayout $ do
+        let currentUserPage = UserHistory
+            userBarWidget   = $(widgetFile "user-bar")
+
         setTitle "Upload history | getwebb"
-        $(widgetFile "public-private")
-        $(widgetFile "remove")
+        $(widgetFile "upload-public-private")
+        $(widgetFile "upload-remove")
         $(widgetFile "history")
 
 -- | Associates each anonymous upload to the signed in user.

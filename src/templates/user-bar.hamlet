@@ -1,0 +1,66 @@
+<nav .user_bar>
+    <ul>
+        $maybe (Entity userId user, avatar) <- mUser
+            $case currentUserPage
+              $of UserProfile profileId
+                <li>
+                    $if userId == profileId
+                        <a .enabled href=@{UserGalleryR (userName user)}>
+                            <img .avatar alt="User avatar"
+                                 src=@{avatarRoute app avatar} />
+                            #{wrappedText (userName user) 40}
+                    $else
+                        <a href=@{UserGalleryR (userName user)}>
+                            <img .avatar alt="User avatar"
+                                 src=@{avatarRoute app avatar} />
+                            #{wrappedText (userName user) 40}
+                <li>
+                    <a href=@{HistoryR}>History
+                <li>
+                    <a href=@{AccountR SettingsR}>
+                        Settings
+                <li>
+                    <a href=@{AccountR SignOutR}>
+                        Sign out
+              $of UserHistory
+                <li>
+                    <a href=@{UserGalleryR (userName user)}>
+                        <img .avatar alt="User avatar"
+                             src=@{avatarRoute app avatar} />
+                        #{wrappedText (userName user) 40}
+                <li>
+                    <a .enabled href=@{HistoryR}>History
+                <li>
+                    <a href=@{AccountR SettingsR}>Settings
+                <li>
+                    <a href=@{AccountR SignOutR}>Sign out
+              $of UserSettings
+                <li>
+                    <a href=@{UserGalleryR (userName user)}>
+                        <img .avatar alt="User avatar"
+                             src=@{avatarRoute app avatar} />
+                        #{wrappedText (userName user) 40}
+                <li>
+                    <a href=@{HistoryR}>History
+                <li>
+                    <a .enabled href=@{AccountR SettingsR}>Settings
+                <li>
+                    <a href=@{AccountR SignOutR}>Sign out
+        $nothing
+            $case currentUserPage
+              $of UserHistory
+                <li>
+                    <a .enabled href=@{HistoryR}>History
+                <li>
+                    <a href=@{AccountR SignInR}>Sign in
+                <li>
+                    <strong>
+                        <a href=@{AccountR RegisterR}>Register
+              $of _
+                <li>
+                    <a href=@{HistoryR}>History
+                <li>
+                    <a href=@{AccountR SignInR}>Sign in
+                <li>
+                    <strong>
+                        <a href=@{AccountR RegisterR}>Register

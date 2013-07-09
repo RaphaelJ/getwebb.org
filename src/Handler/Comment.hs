@@ -3,7 +3,8 @@ module Handler.Comment (
       maxNComments, defaultNComments, maxCommentLength, minCommentInterval
     , getCommentsR, postCommentsR
     , getCommentR, deleteCommentR, putCommentUpR, putCommentDownR
-    , retrieveComments, retrieveComment, removeComment, commentForm, score
+    , retrieveComments, retrieveComment, retrieveCommentVote
+    , removeComment, commentForm, score
     ) where
 
 import Import
@@ -159,14 +160,13 @@ voteComment voteType hmac = do
 
 -- Utilities -------------------------------------------------------------------
 
--- | Retrieves a set of comments from the database.
+-- | Retrieves a set of comments of an upload from the database.
 -- Can give the offset of the first comment and the number of returned comments.
 retrieveComments :: Maybe UserId -> UploadId -> Maybe Int -> Maybe Int
                  -> YesodDB App [(Entity Comment, Entity User, Maybe VoteType)]
 retrieveComments mUserId uploadId mOffset mNComments = do
     let opts = Desc CommentScore : catMaybes [
-                 OffsetBy <$> mOffset
-               , LimitTo  <$> mNComments
+                 OffsetBy <$> mOffset, LimitTo  <$> mNComments
                ]
 
     cs <- selectList [CommentUpload ==. uploadId] opts
@@ -178,13 +178,16 @@ retrieveComment :: Maybe UserId -> Entity Comment
 retrieveComment mUserId entity@(Entity commentId comment) = do
     let authorId = commentUser comment
     author <- Entity authorId <$> getJust authorId
-    case mUserId of
-        Just userId -> do
-            mVote <- selectFirst [ CommentVoteComment ==. commentId
-                                 , CommentVoteUser    ==. userId ] []
-            return (entity, author, (commentVoteType . entityVal) <$> mVote)
-        Nothing     ->
-            return (entity, author, Nothing)
+    mVote <- retrieveCommentVote mUserId commentId
+    return (entity, author, mVote)
+
+-- | Retrieves the user vote of a comment.
+retrieveCommentVote :: Maybe UserId -> CommentId -> YesodDB App (Maybe VoteType)
+retrieveCommentVote (Just userId) commentId = do
+    mVote <- selectFirst [ CommentVoteComment ==. commentId
+                         , CommentVoteUser    ==. userId ] []
+    return $ (commentVoteType . entityVal) <$> mVote
+retrieveCommentVote Nothing       _         = return Nothing
 
 -- | Removes a comment from the database and decrements counters.
 removeComment :: UserId -> Entity Comment -> YesodDB App ()

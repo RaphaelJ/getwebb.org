@@ -1,5 +1,5 @@
 <div #page>
-    <div #page_content>
+    <div .page_content>
         <h1>Sign in
 
         <form method=post action=@{toParent SignInR}

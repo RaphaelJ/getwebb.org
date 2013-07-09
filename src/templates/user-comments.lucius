@@ -1,0 +1,40 @@
+ul.comments {
+    padding: 0;
+    margin: 0;
+
+    list-style-type: none;
+
+    li.comment {
+        padding: 0;
+        position: relative;
+
+        .file_icon {
+            display: block;
+            float: left;
+
+            img {
+                width: 60px;
+                height: 60px;
+            }
+        }
+
+        .message {
+            margin-left: 80px;
+            padding: 7px;
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .message:after {
+            content: "";
+            display: block;
+            height: 0;
+            width: 0;
+            position: absolute;
+            top: 7px;
+            left: 60px;
+
+            border: 10px solid transparent;
+            border-right-color: rgba(0, 0, 0, 0.05);
+        }
+    }
+}

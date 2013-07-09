@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Shows and processes the upload form.
-module Handler.Upload (Options (..), getUploadR, postUploadR, uploadForm)
+module Handler.Upload (Options (..), getUploadR, postUploadR, uploadForm, score)
     where
 
 import Import
@@ -14,7 +14,7 @@ import Network.HTTP.Types.Status (requestEntityTooLarge413)
 import Text.Julius (rawJS)
 
 import Account (getUser)
-import Handler.Upload.Processing (UploadError (..), processFile)
+import Handler.Upload.Processing (UploadError (..), processFile, score)
 import Util.API (
       sendObjectCreated, sendErrorResponse, tooManyRequests429, withFormSuccess
     )
@@ -26,6 +26,8 @@ data Options = Options {
       optPublic :: Bool
     , optEmail  :: Maybe Text
     } deriving (Show, Read)
+
+-- Handlers --------------------------------------------------------------------
 
 -- | Shows the home page with the upload form.
 getUploadR :: Handler Html
@@ -50,6 +52,7 @@ getUploadR = do
                 , "FROM Upload AS upload"
                 , "INNER JOIN File AS f ON f.id = upload.file"
                 , "WHERE f.type = 'Image' AND upload.public = 1"
+                , "ORDER BY upload.score DESC"
                 , "LIMIT 40;"
                 ]
         imgs <- rawSql sql []
@@ -89,6 +92,8 @@ postUploadR = do
                         DailyIPLimitReached -> tooManyRequests429
                         FileTooLarge -> requestEntityTooLarge413
                 sendErrorResponse status [err]
+
+--------------------------------------------------------------------------------
 
 -- | Creates a form for the upload and its options.
 uploadForm :: Html

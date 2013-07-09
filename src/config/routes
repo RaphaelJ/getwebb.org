@@ -24,4 +24,5 @@
 
 /account                AccountR                Account getAccount
 
-/user/#Text             UserR                   GET
+/user/#Text             UserGalleryR            GET
+/user/#Text/comments    UserCommentsR           GET

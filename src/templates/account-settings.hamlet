@@ -1,18 +1,7 @@
 <div #page>
-    <div #page_content>
-        <nav>
-            <ul>
-                <li>
-                    <a href=@{toParent SettingsR}>
-                        <img .avatar alt="User avatar"
-                             src=@{avatarRoute app avatar} />
-                        #{wrappedText (accountUsername app user) 40}
-                <li>
-                    <a href=@{toParent SettingsR} .enabled>
-                        Settings
-                <li>
-                    <a href=@{toParent SignOutR}>
-                        Sign out
+    <div .page_content>
+        ^{accountSettingsWidget app userEntity avatar}
+
         <h1>Account settings
 
         <form method=post action=@{toParent SettingsR} enctype=#{enctype}>

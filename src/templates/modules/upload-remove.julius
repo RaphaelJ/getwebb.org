@@ -1,6 +1,6 @@
 // Removes an upload asynchronously by sending a DELETE request to the given
 // URI.
-function uploadRemove(uploadUri, onSuccess)
+function uploadRemove(uploadUri, onSuccessCallback)
 {
     if (!confirm("Do you really want to remove this file ?"))
         return;
@@ -9,7 +9,7 @@ function uploadRemove(uploadUri, onSuccess)
         type: "DELETE",
         url: uploadUri
     }).done(function (data, status, xhr) {
-        onSuccess();
+        onSuccessCallback();
     }).fail(function (xhr, status, error) {
         if (xhr.status == 403)
             alert("You don't have the permission to remove this file.");

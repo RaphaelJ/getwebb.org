@@ -3,8 +3,8 @@ module Handler.Comment (
       maxNComments, defaultNComments, maxCommentLength, minCommentInterval
     , getCommentsR, postCommentsR
     , getCommentR, deleteCommentR, putCommentUpR, putCommentDownR
-    , retrieveComments, retrieveComment, retrieveCommentVote
-    , removeComment, commentForm, score
+    , retrieveComments, retrieveComment, retrieveCommentVote, removeComment
+    , commentActionsWidget,commentForm, score
     ) where
 
 import Import
@@ -15,13 +15,14 @@ import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, addUTCTime, getCurrentTime)
 import Text.Printf
 
-import Account (getUser, requireAuth)
+import Account
 import Util.API (
       sendObjectCreated, sendNoContent, sendErrorResponse, sendPermissionDenied
     , tooManyRequests429, withFormSuccess
     )
 import Util.Hmac (Hmac, newHmac)
 import Util.Json ()
+import Util.Pretty (PrettyNumber (..))
 
 -- | Maximum number of comments which will be fetched in one request.
 maxNComments :: Int
@@ -117,7 +118,7 @@ deleteCommentR hmac = do
         when (commentUser comment /= userId)
             sendPermissionDenied
 
-        removeComment userId entity
+        removeComment entity
     sendNoContent
 
 -- | Votes for a comment.
@@ -190,12 +191,19 @@ retrieveCommentVote (Just userId) commentId = do
 retrieveCommentVote Nothing       _         = return Nothing
 
 -- | Removes a comment from the database and decrements counters.
-removeComment :: UserId -> Entity Comment -> YesodDB App ()
-removeComment userId (Entity commentId comment) = do
-    update userId                  [UserCommentsCount   -=. 1]
+removeComment :: Entity Comment -> YesodDB App ()
+removeComment (Entity commentId comment) = do
+    update (commentUser comment)   [UserCommentsCount   -=. 1]
     update (commentUpload comment) [UploadCommentsCount -=. 1]
     deleteWhere [CommentVoteComment ==. commentId]
     delete commentId
+
+-- | Widget which displays the availaible actions of a comment to an user.
+-- The boolean determines if the user is the owner of the comment and the
+-- text the Javascript action to executes after a comment has been removed.
+commentActionsWidget :: Comment -> Maybe VoteType -> Bool -> Text -> Widget
+commentActionsWidget comment mVote isUser onRemove =
+    $(widgetFile "modules/comment-actions")
 
 -- | Creates a form to post a new comment.
 commentForm :: Form Textarea

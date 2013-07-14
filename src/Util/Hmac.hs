@@ -1,5 +1,7 @@
 -- | Functions to compute and process HMACs.
 -- HMACs identify uniquely a resource like an upload, a comment or a file.
+-- HMACs are computed using the SHA1 algorithm associed with the encryption key
+-- of the application.
 module Util.Hmac (
       module Util.Hmac.Type, UniqueHmacId {- From Model -}, hmacLength
     , newHmac, computeHmac, toBase62
@@ -42,7 +44,8 @@ newHmac resource = do
         if exists then untilUnique xs
                   else return hmac
 
--- | Returns the first eight base 62 encoded digits of the key HMAC.
+-- | Returns the first eight base 62 encoded digits of the key HMAC, using the
+-- encryption key of the application.
 computeHmac :: C.ByteString -> Handler Hmac
 computeHmac idKey = do
     app <- getYesod

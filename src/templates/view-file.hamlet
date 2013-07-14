@@ -4,10 +4,16 @@
         <a href=@{DownloadR hmacTxt}>
             <img .icon alt="File icon" src="@{icon}" />
 
-        <h1 hint=#{uploadName upload}>
-            #{wrappedName}
-            <img .qrcode alt="QR Code to this page"
-                  src="http://chart.googleapis.com/chart?cht=qr&chs=150x150&chl=@{ViewR hmacTxt}"/>
+        $if isAdmin upload mAdminKey
+            <h1 .editable_title title="Click to edit"
+                value=#{uploadTitle upload} hint=#{uploadTitle upload}>
+                #{wrappedTitle}
+        $else
+            <h1 hint=#{uploadTitle upload}>
+                #{wrappedTitle}
+
+        <img .qrcode alt="QR Code to this page"
+             src="http://chart.googleapis.com/chart?cht=qr&chs=150x150&chl=@{ViewR hmacTxt}"/>
 
         $if fileType file == Audio
             <div .audio_player>
@@ -29,7 +35,7 @@
 
         $case extras
             $of AudioExtras medExtras mAudExtras
-                <div .information>
+                <div .details>
                     <h3>Media information
                     <table .info>
                         <tbody>
@@ -90,9 +96,9 @@
                                 <img alt="last.fm" src=@{StaticR img_lastfm_png} />.
 
             $of VideoExtras medExtras
-                <div .information>
+                <div .details>
                     <h3>Media information
-                    <table>
+                    <table .info>
                         <tbody>
                             <tr>
                                 <th>
@@ -101,7 +107,7 @@
                                     #{PrettyDuration $ mediaAttrsDuration medExtras}
 
             $of ArchiveExtras _
-                <div .information>
+                <div .details>
                     <h3>Archive content
                     <div .archive_content>
                         ^{fromJust archive}

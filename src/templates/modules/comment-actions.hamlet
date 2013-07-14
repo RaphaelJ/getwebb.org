@@ -1,0 +1,44 @@
+<span .actions>
+ $with commentHmac' <- commentHmac comment
+  $with upvotes <- commentUpvotes comment
+   $with downvotes <- commentDownvotes comment
+    $case mVote
+      $of Just Upvote
+        <span .action .upvotes .enabled
+            onclick="commentVote('#{commentHmac'}', '@{CommentR commentHmac'}', '@{CommentUpR commentHmac'}')">
+            ↑
+            <span .no_mobile>Upvote
+            <span .count>#{PrettyNumber upvotes}
+        <span .action .downvotes
+            onclick="commentVote('#{commentHmac'}', '@{CommentR commentHmac'}', '@{CommentDownR commentHmac'}')">
+            ↓
+            <span .no_mobile>Downvote
+            <span .count>#{PrettyNumber downvotes}
+      $of Just Downvote
+        <span .action .upvotes
+            onclick="commentVote('#{commentHmac'}', '@{CommentR commentHmac'}', '@{CommentUpR commentHmac'}')">
+            ↑
+            <span .no_mobile>Upvote
+            <span .count>#{PrettyNumber upvotes}
+        <span .action .downvotes .enabled
+            onclick="commentVote('#{commentHmac'}', '@{CommentR commentHmac'}', '@{CommentDownR commentHmac'}')">
+            ↓
+            <span .no_mobile>Downvote
+            <span .count>#{PrettyNumber downvotes}
+      $of Nothing
+        <span .action .upvotes
+            onclick="commentVote('#{commentHmac'}', '@{CommentR commentHmac'}', '@{CommentUpR commentHmac'}')">
+            ↑
+            <span .no_mobile>Upvote
+            <span .count>#{PrettyNumber upvotes}
+        <span .action .downvotes
+            onclick="commentVote('#{commentHmac'}', '@{CommentR commentHmac'}', '@{CommentDownR commentHmac'}')">
+            ↓
+            <span .no_mobile>Downvote
+            <span .count>#{PrettyNumber downvotes}
+
+    $if isUser
+        <span .action .remove
+                onclick="commentRemove('#{commentHmac'}', '@{CommentR commentHmac'}', #{onRemove})">
+            ⨯
+            <span .no_tablet>Remove

@@ -17,6 +17,7 @@ import qualified Yesod.Default.Config
 import Yesod.Default.Main
 import Yesod.Default.Handlers
 import Control.Monad.Logger (runLoggingT)
+import qualified Database.Persist
 import Database.Persist.Sql (runMigration)
 import Network.Wai.Middleware.Autohead (autohead)
 import Network.Wai.Middleware.RequestLogger
@@ -31,6 +32,7 @@ import Settings
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
 import Account
+import Handler.Browser
 import Handler.Comment
 import Handler.Download
 import qualified Handler.Download.ViewsCache as VC
@@ -83,7 +85,8 @@ makeFoundation conf = do
     account <- makeAccount
 
     dbconf <- withYamlEnvironment "config/sqlite.yml" (appEnv conf)
-              loadConfig >>= applyEnv
+                                  Database.Persist.loadConfig       >>=
+              applyEnv
     p <- createPoolConfig (dbconf :: Settings.PersistConf)
     logger <- mkLogger True stdout
     key <- getEncryptionKey

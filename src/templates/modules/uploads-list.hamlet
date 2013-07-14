@@ -1,0 +1,75 @@
+<ul .uploads>
+    $forall (upload, file, icon, mOwner, isOwner) <- uploads
+     $with Hmac hmacTxt <- uploadHmac upload
+      $with title <- uploadTitle upload
+        <li .upload #upload_#{hmacTxt}>
+            <a .icon href=@{ViewR hmacTxt}>
+                $case icon
+                  $of StaticR _
+                    <img .static_icon alt="File icon" src="@{icon}" />
+                  $of _
+                    <img .miniature alt="File icon" src="@{icon}" />
+
+            <h4 title=#{title}>
+                <a href=@{ViewR hmacTxt}>
+                    #{wrappedText title 22}
+
+            $if isOwner
+                <div .buttons>
+                    $if uploadPublic upload
+                        <span .button .left .public .enabled
+                                #public_button_#{hmacTxt}
+                                onclick="uploadChangePolicy('#{hmacTxt}', '@{ViewR hmacTxt}', true)"
+                                hint="Upload will be published in the public gallery">
+                            Public
+                        <span .button .right .private
+                                #private_button_#{hmacTxt}
+                                onclick="uploadChangePolicy('#{hmacTxt}', '@{ViewR hmacTxt}', false)"
+                                hint="Upload will NOT be published in the public gallery">
+                            Private
+                    $else
+                        <span .button .left .public
+                                #public_button_#{hmacTxt}
+                                onclick="uploadChangePolicy('#{hmacTxt}', '@{ViewR hmacTxt}', true)"
+                                hint="Upload will be published in the public gallery">
+                            Public
+                        <span .button .right .private .enabled
+                                #private_button_#{hmacTxt}
+                                onclick="uploadChangePolicy('#{hmacTxt}', '@{ViewR hmacTxt}', false)"
+                                hint="Upload will NOT be published in the public gallery">
+                            Private
+
+                <div .action .remove
+                     onclick="uploadRemove('@{ViewR hmacTxt}', uploadFadeOut('#{hmacTxt}'))"
+                     hint="Remove this file">
+                    ⨯
+            $else
+                $maybe owner <- mOwner
+                 $with ownerName <- userName owner
+                    <div .creator>
+                        By
+                        <a href=@{UserGalleryR ownerName}>
+                            #{wrappedText ownerName 13}
+
+            <div .info>
+                <span .size>
+                    <span .value>#{PrettyFileSize (fileSize file)}
+
+                •
+
+                <span .views>
+                 $with views <- int $ uploadViews upload
+                    $if views > 1
+                        <span .value>
+                            #{PrettyNumber views}
+                        <span .key>views
+                    $elseif views == 1
+                        <span .value>one
+                        <span .key>view
+                    $else
+                        <span .value>no
+                        <span .key>view
+
+
+
+<div .clear_float>

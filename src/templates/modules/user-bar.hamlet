@@ -6,12 +6,12 @@
                 <li>
                     $if userId == profileId
                         <a .enabled href=@{UserGalleryR (userName user)}>
-                            <img .avatar alt="User avatar"
+                            <img .avatar alt="Your avatar"
                                  src=@{avatarRoute app avatar} />
                             #{wrappedText (userName user) 40}
                     $else
                         <a href=@{UserGalleryR (userName user)}>
-                            <img .avatar alt="User avatar"
+                            <img .avatar alt="Your avatar"
                                  src=@{avatarRoute app avatar} />
                             #{wrappedText (userName user) 40}
                 <li>
@@ -44,6 +44,18 @@
                     <a href=@{HistoryR}>History
                 <li>
                     <a .enabled href=@{AccountR SettingsR}>Settings
+                <li>
+                    <a href=@{AccountR SignOutR}>Sign out
+              $of _
+                <li>
+                    <a href=@{UserGalleryR (userName user)}>
+                        <img .avatar alt="User avatar"
+                             src=@{avatarRoute app avatar} />
+                        #{wrappedText (userName user) 40}
+                <li>
+                    <a href=@{HistoryR}>History
+                <li>
+                    <a href=@{AccountR SettingsR}>Settings
                 <li>
                     <a href=@{AccountR SignOutR}>Sign out
         $nothing

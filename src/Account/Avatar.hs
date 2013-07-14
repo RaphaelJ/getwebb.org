@@ -5,7 +5,7 @@
 module Account.Avatar (
       AvatarImage, ImageHash (..), aiImage, aiGenerated, aiHash
     , avatarSize, spriteFile, tileSize, loadSprite
-    , genIdenticon, genAvatar
+    , genIdenticon, avatarImage
     , newAvatar, removeAvatar, getAvatarId, getAvatar, getAvatarFile
     , avatarPath, avatarRoute, hashImage
     ) where
@@ -117,14 +117,15 @@ genIdenticon (Sprite sprite) str =
         return (color, arr)
 
 -- | Resizes and adapts an uploaded image to be used as an avatar.
-genAvatar :: I.RGBAImage -> AvatarImage
-genAvatar img =
+avatarImage :: I.RGBAImage -> AvatarImage
+avatarImage img =
     let img' = I.force $ I.resize I.Bilinear img (I.Size avatarSize avatarSize)
     in AvatarImage img' False (hashImage img')
 
 -- | Registers and saves a new avatar. Checks if the same avatar is not used by
 -- another user.
-newAvatar :: YesodAccount parent => AvatarImage -> YesodDB parent AvatarNum
+newAvatar :: YesodAccount parent => AvatarImage
+                                 -> YesodDB parent (AvatarNum, Avatar)
 newAvatar (AvatarImage img generated imgHash@(ImageHash hash)) = do
     mFile <- getBy $ UniqueAvatarFileHash hash
     case mFile of
@@ -136,8 +137,9 @@ newAvatar (AvatarImage img generated imgHash@(ImageHash hash)) = do
             liftIO $ createDirectoryIfMissing True (takeDirectory path)
             liftIO $ I.save img path
             insert_ $ AvatarFile hash 1
-    Key (PersistInt64 avatarId) <- insert $ Avatar generated hash
-    return avatarId
+    let avatar = Avatar generated hash
+    Key (PersistInt64 avatarId) <- insert avatar
+    return (avatarId, avatar)
 
 -- | Removes a user\'s avatar from the database and from the filesystem if it
 -- is not shared by other users.

@@ -36,7 +36,7 @@ extensions = S.fromDistinctAscList [
 
 -- | The size of miniatures in pixels (both in width and height).
 miniatureSize :: Int
-miniatureSize = 100
+miniatureSize = 150
 
 -- | Try to open the image and to generate a miniature.
 processImage :: FilePath -> Text -> FileId -> Handler Bool
@@ -114,29 +114,28 @@ miniature :: I.RGBImage -> I.RGBImage
 miniature img =
     -- Crops the image in a square rectangle as large as the largest side of the
     -- image.
-    if w > h
-        then drawBorder $ resize $ I.crop img (I.Rect ((w - h) `quot` 2) 0 h h)
-        else drawBorder $ resize $ I.crop img (I.Rect 0 ((h - w) `quot` 2) w w)
+    if w > h then resize $ I.crop img (I.Rect ((w - h) `quot` 2) 0 h h)
+             else resize $ I.crop img (I.Rect 0 ((h - w) `quot` 2) w w)
   where
     -- Resizes the cropped image to a square of miniatureSize.
 --     resize img' = I.resize I.NearestNeighbor img' miniSize
     resize img' = I.resize I.Bilinear img' miniSize
     {-# INLINE resize #-}
 
-    -- Draw a bright border surrounded by a dark border.
-    drawBorder img' = I.fromFunction miniSize (drawBorderStep img')
-    {-# INLINE drawBorder #-}
-    drawBorderStep img' p@(I.Point x y)
-        | x == 0 || y == 0 || x == (miniatureSize-1) || y == (miniatureSize-1) =
-            pix `I.pixApply` darker
-        | x == 1 || y == 1 || x == (miniatureSize-2) || y == (miniatureSize-2) =
-            pix `I.pixApply` brighter
-        | otherwise = pix
-      where
-        pix = img' `I.getPixel` p
-        darker val = fromIntegral $ max 0 $ int val - 50
-        brighter val = fromIntegral $ min 255 $ int val + 50
-    {-# INLINE drawBorderStep #-}
+--     -- Draw a bright border surrounded by a dark border.
+--     drawBorder img' = I.fromFunction miniSize (drawBorderStep img')
+--     {-# INLINE drawBorder #-}
+--     drawBorderStep img' p@(I.Point x y)
+--         | x == 0 || y == 0 || x == (miniatureSize-1) || y == (miniatureSize-1) =
+--             pix `I.pixApply` darker
+--         | x == 1 || y == 1 || x == (miniatureSize-2) || y == (miniatureSize-2) =
+--             pix `I.pixApply` brighter
+--         | otherwise = pix
+--       where
+--         pix = img' `I.getPixel` p
+--         darker val = fromIntegral $ max 0 $ int val - 50
+--         brighter val = fromIntegral $ min 255 $ int val + 50
+--     {-# INLINE drawBorderStep #-}
 
     I.Size w h = I.getSize img
     !miniSize = I.Size miniatureSize miniatureSize

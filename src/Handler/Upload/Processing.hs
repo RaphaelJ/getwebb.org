@@ -110,7 +110,7 @@ processFile adminKeyId f public = do
             (key, hmac) <- lift $ newHmac HmacUpload
             let upload = Upload {
                   uploadHmac = hmac,  uploadFile = fileId
-                , uploadName = fileName f, uploadDescription = Nothing
+                , uploadName = fileName f, uploadTitle = fileName f
                 , uploadPublic = public, uploadCreated = time
                 , uploadHostname = clientHost, uploadAdminKey = adminKeyId
                 , uploadScore = score time 0, uploadViews = 0

@@ -4,14 +4,17 @@
 
         $if null comments
             <p .notice>
-                #{userName profile} hasn't commented any public file yet.
+                $if page == 1
+                    #{userName profile} hasn't commented any public file yet.
+                $else
+                    You hit the last comment page of #{userName profile}.
         $else
             <ul .comments>
                 $forall (comment, upload, icon, mVote) <- comments
                  $with Hmac uploadHmacTxt <- uploadHmac upload
                   $with name <- uploadName upload
                    $with commentHmac' <- commentHmac comment
-                    <li .comment id="comment_#{commentHmac'}">
+                    <li .comment #comment_#{commentHmac'}>
                         <a .file_icon href=@{ViewR uploadHmacTxt} hint=#{name}>
                             <img  alt="File icon" src="@{icon}" />
 
@@ -19,42 +22,11 @@
                             <span .date>
                              $with diffTime <- diffUTCTime currentTime (commentCreated comment)
                                 #{PrettyDiffTime diffTime} ago
-                            <span .actions>
-                                 $with upvotes <- commentUpvotes comment
-                                  $with downvotes <- commentDownvotes comment
-                                    $case mVote
-                                      $of Just Upvote
-                                        <span .button .upvotes .enabled
-                                              onclick="commentVote('#{commentHmac'}', '@{CommentR commentHmac'}', '@{CommentUpR commentHmac'}')">
-                                            ↑ Upvote
-                                            <span .count>#{PrettyNumber upvotes}
-                                        <span .button .downvotes
-                                              onclick="commentVote('#{commentHmac'}', '@{CommentR commentHmac'}', '@{CommentDownR commentHmac'}')">
-                                            ↓ Downvote
-                                            <span .count>#{PrettyNumber downvotes}
-                                      $of Just Downvote
-                                        <span .button .upvotes
-                                              onclick="commentVote('#{commentHmac'}', '@{CommentR commentHmac'}', '@{CommentUpR commentHmac'}')">
-                                            ↑ Upvote
-                                            <span .count>#{PrettyNumber upvotes}
-                                        <span .button .downvotes .enabled
-                                              onclick="commentVote('#{commentHmac'}', '@{CommentR commentHmac'}', '@{CommentDownR commentHmac'}')">
-                                            ↓ Downvote
-                                            <span .count>#{PrettyNumber downvotes}
-                                      $of Nothing
-                                        <span .button .upvotes
-                                              onclick="commentVote('#{commentHmac'}', '@{CommentR commentHmac'}', '@{CommentUpR commentHmac'}')">
-                                            ↑ Upvote
-                                            <span .count>#{PrettyNumber upvotes}
-                                        <span .button .downvotes
-                                              onclick="commentVote('#{commentHmac'}', '@{CommentR commentHmac'}', '@{CommentDownR commentHmac'}')">
-                                            ↓ Downvote
-                                            <span .count>#{PrettyNumber downvotes}
 
-                                    $if isUserProfile
-                                        <span .button .remove
-                                              onclick="commentRemove('#{commentHmac'}', '@{CommentR commentHmac'}')">
-                                            ⨯ Remove
+                            ^{commentActionsWidget comment mVote isUserProfile "return false"}
+
                             <p .content>#{commentMessage comment}
 
                         <div .clear_float>
+
+        ^{pagingWidget (UserCommentsR name) page (length comments == commentsPerPage)}

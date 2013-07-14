@@ -1,14 +1,20 @@
-// Displays/Hides the comments and the comment form.
-function showComments()
+// Displays/Hides a pane of the page. Changes the button status.
+function showPane(button, target)
 {
-    var button = $("#comments_button");
-    var comments = $("#comments");
+    var pane = $(target);
 
     if (button.hasClass("enabled")) {
         button.toggleClass("enabled", false);
-        comments.hide();
+        pane.toggleClass("enabled", false);
     } else {
         button.toggleClass("enabled", true);
-        comments.show();
+        pane.toggleClass("enabled", true);
     }
 }
+
+var comments_button = $("#comments_button")
+comments_button.click(function () { showPane(comments_button, "#comments"); });
+actionKeys.bind(actionKeys.keys.c, function () { comments_button.click(); });
+
+var details_button = $("#details_button");
+details_button.click(function () { showPane(details_button, "#right_pane"); });

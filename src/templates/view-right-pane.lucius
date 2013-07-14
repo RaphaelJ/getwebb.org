@@ -25,13 +25,18 @@
 
     .size {
         float: right;
-        margin: 3px 7px 3px 0;
+        margin: 3px 10px 3px 0;
     }
 
     .share {
-        margin: 10px;
+        margin: 3px 10px;
 
         .facebook_button, .twitter_button {
+            display: inline-block;
+               -moz-box-sizing: border-box;
+            -webkit-box-sizing: border-box;
+                    box-sizing: border-box;
+
             padding: 5px 5px 5px 21px;
             background-color: transparent;
             background-repeat: no-repeat;
@@ -82,7 +87,7 @@
     }
 
     .embded_links {
-        margin: 20px 10px 10px 10px;
+        margin: 15px 10px;
 
         h4 {
             margin: 4px 0 2px 0;
@@ -104,7 +109,7 @@
     }
 
     .stats {
-        margin: 20px 10px 10px 10px;
+        margin: 15px 10px;
 
         .creator {
             img {
@@ -117,8 +122,16 @@
     }
 
     .ad {
-        margin: 20px auto 10px auto;
+        margin: 20px auto;
+        overflow: hidden;
+        background-color: red;
         width: 250px;
         height: 250px;
+    }
+}
+
+@media (max-height: 699px) {
+    #right_pane .ad {
+        display: none;
     }
 }

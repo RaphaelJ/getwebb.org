@@ -9,14 +9,21 @@ import Data.Time.Clock (getCurrentTime, diffUTCTime)
 import Text.Hamlet (shamlet)
 
 import Account
-import Handler.Comment (retrieveCommentVote)
+import Handler.Comment (retrieveCommentVote, commentActionsWidget)
 import Util.Hmac (Hmac (..))
 import Util.Date (getDiffTime)
 import Util.Extras (getUploadInfo, getUploadsInfo)
+import Util.Paging (getPageOffset, pagingWidget)
 import Util.Pretty (
       WrappedText, PrettyNumber (..), PrettyFileSize (..), PrettyDiffTime (..)
     , wrappedText
     )
+
+uploadsPerPage :: Int
+uploadsPerPage = 18
+
+commentsPerPage :: Int
+commentsPerPage = 8
 
 -- Handlers --------------------------------------------------------------------
 
@@ -29,23 +36,28 @@ getUserGalleryR name = do
     app <- getYesod
     mUser <- getUser
 
+    mAdminKey <- getAdminKey
+    (page, selectOpts) <- getPageOffset uploadsPerPage
     (entity, profileAvatar, profileUploadsCount, uploads) <- runDB $ do
         (entity, profileAvatar, profileUploadsCount) <- getUserProfile name
 
         -- Fetches the user's gallery.
         let adminKeyId = userAdminKey $ entityVal entity
-        uploads' <- selectList [ UploadAdminKey ==. adminKeyId
-                               , UploadPublic   ==. True ]
-                               [ Desc UploadScore ]
-        uploads <- getUploadsInfo uploads'
+        uploads <- selectList [ UploadAdminKey ==. adminKeyId
+                              , UploadPublic   ==. True ]
+                              (Desc UploadScore : selectOpts) >>=
+                   getUploadsInfo mAdminKey
 
         return (entity, profileAvatar, profileUploadsCount, uploads)
 
     defaultLayout $ do
-        let Entity profileId profile = entity
         currentTime <- liftIO getCurrentTime
+        let Entity profileId profile = entity
+            uploadsWidget            = $(widgetFile "modules/uploads-list")
 
         setTitle [shamlet|Gallery of #{wrappedUserName profile} | getwebb|]
+        $(widgetFile "modules/upload-public-private")
+        $(widgetFile "modules/upload-remove")
         $(widgetFile "user-gallery")
 
 -- | Displays the profile overview of an user and its comments.
@@ -55,20 +67,22 @@ getUserCommentsR name = do
     mUser <- getUser
     let mUserId = ((entityKey . fst) <$> mUser)
 
+    (page, selectOpts) <- getPageOffset commentsPerPage
     (entity, profileAvatar, profileUploadsCount, comments) <- runDB $ do
         (entity, profileAvatar, profileUploadsCount) <- getUserProfile name
 
         -- Fetches the user's comments and the corresponding upload.
         comments' <- selectList [CommentUser ==. entityKey entity]
-                                [Desc CommentId]
+                                (Desc CommentId : selectOpts)
         comments  <- forM comments' $ \(Entity commentId comment) -> do
             let uploadId = commentUpload comment
             upload       <- getJust uploadId
 
             -- Skips non-public uploads.
             if uploadPublic upload then do
-                (_, _, icon) <- getUploadInfo (Entity uploadId upload)
-                mVote        <- retrieveCommentVote mUserId commentId
+                let uploadEntity = Entity uploadId upload
+                (_, _, icon, _, _) <- getUploadInfo Nothing uploadEntity
+                mVote          <- retrieveCommentVote mUserId commentId
                 return $ Just (comment, upload, icon, mVote)
                                    else
                 return Nothing
@@ -81,7 +95,6 @@ getUserCommentsR name = do
         currentTime <- liftIO getCurrentTime
 
         setTitle [shamlet|Comments of #{wrappedUserName profile} | getwebb|]
-        $(widgetFile "comments")
         $(widgetFile "user-comments")
 
 -- -----------------------------------------------------------------------------
@@ -104,10 +117,10 @@ profileWidget profilePage mUser (entity, profileAvatar, profileUploadsCount) = d
 
     let Entity profileId profile = entity
         currentUserPage = UserProfile profileId
-        userBarWidget   = $(widgetFile "user-bar")
+        userBarWidget   = $(widgetFile "modules/user-bar")
     profileDiffCreated <- getDiffTime $ userCreated profile
 
-    $(widgetFile "user-profile")
+    $(widgetFile "modules/user-profile")
 
 -- | Limits the length of the user name.
 wrappedUserName :: User -> WrappedText

@@ -2,23 +2,35 @@ $maybe (previous, next) <- links
     <div #browser>
         <div #links>
             <a #previous href=@{ViewR  previous}>
-                <span .action>←<span class="text"> Previous file</span>
+                <span .label>←<span class="no_mobile"> Previous file</span>
             <a #download_all href=@{DownloadR hmacs'}
-               title="Download all files in a single .zip archive."
+               hint="Download all files in a single .zip archive."
                download="archive.zip">
-                <span .action>↓<span class="text"> Download all</span>
+                <span .label>↓<span class="no_mobile"> Download all</span>
             <a #next href=@{ViewR  next}>
-                <span .action><span class="text">Next file </span>→
+                <span .label><span class="no_mobile">Next file</span> →
 
         <div .clear_float>
 
     <script type="text/javascript">
-        // Listen to left-right keys.
-        document.addEventListener("keydown", function(e) {
-            if (e.keyCode == 37)
-                document.location.href = previous;
-            else if (e.keyCode == 39)
-                document.location.href = next;
+
+        window.addEventListener("load", function ()
+        {
+            function goToUrl(url)
+            {
+                return function ()
+                {
+                    document.location.href = url;
+                }
+            }
+
+            actionKeys.bind(actionKeys.keys.left, goToUrl(@{ViewR  previous}));
+            actionKeys.bind(actionKeys.keys.right, goToUrl(@{ViewR  next}));
         });
 
 ^{page}
+
+<script type="text/javascript">
+    // Scripts variables.
+
+    var uploadUri = "@{ViewR (toPathPiece hmac)}";

@@ -1,0 +1,8 @@
+// Removes the HTML tag containing the upload.
+function uploadFadeOut(uploadHmac)
+{
+    return function () {
+        var upload = $("#upload_" + uploadHmac);
+        upload.fadeOut(upload.remove);
+    }
+}

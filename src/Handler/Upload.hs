@@ -19,7 +19,7 @@ import Util.API (
       sendObjectCreated, sendErrorResponse, tooManyRequests429, withFormSuccess
     )
 import Util.Hmac (Hmac (..))
-import Util.Pretty (PrettyFileSize (..), wrappedText)
+import Util.Pretty (PrettyFileSize (..))
 
 -- | Options which can be selected by the user when uploading a file.
 data Options = Options {

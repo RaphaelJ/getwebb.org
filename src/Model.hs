@@ -68,8 +68,8 @@ File
 Upload
     hmac                        Hmac
     file                        FileId
-    name                        Text
-    description                 Text Maybe
+    name                        Text -- File's name.
+    title                       Text -- Default: file's name.
     public                      Bool
     created                     UTCTime
     hostname                    Text -- IP address of the uploader.
@@ -207,7 +207,8 @@ migrateAll = do
         , ( "upload_admin_key_score_public"
           , "\"upload\"(\"admin_key\", \"score\" DESC, \"public\")")
         , ("upload_last_view", "\"upload\"(\"viewed\")")
-        , ("upload_score", "\"upload\"(\"score\" DESC)")
+        , ( "upload_score"
+          , "\"upload\"(\"public\", \"score\" DESC, \"id\" DESC)")
         , ("comment_created", "\"comment\"(\"user\", \"created\")")
         , ("comment_score", "\"comment\"(\"upload\", \"score\" DESC)")
         , ("commentvote_user", "\"comment_vote\"(\"comment\", \"user\")")

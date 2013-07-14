@@ -3,7 +3,7 @@ body {
     bottom: 0;
 }
 
-#full_screen {
+#full_screen { /* Contains the full screen except the header and the footer */
     position: absolute;
     left: 0;
     right: 0;
@@ -16,18 +16,19 @@ body {
         height: 100%;
         width: 100%;
 
-        #title {
+        #info {
             position: absolute;
             left: 0;
             top: 0;
             z-index: 5;
             padding: 5px 15px;
 
+               -moz-box-sizing: border-box;
+            -webkit-box-sizing: border-box;
+                    box-sizing: border-box;
+
             background-color: rgba(255, 255, 255, 0.2);
-            border-right: 1px solid rgba(255, 255, 255, 0.15);
             border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
-            border-radius: 0 0 2px 0;
 
             color: white;
             text-shadow: 0 1px 2px rgba(0, 0, 0, 1);
@@ -37,6 +38,7 @@ body {
 
             h1 {
                 margin: 5px 0 0 0;
+                word-wrap: break-word;
             }
 
             #size {
@@ -45,8 +47,8 @@ body {
 
             #tags {
                 height: 21px;
-                max-width: 400px;
                 overflow: hidden;
+                max-width: 400px;
 
                 h3 {
                     margin: 3px;
@@ -90,7 +92,6 @@ body {
         #left_pane {
             position: absolute;
             left: 0;
-            right: 300px;
             top: 0;
             bottom: 0;
 
@@ -101,6 +102,8 @@ body {
                 left: 0;
                 right: 0;
                 margin: auto;
+                z-index: 0;
+
                 max-width: 95%;
                 max-height: 95%;
                 box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.5);
@@ -112,75 +115,27 @@ body {
                 position: absolute;
                 top: 0;
                 right: 0;
+                z-index: 10;
             }
-
         }
 
         #right_pane {
             position: absolute;
-            right: 0;
-            top: 0;
-            bottom: 0;
-            z-index: 0;
+
             overflow: auto;
-
-            background-color: rgba(255, 255, 255, 0.1);
-            border-left: 1px solid rgba(255, 255, 255, 0.15);
-            border-bottom: none;
-            box-shadow: -1px 0 0 rgba(0, 0, 0, 0.4);
-
-            color: white;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-
-            .key {
-                color: rgba(255, 255, 255, 0.6);
-            }
-
-            .value {
-                color: rgba(255, 255, 255, 1);
-            }
-
-            .toggle_button_left, .toggle_button_central, .toggle_button_right {
-                background-color: rgba(255, 255, 255, 0.1);
-                box-shadow: none;
-                border-color: rgba(255, 255, 255, 0.2);
-
-                color: rgba(255, 255, 255, 0.7);
-                text-shadow: none;
-            }
-
-            .toggle_button_left:hover, .toggle_button_central:hover,
-            .toggle_button_right:hover {
-                background-color: rgba(255, 255, 255, 0.2);
-            }
-
-            .toggle_button:active, .toggle_button.enabled,
-            .toggle_button_left:active, .toggle_button_left.enabled,
-            .toggle_button_central:active, .toggle_button_central.enabled,
-            .toggle_button_right:active, .toggle_button_right.enabled {
-                background-color: rgba(0, 0, 0, 0.1);
-                box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6);
-                color: rgba(255, 255, 255, 0.9);
-            }
         }
 
         #comments {
+            display: none;
             position: absolute;
             z-index: 10;
-            height: 600px;
-            width: 620px;
-            bottom: 0;
-            right: 0;
             padding: 0;
 
             background-color: #F0F0F0;
-            box-shadow: 1px -1px 2px rgba(0, 0, 0, 0.4);
 
-            #new_comment {
-                position: relative;
+            #comments_new {
                 height: 80px;
                 padding: 5px;
-                margin-bottom: 10px;
 
                 background-color: rgba(0, 0, 0, 0.05);
 
@@ -192,39 +147,54 @@ body {
                     text-align: center;
                 }
 
-                .avatar {
-                    position: absolute;
-                    top: 10px;
-                    left: 10px;
-
-                    img {
-                        width: 60px;
-                        height: 60px;
-                    }
-                }
-
                 form {
-                    div {
-                        display: inline;
+                    position: relative;
+
+                    table {
+                        width: 100%;
+                        height: 70px;
+
+                        td {
+                            padding: 5px;
+                        }
+
+                        td.user_avatar {
+                            width: 60px;
+
+                            img {
+                                display: block;
+                                width: 60px;
+                                height: 60px;
+                            }
+                        }
+
+                        td.textarea {
+                            textarea {
+                                width: 100%;
+                                height: 70px;
+                                resize: none;
+                            }
+                        }
+
+                        td.submit {
+                            vertical-align: top;
+                            width: 115px;
+
+                            input[type="submit"] {
+                                margin: 0;
+                                width: 100%;
+                            }
+                        }
                     }
 
                     label {
                         display: none;
                     }
 
-                    textarea {
-                        position: absolute;
-                        top: 10px;
-                        left: 90px;
-                        height: 60px;
-                        width: 380px;
-                        resize: none;
-                    }
-
                     #comment_chars_left {
                         position: absolute;
                         bottom: 10px;
-                        right: 145px;
+                        right: 140px;
 
                         font-size: 1.3em;
                         font-weight: 700;
@@ -235,103 +205,113 @@ body {
                         color: #AE3737;
                     }
 
-                    input[type="submit"] {
-                        position: absolute;
-                        top: 7px;
-                        left: 495px;
-                        width: 115px;
-                    }
+
                 }
             }
 
-            #new_comment:after {
+            #comments_new:after {
                 content: "";
                 display: block;
-                height: 0;
                 width: 0;
+                height: 0;
                 position: absolute;
-                bottom: -20px;
+                top: 90px;
                 left: 10px;
 
                 border: 10px solid transparent;
                 border-top-color: rgba(0, 0, 0, 0.05);
             }
 
-            .notice {
-                margin: 20px 10px;
-            }
-
-            ul {
-                margin: 0;
-                padding: 0;
-                height: 500px;
-
+            #comments_messages {
+                position: absolute;
+                top: 100px;
+                left: 0;
+                bottom: 0;
+                right: 0;
                 overflow-y: auto;
 
-                list-style-type: none;
+                .notice {
+                    margin: 10px;
+                }
 
-                li {
-                    padding: 10px;
-                    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+                ul {
+                    margin: 0;
+                    padding: 0;
 
-                    .avatar {
-                        float: left;
+                    list-style-type: none;
 
-                        img {
-                            width: 40px;
-                            height: 40px;
+                    li {
+                        padding: 10px;
+                        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+
+                        .author_avatar {
+                            float: left;
+
+                            img {
+                                width: 40px;
+                                height: 40px;
+                            }
+                        }
+
+                        .message {
+                            margin-left: 55px;
                         }
                     }
 
-                    .message {
-                        margin-left: 55px;
+                    li.owner {
+                        background-color: rgba(60, 150, 180, 0.1);
                     }
                 }
-
-                li.owner {
-                    background-color: rgba(60, 150, 180, 0.1);
-                }
             }
+        }
+
+        #comments.enabled {
+            display: block;
         }
     }
 }
 
-#comments_button {
-    display: block;
+#footer_buttons {
     position: absolute;
     right: 0;
     bottom: 0;
-    z-index: 10;
+    z-index: 15;
 
-    padding: 0 15px 0 40px;
+    .footer_button {
+        display: block;
+        float: right;
+        padding: 0 10px;
+        margin: 0;
 
-    background-image: url('@{StaticR img_comments_png}');
-    background-repeat: no-repeat;
-    background-position: 15px center;
-    border-left: 1px solid rgba(0, 0, 0, 0.15);
-    border-bottom: none;
+        border-left: 1px solid rgba(0, 0, 0, 0.15);
 
-    color: white;
-    line-height: 25px;
-    font-size: 12px;
-    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
-}
+        color: white;
+        line-height: 25px;
+        font-size: 12px;
+        text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
 
-#comments_button:hover, #comments_button.enabled:hover {
-    cursor: pointer;
-    text-decoration: none;
-    background-color: rgba(0, 0, 0, 0.2);
-}
+        img {
+            vertical-align:middle;
+            margin-right: 5px;
+        }
+    }
 
-#comments_button.enabled {
-    box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.4);
-    background-color: rgba(0, 0, 0, 0.1);
+    .footer_button:hover {
+        cursor: pointer;
+        text-decoration: none;
+        background-color: rgba(0, 0, 0, 0.2);
+    }
+
+    .footer_button.enabled {
+        box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.4);
+        background-color: rgba(0, 0, 0, 0.1);
+    }
 }
 
 footer {
     padding: 0;
     height: 25px;
-    z-index: 5;
+    z-index: 10;
 
     background-color: #3D94B6;
     box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.3);
@@ -341,7 +321,7 @@ footer {
     text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
 
     #footer_content {
-        margin-left: 15px;
+        margin-left: 0;
 
         text-align: left;
 
@@ -360,26 +340,130 @@ footer {
     }
 }
 
-@media (max-width: 950px) {
+/* On large screens, at least 500px are reserved for the left panel and 300px
+ * for the right panel. Comments are displayed in the right corner. */
+@media (min-width: 800px) and (min-height: 700px) {
     #full_screen #position_relative {
-        #title {
-            position: static;
-            display: block;
-            border-radius: 0;
+        #info {
+            max-width: 500px;
+            border-radius: 0 0 2px 0;
+            border-right: 1px solid rgba(255, 255, 255, 0.15);
+
+            box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
         }
 
         #left_pane {
-            position: static;
+            position: absolute;
+            left: 0;
+            right: 300px;
+            top: 0;
+            bottom: 0;
+        }
+
+        #right_pane {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 0;
+
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: -1px 0 0 rgba(0, 0, 0, 0.4);
+
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+
+            .key {
+                color: rgba(255, 255, 255, 0.6);
+            }
+
+            .value {
+                color: rgba(255, 255, 255, 1);
+            }
+
+            .button {
+                background-color: rgba(255, 255, 255, 0.1);
+                box-shadow: none;
+                border-color: rgba(255, 255, 255, 0.2);
+
+                color: rgba(255, 255, 255, 0.7);
+                text-shadow: none;
+            }
+
+            .button:hover {
+                background-color: rgba(255, 255, 255, 0.2);
+            }
+
+            .button:active, .button.enabled {
+                background-color: rgba(0, 0, 0, 0.1);
+                box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6);
+                color: rgba(255, 255, 255, 0.9);
+            }
+        }
+
+        #comments {
+            width: 620px;
+            height: 600px;
+
+            bottom: 0;
             right: 0;
 
-            #image {
-                max-height: none;
-                margin: 5px auto;
-            }
+            box-shadow: -1px -1px 2px rgba(0, 0, 0, 0.4);
+        }
+    }
+
+    #footer_buttons #details_button {
+        display: none;
+    }
+}
+
+/* On smaller screens, the right panel is not displayed until the user uses the
+ * button on the footer bar. Comments and right panel are displayed in
+ * full screen. */
+@media (max-width: 799px), (max-height: 699px) {
+    #full_screen #position_relative {
+        #info {
+            width: 100%;
+
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+        }
+
+        #left_pane {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
         }
 
         #right_pane {
             display: none;
         }
+
+        #right_pane.enabled {
+            display: block;
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            z-index: 10;
+
+            background-color: #F0F0F0;
+
+            width: 100%;
+        }
+
+        #comments {
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+        }
+    }
+
+    footer #footer_content #info {
+        display: none;
     }
 }

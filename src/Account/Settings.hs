@@ -8,7 +8,6 @@ import Prelude
 import Control.Applicative
 import qualified Control.Exception as E
 import Data.Monoid
-import Data.Text (Text)
 import System.Directory (removeFile)
 import System.FilePath ((</>))
 import System.IO (hClose, openTempFile)
@@ -19,7 +18,7 @@ import qualified Vision.Image as I
 
 import Account.Foundation
 import Account.Avatar (
-      genIdenticon, genAvatar, newAvatar, removeAvatar, getAvatarId, avatarRoute
+      genIdenticon, avatarImage, newAvatar, removeAvatar, getAvatarId, avatarRoute
     )
 import Account.Util (redirectAuth)
 import Settings (widgetFile)
@@ -42,7 +41,7 @@ postSettingsR = do
 
     app <- lift getYesod
     sub <- getYesod
-    widget' <- lift $ case res of
+    widget' <- case res of
         FormSuccess (AvatarResult True (Just f), setts) -> do
             -- New user uploaded avatar.
             let tmpDir = avatarsDir app </> "tmp"
@@ -55,40 +54,43 @@ postSettingsR = do
 
             case eImg of
                 Right img -> do
-                    runDB $ do
-                        replaceAvatar userId user avatar (genAvatar img)
+                    let img' = avatarImage img
+                    lift $ runDB $ do
+                        replaceAvatar userId user avatar img'
                         accountSettingsSave userId setts
-                    redirectSignIn
+                    redirectSuccess
                 Left (_ :: E.SomeException) ->
-                    let msg = "Invalid image." :: Text
-                    in return [whamlet|
-                        <p .errors>#{msg}
+                    return [whamlet|
+                        <p .errors>Invalid image.
                         ^{widget}
                     |]
         FormSuccess (AvatarResult False _, setts)
             | not (avatarGenerated avatar) -> do
             -- Restores the generated avatar.
             let !img = genIdenticon (acAvatarSprite sub) (accountEmail app user)
-            runDB $ do
+            lift $ runDB $ do
                 replaceAvatar userId user avatar img
                 accountSettingsSave userId setts
-            redirectSignIn
+            redirectSuccess
         FormSuccess (_, setts) -> do
-            runDB $ accountSettingsSave userId setts
-            redirectSignIn
+            lift $ runDB $ accountSettingsSave userId setts
+            redirectSuccess
         _ -> return widget
 
     displaySettings userEntity avatar widget' enctype
   where
+    -- Removes the previous avatar before changing the reference to the ne
+    -- avatar.
     replaceAvatar userId user oldAvatar img = do
-        oldAvatarId <- lift $ getAvatarId user
+        oldAvatarId <- getAvatarId user
         removeAvatar oldAvatarId oldAvatar
 
         app <- getYesod
-        avatarId <- newAvatar img
-        update userId [ accountAvatarIdField app =. avatarId ]
+        (avatarId, _) <- newAvatar img
+        update userId [accountAvatarIdField app =. avatarId]
 
-    redirectSignIn = getYesod >>= redirect . signInDest
+    redirectSuccess :: AccountHandler parent a
+    redirectSuccess = redirect SettingsR
 
 displaySettings :: YesodAccount parent => Entity (AccountUser parent) -> Avatar
                 -> ParentWidget parent () -> Enctype
@@ -121,7 +123,7 @@ settingsForm user avatar extra = do
     let widget = [whamlet|
             #{extra}
             <div .avatar_settings>
-                <img alt="Your avatar" src=@{avatarRte} />
+                <img .avatar alt="Your avatar" src=@{avatarRte} />
                 ^{avatarWidget}
 
                 <div #avatar_file_widget>

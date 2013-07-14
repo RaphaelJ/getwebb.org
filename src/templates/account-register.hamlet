@@ -3,7 +3,7 @@
         <h1>Register
 
         <form method=post action=@{toParent RegisterR} enctype=#{enctype}>
-            <ul #features>
+            <ul #features .no_mobile>
                 <li>
                     <h3>Trace back
                     each of your files whatever the computer from which they
@@ -22,4 +22,4 @@
             or
             <a href=@{toParent SignInR}>
                 sign in
-            using an existing account
+            <span .no_tablet>using an existing account

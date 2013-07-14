@@ -32,7 +32,7 @@ newUser sub email name pass = do
     salt <- randomSalt
     let !img = genIdenticon (acAvatarSprite sub) email
     liftHandlerT $ runDB $ do
-        avatarId <- newAvatar img
+        (avatarId, _) <- newAvatar img
         initUser email name (saltedHash salt pass) salt avatarId >>= insert
 
 -- | Checks the given credentials without setting the session value.

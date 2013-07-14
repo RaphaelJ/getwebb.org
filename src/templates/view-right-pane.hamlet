@@ -17,26 +17,26 @@
 
     <div .share>
         <a .facebook_button
-            href="https://www.facebook.com/dialog/feed?app_id=#{facebookAppId}&link=@{ViewR hmacTxt}&picture=@{icon}&name=#{wrappedName}&redirect_uri=@{currUrl}">
+            href="https://www.facebook.com/dialog/feed?app_id=#{facebookAppId}&link=@{ViewR hmacTxt}&picture=@{icon}&name=#{wrappedTitle}&redirect_uri=@{currUrl}">
             Share
         <a .twitter_button
-            href="https://twitter.com/intent/tweet?text=#{wrappedName}&url=@{ViewR hmacTxt}&via=GetwebbFiles&original_referer=@{currUrl}">
+            href="https://twitter.com/intent/tweet?text=#{wrappedTitle}&url=@{ViewR hmacTxt}&via=GetwebbFiles&original_referer=@{currUrl}">
             Tweet
 
     <div .clear_float>
 
     <div .embded_links>
         <div .buttons>
-            <button #button_links .toggle_button_left .enabled type=button
+            <span .button .left .enabled #button_links
                     onclick="showCode('links');">
                 Links
-            <button #button_html .toggle_button_central type=button
+            <button .button .central #button_html
                     onclick="showCode('html');">
                 HTML
-            <button #button_bbcode .toggle_button_central type=button
+            <button .button .central #button_bbcode
                     onclick="showCode('bbcode');">
                 BBCode
-            <button #button_markdown .toggle_button_right type=button
+            <button .button .right #button_markdown
                     onclick="showCode('markdown');">
                 MarkDown
 
@@ -48,32 +48,32 @@
 
         <div #codes_html style="display: none">
             <h4>Link
-            <input type=text value="<a href='@{ViewR hmacTxt}'>#{wrappedName}</a>"
+            <input type=text value="<a href='@{ViewR hmacTxt}'>#{wrappedTitle}</a>"
                    onclick="this.select()" />
             <h4>Direct link
             <input type=text
-                   value="<a href='@{DownloadR hmacTxt}'>#{wrappedName}</a>"
+                   value="<a href='@{DownloadR hmacTxt}'>#{wrappedTitle}</a>"
                    onclick="this.select()" />
 
             $maybe imageUrl <- image
                 <h4>Image with link
                 <input type=text
-                       value="<a href='@{ViewR hmacTxt}'><img alt='#{wrappedName}' src='@{imageUrl}' /></a>"
+                       value="<a href='@{ViewR hmacTxt}'><img alt='#{wrappedTitle}' src='@{imageUrl}' /></a>"
                        onclick="this.select()" />
 
             $maybe miniatureUrl <- miniature
                 <h4>Miniature with link
                 <input type=text
-                       value="<a href='@{ViewR hmacTxt}'><img alt='#{wrappedName}' src='@{miniatureUrl}' /></a>"
+                       value="<a href='@{ViewR hmacTxt}'><img alt='#{wrappedTitle}' src='@{miniatureUrl}' /></a>"
                        onclick="this.select()" />
 
         <div #codes_bbcode style="display: none">
             <h4>Link
-            <input type=text value="[url=@{ViewR hmacTxt}]#{wrappedName}[/url]"
+            <input type=text value="[url=@{ViewR hmacTxt}]#{wrappedTitle}[/url]"
                    onclick="this.select()" />
             <h4>Direct link
             <input type=text
-                   value="[url=@{DownloadR hmacTxt}]#{wrappedName}[/url]"
+                   value="[url=@{DownloadR hmacTxt}]#{wrappedTitle}[/url]"
                    onclick="this.select()" />
 
             $maybe imageUrl <- image
@@ -90,22 +90,22 @@
 
         <div #codes_markdown style="display: none">
             <h4>Link
-            <input type=text value="[#{wrappedName}](@{ViewR hmacTxt})"
+            <input type=text value="[#{wrappedTitle}](@{ViewR hmacTxt})"
                    onclick="this.select()" />
             <h4>Direct link
-            <input type=text value="[#{wrappedName}](@{DownloadR hmacTxt})"
+            <input type=text value="[#{wrappedTitle}](@{DownloadR hmacTxt})"
                    onclick="this.select()" />
 
             $maybe imageUrl <- image
                 <h4>Image with link
                 <input type=text
-                       value="[@{ViewR hmacTxt}](![#{wrappedName}](@{imageUrl}))"
+                       value="[@{ViewR hmacTxt}](![#{wrappedTitle}](@{imageUrl}))"
                        onclick="this.select()" />
 
             $maybe miniatureUrl <- miniature
                 <h4>Miniature with link
                 <input type=text
-                       value="[@{ViewR hmacTxt}](![#{wrappedName}](@{miniatureUrl}))"
+                       value="[@{ViewR hmacTxt}](![#{wrappedTitle}](@{miniatureUrl}))"
                        onclick="this.select()" />
 
     <div .stats>
@@ -113,9 +113,11 @@
         $maybe (Entity _ owner, ownerAvatar) <- mOwner
          $with ownerName <- userName owner
             <div .creator>
-                <img src=@{avatarRoute app ownerAvatar} alt=#{ownerName} />
-                Uploaded
-                by <a href=@{UserGalleryR ownerName}>#{wrappedText ownerName 20}</a>.
+                <a href=@{UserGalleryR ownerName}>
+                    <img .avatar src=@{avatarRoute app ownerAvatar} alt=#{ownerName} />
+                <span .key>
+                    Uploaded
+                    by <a href=@{UserGalleryR ownerName}>#{wrappedText ownerName 20}</a>.
         $with (views, _, bw) <- stats
             <span .key>Totalled
             <span .value>
@@ -132,9 +134,12 @@
 
     <div .ad>
         <script type="text/javascript">
+            <!--
             google_ad_client = "ca-pub-8544036589375641";
-            google_ad_slot = "5853507369";
+            /* getwebb right panel */
+            google_ad_slot = "5337604561";
             google_ad_width = 250;
             google_ad_height = 250;
-        <script type="text/javascript" 
-            href="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+            //-->
+        <script type="text/javascript"
+                src="http://pagead2.googlesyndication.com/pagead/show_ads.js">

@@ -1,0 +1,20 @@
+#page {
+    .profile_avatar {
+        float: left;
+        width: 80px;
+        height: 80px;
+    }
+
+    h1, .bio, table.info {
+        margin-left: 95px;
+    }
+
+    .bio, table.info {
+        font-size: 0.9em;
+    }
+
+    .bio {
+        max-width: 550px;
+        opacity: 0.7;
+    }
+}

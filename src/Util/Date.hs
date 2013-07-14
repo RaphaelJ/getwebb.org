@@ -25,4 +25,3 @@ instance Show Rfc822Date where
 -- | Returns the difference of time between the current time and the given time.
 getDiffTime :: MonadIO m => UTCTime -> m NominalDiffTime
 getDiffTime time = (`diffUTCTime` time) `liftM` liftIO getCurrentTime
-

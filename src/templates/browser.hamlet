@@ -1,0 +1,14 @@
+<div #page>
+    <div .page_content>
+        ^{userBarWidget}
+
+        <h1>Most viewed public files
+
+        $if null uploads
+            <p .notice>
+                You hit the last browser page.
+        $else
+            ^{uploadsWidget}
+
+        ^{pagingWidget BrowserR page (length uploads == uploadsPerPage)}
+

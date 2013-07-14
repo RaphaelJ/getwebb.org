@@ -35,11 +35,11 @@ library
                      Account.Settings
                      Account.Util
 
+                     Handler.Browser
                      Handler.Comment
                      Handler.Download
                      Handler.Download.ViewsCache
                      Handler.Download.ViewsCache.Type
-                     Handler.Gallery
                      Handler.History
                      Handler.Upload
                      Handler.Upload.Archive
@@ -70,6 +70,7 @@ library
                      Util.Hmac
                      Util.Hmac.Type
                      Util.Json
+                     Util.Paging
                      Util.Path
                      Util.Pretty
 

@@ -146,19 +146,24 @@ getArchive rdr hmac (ArchiveExtras files) =
     in Just $ treeToHtml rdr' $ archiveTree files
 getArchive _   _    _                     = Nothing
 
--- | Fetches the database to retrieve the corresponding file and icon URL for
--- an upload.
-getUploadInfo :: Entity Upload -> YesodDB App (Upload, File, Route App)
-getUploadInfo (Entity _ upload) = do
-    let fileId = uploadFile upload
-    Just file <- get fileId
-    extras    <- getFileExtras (Entity fileId file)
-    return (upload, file, getIcon upload extras)
+-- | Fetches the database to retrieve the corresponding file, icon URL, creator
+-- and if the given user is the owner of an upload.
+getUploadInfo :: Maybe AdminKeyValue -> Entity Upload
+              -> YesodDB App (Upload, File, Route App, Maybe User, Bool)
+getUploadInfo mAdminKey (Entity _ upload) = do
+    let fileId  = uploadFile upload
+        isOwner = isAdmin upload mAdminKey
 
--- | Fetches the database to retrieve the corresponding file and icon URL for
--- each upload.
-getUploadsInfo :: [Entity Upload] -> YesodDB App [(Upload, File, Route App)]
-getUploadsInfo = mapM getUploadInfo
+    file   <- getJust fileId
+    mOwner <- getBy $ UniqueUserAdminKey $ uploadAdminKey upload
+    extras <- getFileExtras (Entity fileId file)
+    return (upload, file, getIcon upload extras, entityVal <$> mOwner, isOwner)
+
+-- | Fetches the database to retrieve the corresponding file, icon URL and if
+-- the user is the owner for each upload.
+getUploadsInfo :: Maybe AdminKeyValue -> [Entity Upload]
+               -> YesodDB App [(Upload, File, Route App, Maybe User, Bool)]
+getUploadsInfo mAdminKey = mapM (getUploadInfo mAdminKey)
 
 -- | Returns the account and of avatar of the user who uploaded the file.
 getUploadOwner :: Upload -> YesodDB App (Maybe (Entity User, Avatar))

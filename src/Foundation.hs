@@ -83,10 +83,11 @@ encryptKeyFile :: FilePath
 encryptKeyFile = "config/client_session_key.aes"
 
 -- | Used to change the state of the main navigation bar.
-data CurrentPage = NewUpload | History | Other deriving (Eq)
+data CurrentPage = NewUpload | Browser | History | Other deriving (Eq)
 
 -- | Used to change the state of the user navigation bar.
-data CurrentUserPage = UserProfile UserId | UserHistory | UserSettings
+data CurrentUserPage = 
+    UserProfile UserId | UserHistory | UserSettings | NotUserPage
     deriving (Eq)
 
 -- Please see the documentation for the Yesod typeclass. There are a number
@@ -160,6 +161,7 @@ instance Yesod App where
         hamletToRepHtml $(hamletFile "templates/default-layout.hamlet")
       where
         getCurrentPage (Just UploadR)  = NewUpload
+        getCurrentPage (Just BrowserR) = Browser
         getCurrentPage (Just HistoryR) = History
         getCurrentPage _               = Other
 
@@ -250,7 +252,7 @@ instance YesodAccount App where
     accountSettingsWidget app user avatar = do
         let mUser           = Just (user, avatar)
             currentUserPage = UserSettings
-        $(widgetFile "user-bar")
+        $(widgetFile "modules/user-bar")
 
     accountSettingsForm user = UserAccountSettings
         <$> aopt bioField bioSettings (Just (userBio user))

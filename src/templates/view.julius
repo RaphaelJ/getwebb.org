@@ -1,5 +1,93 @@
+// Changes the title of an upload by sending a PATCH request.
+$(".editable_title").click(function uploadUpdateTitle() {
+    var elem = $(this);
+    elem.unbind("click", uploadUpdateTitle);
+
+    // Sets the element editable.
+    actionKeys.disable();
+    elem.text(elem.attr("value"));
+    elem.attr("contentEditable", true);
+    elem.focus();
+
+    // Sends the PATCH query to set the new title.
+    function applyNewTitle()
+    {
+        var newTitle = elem.text();
+        if (newTitle.length < 1) {
+            alert("Please enter a title of at least one character.");
+            elem.focus();
+            return;
+        }
+
+        elem.text(newTitle);
+        elem.css({ opacity: 0.5 });
+
+        $.ajax({
+            type: "PATCH",
+            url: uploadUri,
+            data: { title: newTitle }
+        }).done(function (data, status, xhr) {
+            endEdit(newTitle);
+        }).fail(function (xhr, status, error) {
+            if (xhr.status == 403) {
+                alert(
+                    "You don't have the permission to change the title of " +
+                    "this file."
+                );
+            } else if (xhr.status == 404) {
+                alert("The file doesn't exists.");
+            } else {
+                alert("Failed to change the title.");
+                showErrorResponse(xhr);
+            }
+        }).always(function (data, status, xhr) {
+            elem.css({ opacity: 1 });
+        });
+    }
+
+    // Ends the editable status of the HTML element and sets the new title
+    // value.
+    function endEdit(newTitle)
+    {
+        elem.unbind("keyup");
+        elem.unbind("change");
+        elem.unbind("blur");
+        elem.blur();
+
+        actionKeys.enable();
+        elem.attr("contentEditable", false);
+
+        var wrappedTitle = wrappedText(newTitle, 50);
+        document.title = wrappedTitle + " | getwebb";
+        elem.text(wrappedTitle);
+
+        elem.attr("hint", newTitle);
+        elem.attr("value", newTitle);
+
+        elem.click(uploadUpdateTitle);
+    }
+
+    // Catches <ENTER>, <ESCAPE> and text change events.
+    elem.keyup(function (e)
+    {
+        if (e.which == actionKeys.keys.enter)
+            elem.blur();
+        else if (e.which == actionKeys.keys.escape) {
+            // Cancels the current editing and resets the original title.
+            endEdit(elem.attr("value"));
+        } else {
+            var newTitle = elem.text();
+            var wrappedTitle = wrappedText(newTitle, 50);
+            document.title = wrappedTitle + " | getwebb";
+            elem.attr("hint", newTitle);
+        }
+    });
+
+    elem.blur(applyNewTitle);
+});
+
 // Decrements the number of available characters in the new comment form.
-var new_comment_text = $("#new_comment #comment_message");
+var new_comment_text = $("#comments_new textarea");
 new_comment_text.keyup(function (e)
 {
     var remain = #{rawJS $ show maxCommentLength} - new_comment_text.val().length;
@@ -9,7 +97,7 @@ new_comment_text.keyup(function (e)
     chars_left.text(remain);
     chars_left.toggleClass("negative", negative);
     var disabled = negative ? "disabled" : null
-    $("#new_comment #comment_submit").attr("disabled", disabled);
+    $("#comments_new input[type=submit]").attr("disabled", disabled);
 });
 
 // Posts the new comment using a POST request to the form's action URI.
@@ -45,7 +133,7 @@ function commentNew(form)
         var voteUri = data.uri;
         getComment(voteUri, function (commentData) {
             // Removes the comment saying that nobody has commented the upload.
-            var parent = $("#comments");
+            var parent = $("#comments_messages");
             var ul;
             if (commentsCount == 1) {
                 parent.find("p.notice").remove();
@@ -62,15 +150,20 @@ function commentNew(form)
             if (userIsOwner)
                 li.addClass("owner");
 
-            $("<div>").addClass("avatar")
-                      .append($("<img>", { alt: "Avatar", src: userAvatar }))
-                      .appendTo(li);
+            $("<a>").addClass("author_avatar")
+                    .attr("href", userProfile)
+                    .append(
+                        $("<img>", {
+                            alt: "Avatar", src: userAvatar, class: "avatar"
+                        })
+                    )
+                    .appendTo(li);
 
             var message = $("<div>").addClass("message")
                                     .appendTo(li);
 
             $("<a>").addClass("author")
-                    .attr("href", "#")
+                    .attr("href", userProfile)
                     .text(commentData.user.name)
                     .appendTo(message);
             message.append(" ");
@@ -83,14 +176,14 @@ function commentNew(form)
             var actions = $("<span>").addClass("actions")
                                      .appendTo(message);
 
-            $("<span>").addClass("button").addClass("upvotes")
+            $("<span>").addClass("action").addClass("upvotes")
                        .toggleClass("enabled", commentData.vote == "upvote")
                        .click(function () {
                            commentVote(
                                commentData.id, voteUri, voteUri + "/up"
                            );
                        })
-                       .text("↑ Upvote ")
+                       .html("↑<span class='no_mobile'> Upvote</span> ")
                        .append(
                             $("<span>").addClass("count")
                                        .text(commentData.upvotes)
@@ -98,14 +191,14 @@ function commentNew(form)
                        .append(" ")
                        .appendTo(actions);
 
-            $("<span>").addClass("button").addClass("downvotes")
+            $("<span>").addClass("action").addClass("downvotes")
                        .toggleClass("enabled", commentData.vote == "downvote")
                        .click(function () {
                            commentVote(
                                commentData.id, voteUri, voteUri + "/down"
                            );
                        })
-                       .text("↓ Downvote ")
+                       .html("↓<span class='no_mobile'> Downvote</span> ")
                        .append(
                             $("<span>").addClass("count")
                                        .text(commentData.downvotes)
@@ -113,11 +206,11 @@ function commentNew(form)
                        .append(" ")
                        .appendTo(actions);
 
-            $("<span>").addClass("button").addClass("remove")
+            $("<span>").addClass("action").addClass("remove")
                        .click(function () {
                            commentRemove(commentData.id, voteUri);
                        })
-                       .text("⨯ Remove ")
+                       .html("⨯<span class='no_tablet'> Remove</span>")
                        .appendTo(actions);
 
             $("<p>").addClass("content")
@@ -143,4 +236,19 @@ function commentNew(form)
         textarea.attr("disabled", null);
         submit.attr("disabled", null);
     });
+}
+
+function commentsCountDecrement()
+{
+    // Decrements the number of comments of the upload.
+    $("#comments_count").text(prettyNumber(--commentsCount));
+
+    if (commentsCount == 0) {
+        var parent = $("#comments_messages");
+        parent.find("ul").remove();
+        parent.append(
+            $("<p>").addClass("notice")
+                    .text("Nobody has commented this file yet.")
+        );
+    }
 }

@@ -14,17 +14,17 @@
     }
 
     .actions {
-        .button {
+        .action {
             margin: 0 2px;
             opacity: 0.6;
         }
 
-        .button:hover {
+        .action:hover {
             text-decoration: none;
             opacity: 1.0;
         }
 
-        .button.enabled {
+        .action.enabled {
             opacity: 1;
         }
 
@@ -32,7 +32,7 @@
             color: #89B630;
         }
 
-        .downvotes.enabled {
+        .downvotes.enabled, .remove {
             color: #B65234;
         }
 

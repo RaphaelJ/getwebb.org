@@ -1,7 +1,7 @@
 <nav .user_bar>
     ^{userBarWidget}
 
-<img .profile_avatar alt=Avatar src=@{avatarRoute app profileAvatar}>
+<img .avatar .profile_avatar alt=Avatar src=@{avatarRoute app profileAvatar}>
 
 $case profilePage
   $of PublicGallery
@@ -40,24 +40,21 @@ $maybe bio <- userBio profile
 
 <div .clear_float>
 
-<nav .profile_bar>
+<nav .nav_bar .two>
  $with profileName <- userName profile
     <ul>
         $case profilePage
           $of PublicGallery
             <li>
                 <a .enabled href=@{UserGalleryR profileName}>
-                    Public gallery
+                    <span .label>Public gallery
             <li>
                 <a href=@{UserCommentsR profileName}>
-                    Comments
+                    <span .label>Comments
           $of Comments
             <li>
                 <a href=@{UserGalleryR profileName}>
-                    Public gallery
+                    <span .label>Public gallery
             <li>
                 <a .enabled href=@{UserCommentsR profileName}>
-                    Comments
-
-    <div .clear_float>
-
+                    <span .label>Comments

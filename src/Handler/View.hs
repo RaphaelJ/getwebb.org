@@ -22,6 +22,7 @@ import Text.Julius (rawJS)
 import Account
 import Handler.Comment (
       maxCommentLength, commentForm, retrieveComments, removeComment
+    , commentActionsWidget
     )
 import Util.API (sendNoContent, withFormSuccess, withUploadOwner)
 import Util.Date (getDiffTime)
@@ -88,8 +89,8 @@ getViewR hmacs' = do
 
             stats <- getUploadStats entity
             let Entity _ upload = entity
-                name = uploadName upload
-                wrappedName = wrappedText name 50
+                title = uploadTitle upload
+                wrappedTitle = wrappedText title 50
                 userIsOwner = ((entityKey . fst) <$> mOwner) == mUserId
                 links = getLinks hmacs
                 icon = getIcon upload extras
@@ -101,14 +102,13 @@ getViewR hmacs' = do
             uploadDiffTime <- getDiffTime $ uploadCreated upload
 
             defaultLayout $ do
-                setTitle [shamlet|#{wrappedName} | getwebb|]
+                setTitle [shamlet|#{wrappedTitle} | getwebb|]
                 let right_pane = $(widgetFile "view-right-pane")
                     page = case fileType file of
                         Image -> $(widgetFile "view-image")
                         _     -> $(widgetFile "view-file")
 
-                $(widgetFile "upload-remove")
-                $(widgetFile "comments")
+                $(widgetFile "modules/upload-remove")
                 $(widgetFile "view")
         _  -> notFound
   where
@@ -156,19 +156,19 @@ patchViewR :: Text -> Handler ()
 patchViewR hmacTxt = do
     ((res, _), _) <- runFormPostNoToken form
 
-    withFormSuccess res $ \(mDescription, mPublic) ->
+    withFormSuccess res $ \(mTitle, mPublic) ->
         withUploadOwner (Hmac hmacTxt) sendNoContent $ \(Entity uploadId _) ->
             update uploadId $ catMaybes [
-                  (UploadDescription =.) <$> Just <$> mDescription
+                  (UploadTitle  =.) <$> mTitle
                 , (UploadPublic =.) <$> mPublic
                 ]
   where
-    form = renderDivs $ (,) <$> aopt textField descriptionSettings Nothing
-                            <*> aopt boolField publicSettings      Nothing
+    form = renderDivs $ (,) <$> aopt textField titleSettings  Nothing
+                            <*> aopt boolField publicSettings Nothing
 
-    descriptionSettings = FieldSettings {
-          fsLabel = "Upload description", fsTooltip = Nothing, fsId = Nothing
-        , fsName = Just "description", fsAttrs = []
+    titleSettings = FieldSettings {
+          fsLabel = "Upload title", fsTooltip = Nothing, fsId = Nothing
+        , fsName = Just "title", fsAttrs = []
         }
 
     publicSettings = FieldSettings {
@@ -179,19 +179,18 @@ patchViewR hmacTxt = do
 -- | Deletes an upload. Returns a 204 No content on success, a 404 Not found if
 -- doesn't exists or 403 if the user isn't allowed to remove the upload.
 deleteViewR :: Text -> Handler ()
-deleteViewR hmacTxt = do
-    (Entity userId _, _) <- requireAuth
-    withUploadOwner (Hmac hmacTxt) sendNoContent (removeUpload userId)
+deleteViewR hmacTxt =
+    withUploadOwner (Hmac hmacTxt) sendNoContent removeUpload
 
 -- Utilities -------------------------------------------------------------------
 
 -- | Removes an upload. Decrements its owner\'s count and remove the associated
 -- file if the file is now upload-less.
-removeUpload :: UserId -> Entity Upload -> YesodDB App ()
-removeUpload userId (Entity uploadId upload) = do
+removeUpload :: Entity Upload -> YesodDB App ()
+removeUpload (Entity uploadId upload) = do
     -- Removes comments.
     comments <- selectList [CommentUpload ==. uploadId] []
-    forM_ comments (removeComment userId)
+    forM_ comments removeComment
 
     let fileId = uploadFile upload
     delete uploadId

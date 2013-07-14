@@ -1,5 +1,14 @@
 // Contains utilities which are used all around the website.
 
+// Truncates the text if longer than the given integer.
+function wrappedText(text, len)
+{
+    if (text.length > len)
+        return text.substr(0, len - 3) + "...";
+    else
+        return text;
+}
+
 // Represents large numbers with a separator between thousands.
 function prettyNumber(n)
 {
@@ -114,6 +123,15 @@ function escapeHtml(str)
     return buf.join(''); // Join is faster than immuable strings concats.
 }
 
+// Returns a function which will redirects the browser to the given URL.
+function goToUrl(url)
+{
+    return function ()
+    {
+        document.location.href = url;
+    }
+}
+
 // Location.reload() can't be passed as a callback function.
 function reloadPage()
 {
@@ -128,6 +146,54 @@ function showErrorResponse(xhr)
         for (i = 0; i < res.length; i++)
             alert(res[i]);
     }
+}
+
+// Manages keyboard keys binding to handlers.
+// Disables automatically bindings when the user is using forms.
+var actionKeys = new function ()
+{
+    var self = this;
+
+    this._bindings = { };
+    this._disabled = false;
+
+    this.keys = {
+        a: 65, b: 66, c: 67,
+        enter: 13, escape: 27, space: 32, left: 37, right: 39, del: 46
+    };
+
+    this.bind = function (key, handler)
+    {
+        this._bindings[key] = handler;
+    };
+
+    this.unbind = function (key)
+    {
+        this._bindings[key] = undefined;
+    };
+
+    this.enable = function ()
+    {
+        self._disabled = false;
+    }
+
+    this.disable = function ()
+    {
+        self._disabled = true;
+    }
+
+    $(document).keydown(function (e)
+    {
+        if (!self._disabled) {
+            var handler = self._bindings[e.which];
+
+            if (handler != undefined)
+                handler();
+        }
+    });
+
+    $("input, textarea").focus(this.disable)
+                        .blur (this.enable);
 }
 
 // Adds a sprintf-like method to String objects.

@@ -11,25 +11,24 @@
                 <h2>Select some files to upload
 
                 <div #public_private .buttons>
-                    <button #public_button .public_button
-                            type=button onclick="uploadPublic(true);"
-                            hint="Uploaded files will be published in the public gallery">
+                    <span .button .left .public #public_button
+                          onclick="uploadPublic(true);"
+                          hint="Uploaded files will be published in the public gallery">
                         Public
-                    <button #private_button .private_button
-                            type=button onclick="uploadPublic(false);"
-                            hint="Uploaded files will NOT be published in the public gallery">
+                    <span .button .right .private #private_button
+                          onclick="uploadPublic(false);"
+                          hint="Uploaded files will NOT be published in the public gallery">
                         Private
                 <div .clear_float>
 
                 <div #upload_widget>
                     ^{filesWidget}
 
-                <p .options_button>
-                    <button #options_toggle type=button tabindex=3>
-                        Show more options
-
                 <input .big_button #upload_button type=submit tabindex=2
                                                   value=Upload>
+
+                <span .options_button #options_toggle tabindex=3>
+                    Show more options
 
                 <div .clear_float>
 
@@ -49,13 +48,13 @@
     <ul #browser>
         $forall (upload, iconUrl) <- topImages
           $with Hmac hmac <- uploadHmac upload
-           $with name <- uploadName upload
-            <li .hint hint=#{wrappedText name 60}>
+           $with title <- uploadTitle upload
+            <li .hint hint=#{title}>
                 <a href=@{ViewR hmac}>
-                    <img src=@{iconUrl} alt=#{name} />
+                    <img src=@{iconUrl} alt=#{title} />
 
-        <a .big_button href=#>
-            Browse public files
+        <a .big_button href=@{BrowserR}>
+            Browse most viewed files
 
     <ul #features>
         <li>

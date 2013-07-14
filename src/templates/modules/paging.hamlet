@@ -1,0 +1,29 @@
+<nav .nav_bar .two>
+    <ul>
+        $if page > 1
+         $with previous <- pageRte rdr (page - 1)
+            <li>
+                <a href=#{previous}>
+                    <span .label>← Previous
+            <script type="text/javascript">
+                window.addEventListener("load", function ()
+                {
+                    actionKeys.bind(actionKeys.keys.left, goToUrl("#{previous}"));
+                });
+        $else
+            <li .disabled>
+                <span .label>← Previous
+
+        $if hasNext
+         $with next <- pageRte rdr (page + 1)
+            <li>
+                <a href=#{next}>
+                    <span .label>Next →
+            <script type="text/javascript">
+                window.addEventListener("load", function ()
+                {
+                    actionKeys.bind(actionKeys.keys.right, goToUrl("#{next}"));
+                });
+        $else
+            <li .disabled>
+                <span .label>Next →

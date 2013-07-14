@@ -11,9 +11,6 @@
             <a href="@{UploadR}">
                 Credits
             &nbsp;•&nbsp;
-            <a href="@{UploadR}">
-                API
-            &nbsp;•&nbsp;
             <a href="https://github.com/RaphaelJ/getwebb.org">
                 Sources
             &nbsp;•&nbsp;

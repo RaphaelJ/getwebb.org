@@ -4,37 +4,11 @@
 
         $if null uploads
             <p .notice>
-                #{userName profile} hasn't uploaded any public file yet.
+                $if page == 1
+                    #{userName profile} hasn't uploaded any public file yet.
+                $else
+                    You hit the last gallery page of #{userName profile}.
         $else
-            <ul .uploads>
-                $forall (upload, file, icon) <- uploads
-                 $with Hmac hmacTxt <- uploadHmac upload
-                  $with name <- uploadName upload
-                    <li .upload>
-                        <a href=@{ViewR hmacTxt} hint=#{name}>
-                            <h4>#{wrappedText name 32}
+            ^{uploadsWidget}
 
-                            <img  alt="File icon" src="@{icon}" />
-
-                            <div .info>
-                                <div .size>
-                                    <span .value>#{PrettyFileSize (fileSize file)}
-                                <div .views>
-                                 $with views <- int $ uploadViews upload
-                                    $if views > 1
-                                        <span .value>
-                                            #{PrettyNumber views}
-                                        <span .key>views
-                                    $elseif views == 1
-                                        <span .value>one
-                                        <span .key>view
-                                    $else
-                                        <span .value>no view
-                                <div .date>
-                                 $with uploaded <- uploadCreated upload
-                                  $with diffTime <- diffUTCTime currentTime uploaded
-                                    <span .value>#{PrettyDiffTime diffTime}
-                                    <span .key>ago
-
-                            <div .clear_float>
-                <div .clear_float>
+        ^{pagingWidget (UserGalleryR name) page (length uploads == uploadsPerPage)}

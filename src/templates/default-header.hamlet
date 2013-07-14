@@ -1,38 +1,63 @@
 <header>
     <nav>
         <a #logo href=@{UploadR}>
-            g<span class="etwebb">etwebb</span>
+            g<span class="no_mobile">etwebb</span>
 
-        <span #free_file_sharing>
+        <span #free_file_sharing .no_tablet>
             free file sharing
 
         <ul #links>
             $case currentPage
                 $of NewUpload
                     <li .active>
-                        <a href=@{UploadR}>New upload
+                        <a href=@{UploadR}>
+                            <span .no_mobile>New upload
+                            <span .only_mobile>Upload
                     <li>
-                        <a href=@{UploadR}>Browse
+                        <a href=@{BrowserR}>Browser
                     <li>
-                        <a href=@{HistoryR}>Upload history
+                        <a href=@{HistoryR}>
+                            <span .no_mobile>Upload history
+                            <span .only_mobile>History
+                            <span .count #count_history>
+                                #{PrettyNumber countHistory}
+                $of Browser
+                    <li>
+                        <a href=@{UploadR}>
+                            <span .no_mobile>New upload
+                            <span .only_mobile>Upload
+                    <li .active>
+                        <a href=@{BrowserR}>Browser
+                    <li>
+                        <a href=@{HistoryR}>
+                            <span .no_mobile>Upload history
+                            <span .only_mobile>History
                             <span .count #count_history>
                                 #{PrettyNumber countHistory}
                 $of History
                     <li>
-                        <a href=@{UploadR}>New upload
+                        <a href=@{UploadR}>
+                            <span .no_mobile>New upload
+                            <span .only_mobile>Upload
                     <li>
-                        <a href=@{UploadR}>Browse
+                        <a href=@{BrowserR}>Browser
                     <li .active>
-                        <a href=@{HistoryR}>Upload history
+                        <a href=@{HistoryR}>
+                            <span .no_mobile>Upload history
+                            <span .only_mobile>History
                             <span .count #count_history>
                                 #{PrettyNumber countHistory}
                 $of _
                     <li>
-                        <a href=@{UploadR}>New upload
+                        <a href=@{UploadR}>
+                            <span .no_mobile>New upload
+                            <span .only_mobile>Upload
                     <li>
-                        <a href=@{UploadR}>Browse
+                        <a href=@{BrowserR}>Browser
                     <li>
-                        <a href=@{HistoryR}>Upload history
+                        <a href=@{HistoryR}>
+                            <span .no_mobile>Upload history
+                            <span .only_mobile>History
                             <span .count #count_history>
                                 #{PrettyNumber countHistory}
 

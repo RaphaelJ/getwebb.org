@@ -90,5 +90,5 @@ withUploadOwner hmac onSuccess transac = do
                                             else return False
 
             if success then onSuccess
-                        else sendPermissionDenied
+                       else sendPermissionDenied
         Nothing -> sendPermissionDenied

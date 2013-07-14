@@ -6,6 +6,7 @@ ul.comments {
 
     li.comment {
         padding: 0;
+        margin-top: 5px;
         position: relative;
 
         .file_icon {

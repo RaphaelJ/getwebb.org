@@ -28,9 +28,13 @@ function commentVote(commentHmac, commentUri, voteUri)
             );
         });
     }).fail(function (xhr, status, error) {
-        if (xhr.status == 403)
-            alert("You don't have the permission to vote for a comment.");
-        else if (xhr.status == 404)
+        if (xhr.status == 403) {
+            if (confirm(
+                "You need to be authenticated to vote for a comment.\n" +
+                "Authenticate now ?"
+            ))
+                location.href = "@{AccountR SignInR}";
+        } else if (xhr.status == 404)
             alert("The comment doesn't exist.");
         else {
             alert("Failed to vote for the comment.");
@@ -87,19 +91,4 @@ function getComment(commentUri, commentCallback)
             showErrorResponse(xhr);
         }
     });
-}
-
-function decrementCommentCount()
-{
-    // Decrements the number of comments of the upload.
-    $("#comments_count").text(prettyNumber(--commentsCount));
-
-    if (commentsCount == 0) {
-        var parent = $("#comments");
-        parent.find("ul").remove();
-        parent.append(
-            $("<p>").addClass("notice")
-                    .text("Nobody has commented this file yet.")
-        );
-    }
 }

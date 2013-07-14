@@ -5,7 +5,7 @@ header {
     nav {
         margin: auto;
         padding: 0;
-        width: 1024px;
+        width: 1000px;
         height: 37px;
 
         font-family: "Chau Philomene One", sans-serif;
@@ -67,26 +67,15 @@ header {
 @media (max-width: 1000px) {
     header nav {
         width: auto;
-
-
-        #free_file_sharing {
-            display: none;
-        }
     }
 }
 
 @media (max-width: 500px) {
-    header nav {
-        .etwebb {
-            display: none;
-        }
+    header nav ul#links {
+        margin: 0 5px;
 
-        ul#links {
-            margin: 0 5px;
-
-            li a {
-                margin: 0;
-            }
+        li a {
+            margin: 0;
         }
     }
 }

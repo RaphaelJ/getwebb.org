@@ -5,6 +5,7 @@
         float: left;
         width: 670px;
         padding: 15px;
+        position: relative;
 
         .icon {
             float: left;
@@ -14,13 +15,13 @@
 
         h1 {
             margin-left: 115px;
-            position: relative;
+            word-wrap: break-word;
+        }
 
-            img.qrcode {
-                position: absolute;
-                top: 0;
-                right: 0;
-            }
+        img.qrcode {
+            position: absolute;
+            top: 0;
+            right: 0;
         }
 
         .audio_player {
@@ -34,7 +35,7 @@
             }
         }
 
-        .information {
+        .details {
             table.info {
                 margin-left: 10px;
             }

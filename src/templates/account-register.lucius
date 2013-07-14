@@ -33,9 +33,3 @@
         width: 100%;
     }
 }
-
-@media (max-width: 400px) {
-    #page ul#features {
-        display: none;
-    }
-}

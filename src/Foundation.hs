@@ -26,7 +26,7 @@ import Settings.StaticFiles as Import
 import System.Log.FastLogger (Logger)
 import Text.Blaze.Renderer.Text (renderMarkup)
 import Text.Jasmine (minifym)
-import Text.Hamlet (shamlet, hamletFile)
+import Text.Hamlet (hamletFile)
 import qualified Web.ClientSession as S
 
 import Account
@@ -158,7 +158,7 @@ instance Yesod App where
             $(widgetFile "default-body")
             $(widgetFile "default-footer")
             addScriptRemote "http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"
-        hamletToRepHtml $(hamletFile "templates/default-layout.hamlet")
+        giveUrlRenderer $(hamletFile "templates/default-layout.hamlet")
       where
         getCurrentPage (Just UploadR)  = NewUpload
         getCurrentPage (Just BrowserR) = Browser

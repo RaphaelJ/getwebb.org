@@ -23,6 +23,8 @@ ul.comments {
             margin-left: 80px;
             padding: 7px;
             background-color: rgba(0, 0, 0, 0.05);
+
+            word-wrap: break-word;
         }
 
         .message:after {

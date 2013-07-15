@@ -113,6 +113,12 @@
                         ^{fromJust archive}
             $of _
 
-    ^{right_pane}
+
+    ^{rightPaneWidget}
+
+    <h3 #comments_title>
+        Comments
+        <span #comments_count .count>#{PrettyNumber (uploadCommentsCount upload)}
+    ^{commentsWidget}
 
     <div .clear_float>

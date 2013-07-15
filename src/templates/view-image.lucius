@@ -31,7 +31,7 @@ body {
             border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 
             color: white;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 1);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 1);
 
             transition-property: all;
             transition-duration: 0.2s;
@@ -46,17 +46,16 @@ body {
             }
 
             #tags {
+                position: relative;
                 height: 21px;
                 overflow: hidden;
-                max-width: 400px;
 
                 h3 {
-                    margin: 3px;
+                    margin: 0;
+                    padding-left: 18px;
+
                     font-size: 15px;
-                    padding-left: 20px;
-                    background-image: url('@{StaticR img_reduced_png}');
-                    background-repeat: no-repeat;
-                    background-position: center left;
+                    line-height: 22px;
                 }
 
                 table {
@@ -78,14 +77,28 @@ body {
                 }
             }
 
+            #tags:after {
+                position: absolute;
+                top: 5px;
+                left: 3px;
+                content: "";
+                z-index: 100;
+
+                border: 6px solid transparent;
+                border-left-color: white;
+            }
+
             #tags:hover {
                 height: auto;
                 max-height: 250px;
                 overflow: auto;
+            }
 
-                h3 {
-                    background-image: url('@{StaticR img_expanded_png}');
-                }
+            #tags:hover:after {
+                top: 8px;
+                left: 0;
+                border-left-color: transparent;
+                border-top-color: white;
             }
         }
 
@@ -129,139 +142,16 @@ body {
             display: none;
             position: absolute;
             z-index: 10;
-            padding: 0;
 
             background-color: #F0F0F0;
 
-            #comments_new {
-                height: 80px;
-                padding: 5px;
-
-                background-color: rgba(0, 0, 0, 0.05);
-
-                font-size: 0.85em;
-
-                .not_connected {
-                    height: 60px;
-                    line-height: 60px;
-                    text-align: center;
-                }
-
-                form {
-                    position: relative;
-
-                    table {
-                        width: 100%;
-                        height: 70px;
-
-                        td {
-                            padding: 5px;
-                        }
-
-                        td.user_avatar {
-                            width: 60px;
-
-                            img {
-                                display: block;
-                                width: 60px;
-                                height: 60px;
-                            }
-                        }
-
-                        td.textarea {
-                            textarea {
-                                width: 100%;
-                                height: 70px;
-                                resize: none;
-                            }
-                        }
-
-                        td.submit {
-                            vertical-align: top;
-                            width: 115px;
-
-                            input[type="submit"] {
-                                margin: 0;
-                                width: 100%;
-                            }
-                        }
-                    }
-
-                    label {
-                        display: none;
-                    }
-
-                    #comment_chars_left {
-                        position: absolute;
-                        bottom: 10px;
-                        right: 140px;
-
-                        font-size: 1.3em;
-                        font-weight: 700;
-                        color: #80AE2B;
-                    }
-
-                    #comment_chars_left.negative {
-                        color: #AE3737;
-                    }
-
-
-                }
-            }
-
-            #comments_new:after {
-                content: "";
-                display: block;
-                width: 0;
-                height: 0;
-                position: absolute;
-                top: 90px;
-                left: 10px;
-
-                border: 10px solid transparent;
-                border-top-color: rgba(0, 0, 0, 0.05);
-            }
-
             #comments_messages {
                 position: absolute;
-                top: 100px;
+                top: 90px;
                 left: 0;
                 bottom: 0;
                 right: 0;
                 overflow-y: auto;
-
-                .notice {
-                    margin: 10px;
-                }
-
-                ul {
-                    margin: 0;
-                    padding: 0;
-
-                    list-style-type: none;
-
-                    li {
-                        padding: 10px;
-                        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-
-                        .author_avatar {
-                            float: left;
-
-                            img {
-                                width: 40px;
-                                height: 40px;
-                            }
-                        }
-
-                        .message {
-                            margin-left: 55px;
-                        }
-                    }
-
-                    li.owner {
-                        background-color: rgba(60, 150, 180, 0.1);
-                    }
-                }
             }
         }
 
@@ -350,6 +240,10 @@ footer {
             border-right: 1px solid rgba(255, 255, 255, 0.15);
 
             box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
+
+            #tags {
+                max-width: 400px;
+            }
         }
 
         #left_pane {

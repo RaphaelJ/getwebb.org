@@ -22,7 +22,6 @@ import Text.Julius (rawJS)
 import Account
 import Handler.Comment (
       maxCommentLength, commentForm, retrieveComments, removeComment
-    , commentActionsWidget
     )
 import Util.API (sendNoContent, withFormSuccess, withUploadOwner)
 import Util.Date (getDiffTime)
@@ -103,11 +102,13 @@ getViewR hmacs' = do
 
             defaultLayout $ do
                 setTitle [shamlet|#{wrappedTitle} | getwebb|]
-                let right_pane = $(widgetFile "view-right-pane")
-                    page = case fileType file of
+                let rightPaneWidget = $(widgetFile "view-right-pane")
+                    commentsWidget  = $(widgetFile "view-comments")
+                    pageWidget = case fileType file of
                         Image -> $(widgetFile "view-image")
                         _     -> $(widgetFile "view-file")
 
+                $(widgetFile "modules/comment-actions")
                 $(widgetFile "modules/upload-remove")
                 $(widgetFile "view")
         _  -> notFound

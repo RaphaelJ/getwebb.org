@@ -16,7 +16,6 @@ import qualified Data.Text as T
 import System.FilePath (splitDirectories, hasTrailingPathSeparator)
 
 import qualified Codec.Archive.Zip as Z
-import Text.Hamlet (shamlet)
 
 import qualified JobsDaemon.Compression as C
 import Util.Hmac (Hmac, newHmac)

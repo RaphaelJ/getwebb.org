@@ -45,10 +45,10 @@ jobExifTags app fileId = do
     when (not $ null tags) $ runDBIO app $ do
         mFile <- get fileId
         case mFile of
-            Just _  -> error "File doesn't exists anymore"
-            Nothing ->
+            Just _  ->
                 forM_ tags $ \(title, value) ->
                     insertUnique $ ExifTag fileId title value
+            Nothing -> error "File doesn't exists anymore"
 
 -- | Adds a file to the background EXIF tags extracting queue.
 putFile :: App -> FileId -> [JobId] -> IO JobId

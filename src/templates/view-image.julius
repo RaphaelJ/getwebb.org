@@ -1,20 +1,20 @@
-// Displays/Hides a pane of the page. Changes the button status.
-function showPane(button, target)
-{
-    var pane = $(target);
+// Displays/Hides a pane of the page. Changes the clicked button status.
+$("#footer_buttons .footer_button").click(function (e) {
+    var button = $(this);
+    var pane = $(button.attr("toogle_element"));
 
     if (button.hasClass("enabled")) {
         button.toggleClass("enabled", false);
         pane.toggleClass("enabled", false);
     } else {
+        // Closes others panels.
+        $("#footer_buttons .footer_button.enabled").each(function (i, elem) {
+            elem = $(elem);
+            elem.toggleClass("enabled", false);
+            $(elem.attr("toogle_element")).toggleClass("enabled", false);
+        });
+
         button.toggleClass("enabled", true);
         pane.toggleClass("enabled", true);
     }
-}
-
-var comments_button = $("#comments_button")
-comments_button.click(function () { showPane(comments_button, "#comments"); });
-actionKeys.bind(actionKeys.keys.c, function () { comments_button.click(); });
-
-var details_button = $("#details_button");
-details_button.click(function () { showPane(details_button, "#right_pane"); });
+});

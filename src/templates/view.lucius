@@ -8,14 +8,20 @@
     font-family: "Chau Philomene One", sans-serif;
     color: #FFFFFF;
 
+    font-size: 0;
     text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.2);
 
     #links {
-        margin: auto;
-        width: 1000px;
-
         #previous, #download_all, #next {
             display: block;
+            float: left;
+
+               -moz-box-sizing: border-box;
+            -webkit-box-sizing: border-box;
+                    box-sizing: border-box;
+
+            font-size: 15px;
+            line-height: 30px;
         }
 
         #previous, #next {
@@ -23,30 +29,18 @@
         }
 
         #previous {
-            float: left;
-
-            margin-right: -1px;
             border-right: 1px solid rgba(0, 0, 0, 0.1);
-
-            .label {
-                padding-left: 15px;
-            }
+            padding-left: 15px;
         }
 
         #next {
-            float: left;
-            text-align: right;
-
-            margin-left: -1px;
+            padding-right: 15px;
             border-left: 1px solid rgba(0, 0, 0, 0.1);
 
-            .label {
-                padding-right: 15px;
-            }
+            text-align: right;
         }
 
         #download_all {
-            float: left;
             width: 34%;
 
             text-align: center;
@@ -55,7 +49,6 @@
         a {
             color: white;
             text-decoration: none;
-            line-height: 30px;
         }
 
         a:hover {
@@ -67,9 +60,6 @@
             background: #609E22;
         }
     }
-
-    transition-property: all;
-    transition-duration: 0.2s;
 }
 
 img.qrcode {
@@ -88,6 +78,13 @@ img.qrcode:hover {
     width: 150px;
     height: 150px;
 
+}
+
+@media (min-width: 1000px) {
+    #browser #links {
+        margin: 0 auto;
+        width: 1000px;
+    }
 }
 
 @media (max-width: 999px) {

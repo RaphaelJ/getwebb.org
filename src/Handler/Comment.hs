@@ -4,7 +4,7 @@ module Handler.Comment (
     , getCommentsR, postCommentsR
     , getCommentR, deleteCommentR, putCommentUpR, putCommentDownR
     , retrieveComments, retrieveComment, retrieveCommentVote, removeComment
-    , commentActionsWidget,commentForm, score
+    , commentForm, score
     ) where
 
 import Import
@@ -22,7 +22,6 @@ import Util.API (
     )
 import Util.Hmac (Hmac, newHmac)
 import Util.Json ()
-import Util.Pretty (PrettyNumber (..))
 
 -- | Maximum number of comments which will be fetched in one request.
 maxNComments :: Int
@@ -197,13 +196,6 @@ removeComment (Entity commentId comment) = do
     update (commentUpload comment) [UploadCommentsCount -=. 1]
     deleteWhere [CommentVoteComment ==. commentId]
     delete commentId
-
--- | Widget which displays the availaible actions of a comment to an user.
--- The boolean determines if the user is the owner of the comment and the
--- text the Javascript action to executes after a comment has been removed.
-commentActionsWidget :: Comment -> Maybe VoteType -> Bool -> Text -> Widget
-commentActionsWidget comment mVote isUser onRemove =
-    $(widgetFile "modules/comment-actions")
 
 -- | Creates a form to post a new comment.
 commentForm :: Form Textarea

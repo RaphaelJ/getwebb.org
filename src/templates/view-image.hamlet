@@ -34,85 +34,16 @@
             <img .qrcode alt="QR Code to this page"
                 src="http://chart.googleapis.com/chart?cht=qr&chs=150x150&chl=@{ViewR hmacTxt}"/>
 
-        ^{right_pane}
+        ^{rightPaneWidget}
 
-        <div #comments>
-            <div #comments_new>
-                $case mUser
-                  $of Just (_, avatar)
-                    <form method=post enctype=#{commentEnctype}
-                          action=@{CommentsR (uploadHmac upload)}
-                          onsubmit="commentNew(this); return false;">
-                        <table>
-                            <tr>
-                                <td .user_avatar .no_mobile>
-                                    <img .avatar src=@{avatarRoute app avatar}
-                                         alt="Your avatar" />
-                                <td .textarea>
-                                    ^{commentWidget}
-                                <td .submit>
-                                    <input #comment_submit .big_button type=submit
-                                           value=Publish />
-
-                        <span #comment_chars_left
-                              title="Number of remaining characters.">
-                              #{maxCommentLength}
-                  $of Nothing
-                    <p .not_connected>
-                        <a href=@{AccountR SignInR}>Sign in
-                        or
-                        <a href=@{AccountR RegisterR}>register
-                        to write a comment.
-
-            <div #comments_messages>
-                $case comments
-                  $of []
-                    <p .notice>
-                        Nobody has commented this file yet.
-                  $of _
-                    <ul>
-                        $forall (comment, author, isOwner, isUser, avatar, mVote) <- comments
-                         $with commentHmac' <- commentHmac comment
-                            <li #comment_#{commentHmac'}
-                                class="comment #{if' isOwner "owner" T.empty}">
-                             $with authorName <- userName author
-                                <a .author_avatar href=@{UserGalleryR authorName}>
-                                    <img .avatar alt=Avatar src=@{avatarRoute app avatar}>
-
-                                <div .message>
-                                    <a .author href=@{UserGalleryR authorName}>
-                                        #{wrappedText authorName 40}
-                                    <span .date>
-                                     $with diffTime <- diffUTCTime currentTime (commentCreated comment)
-                                        #{PrettyDiffTime diffTime} ago
-
-                                    ^{commentActionsWidget comment mVote isUser "commentsCountDecrement"}
-
-                                    <p .content>
-                                        #{commentMessage comment}
+        ^{commentsWidget}
 
 <div #footer_buttons>
-    <span .footer_button #comments_button>
+    <span .footer_button #comments_button toogle_element="#comments">
         <img src="@{StaticR img_comments_png}" alt="Comments icon">
         <span .no_mobile>Comments
         <span #comments_count .count>#{PrettyNumber (uploadCommentsCount upload)}
 
-    <span .footer_button #details_button>
+    <span .footer_button #details_button toogle_element="#right_pane">
         <img src="@{StaticR img_details_png}" alt="Details icon">
         <span .no_mobile>Details
-
-<script type="text/javascript">
-    // Scripts variables.
-
-    var commentsCount = #{uploadCommentsCount upload};
-
-    // True if the current user is the creator of the upload.
-    var userIsOwner =
-    $if userIsOwner
-        true;
-    $else
-        false;
-
-    $maybe (Entity _ user, avatar) <- mUser
-        var userProfile = "@{UserGalleryR (userName user)}";
-        var userAvatar  = "@{avatarRoute app avatar}";

@@ -10,10 +10,9 @@ $maybe (previous, next) <- links
             <a #next href=@{ViewR  next}>
                 <span .label><span class="no_mobile">Next file</span> →
 
-        <div .clear_float>
+            <div .clear_float>
 
     <script type="text/javascript">
-
         window.addEventListener("load", function ()
         {
             function goToUrl(url)
@@ -24,13 +23,26 @@ $maybe (previous, next) <- links
                 }
             }
 
-            actionKeys.bind(actionKeys.keys.left, goToUrl(@{ViewR  previous}));
-            actionKeys.bind(actionKeys.keys.right, goToUrl(@{ViewR  next}));
+            actionKeys.bind(actionKeys.keys.left, goToUrl("@{ViewR  previous}"));
+            actionKeys.bind(actionKeys.keys.right, goToUrl("@{ViewR  next}"));
         });
 
-^{page}
+^{pageWidget}
 
 <script type="text/javascript">
     // Scripts variables.
 
     var uploadUri = "@{ViewR (toPathPiece hmac)}";
+
+    var commentsCount = #{uploadCommentsCount upload};
+
+    // True if the current user is the creator of the upload.
+    var userIsOwner =
+    $if userIsOwner
+        true;
+    $else
+        false;
+
+    $maybe (Entity _ user, avatar) <- mUser
+        var userProfile = "@{UserGalleryR (userName user)}";
+        var userAvatar  = "@{avatarRoute app avatar}";

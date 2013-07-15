@@ -295,11 +295,12 @@ a.big_button, a.big_button:hover {
 }
 
 [hint]:after, [hint]:before {
-    visibility: hidden;
+    display: none;
     position: absolute;
     opacity: 0;
     pointer-events: none;
     transition: 0.2s opacity;
+    z-index: 100;
 }
 
 [hint]:after {
@@ -312,9 +313,8 @@ a.big_button, a.big_button:hover {
 }
 
 [hint]:hover:after, [hint]:hover:before {
-    visibility: visible;
+    display: block;
     opacity: 1;
-    z-index: 100;
     top: 100%;
     left: 15px;
 }
@@ -329,6 +329,7 @@ a.big_button, a.big_button:hover {
 
     color: white;
     font-size: 12px;
+    font-weight: normal;
     line-height: 24px;
     text-shadow: 0 -1px 0 black;
     white-space: nowrap;

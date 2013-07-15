@@ -9,7 +9,7 @@ import Data.Time.Clock (getCurrentTime, diffUTCTime)
 import Text.Hamlet (shamlet)
 
 import Account
-import Handler.Comment (retrieveCommentVote, commentActionsWidget)
+import Handler.Comment (retrieveCommentVote)
 import Util.Hmac (Hmac (..))
 import Util.Date (getDiffTime)
 import Util.Extras (getUploadInfo, getUploadsInfo)
@@ -95,6 +95,7 @@ getUserCommentsR name = do
         currentTime <- liftIO getCurrentTime
 
         setTitle [shamlet|Comments of #{wrappedUserName profile} | getwebb|]
+        $(widgetFile "modules/comment-actions")
         $(widgetFile "user-comments")
 
 -- -----------------------------------------------------------------------------

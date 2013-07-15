@@ -1,5 +1,9 @@
 #right_pane {
-    width: 299px;
+       -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+
+    width: 300px;
 
     h3 {
         margin: 10px 0 5px 0;
@@ -124,9 +128,7 @@
     .ad {
         margin: 20px auto;
         overflow: hidden;
-        background-color: red;
         width: 250px;
-        height: 250px;
     }
 }
 

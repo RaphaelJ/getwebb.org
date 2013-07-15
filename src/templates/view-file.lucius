@@ -2,8 +2,10 @@
     padding: 0;
 
     #left_pane {
-        float: left;
-        width: 670px;
+           -moz-box-sizing: border-box;
+        -webkit-box-sizing: border-box;
+                box-sizing: border-box;
+
         padding: 15px;
         position: relative;
 
@@ -25,7 +27,7 @@
         }
 
         .audio_player {
-            margin: 10px 0 10px 115px;
+            margin: 10px 0;
 
             .transcoding {
                 padding-left: 35px;
@@ -105,8 +107,118 @@
     }
 
     #right_pane {
-        float: right;
         background-color: rgba(0, 0, 0, 0.05);
-        border-left: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    #comments_title {
+        padding: 0 15px;
+
+        .count {
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+    }
+
+    #comments_new {
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+    }
+}
+
+/* On large screen, information and comments are on the left side of the
+ * screen while the download link is on the right. */
+@media (min-width: 1000px) {
+    #page {
+        #left_pane, #comments_title, #comments {
+            float: left;
+        }
+
+        #left_pane {
+            width: 700px;
+            min-height: 400px;
+
+            .audio_player {
+                margin-left: 115px;
+            }
+
+            .details {
+                .archive_content {
+                    max-width: 100%;
+                }
+            }
+        }
+
+        #right_pane {
+            float: right;
+            min-height: 700px;
+
+            border-left: 1px solid rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        #comments {
+            width: 700px;
+        }
+    }
+}
+
+/* On small screens, information, download link and comments follow each other.
+ * Information are not displayed until the user hover the section. */
+@media (max-width: 999px) {
+    #page {
+        #left_pane, #right_pane, #comments {
+            width: 100%;
+        }
+
+        #left_pane {
+            .audio_player {
+                clear: both;
+                padding: 5px 0;
+                text-align: center;
+            }
+
+            .details {
+                position: relative;
+                margin: 5px 0;
+
+                h3 {
+                    margin: 0;
+                    padding-left: 18px;
+                    line-height: 25px;
+                }
+
+                height: 25px;
+                overflow: hidden;
+            }
+
+            .details:after {
+                position: absolute;
+                top: 7px;
+                left: 3px;
+                content: "";
+                z-index: 100;
+
+                border: 6px solid transparent;
+                border-left-color: #2D2D2D;
+            }
+
+            .details:hover {
+                height: auto;
+            }
+
+            .details:hover:after {
+                top: 10px;
+                left: 0;
+                border-left-color: transparent;
+                border-top-color: #2D2D2D;
+            }
+        }
+
+        #right_pane {
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+
+            .ad {
+                display: none;
+            }
+        }
     }
 }

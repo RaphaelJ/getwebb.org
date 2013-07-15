@@ -132,6 +132,8 @@
             <span .key>for a total bandwith of
             <span .value>#{PrettyFileSize bw}.
 
+            <div .clear_float>
+
     <div .ad>
         <script type="text/javascript">
             <!--

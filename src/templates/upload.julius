@@ -89,7 +89,7 @@ $("#upload_form").submit(function ()
             info.div.append(file_status);
 
             var file_title = $("<h3>");
-            file_title.text(file.name);
+            file_title.text(wrappedText(file.name, 55));
             file_status.append(file_title);
 
             var progress = $("<div>", { class: "progress" });

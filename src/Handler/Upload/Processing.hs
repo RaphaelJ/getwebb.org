@@ -31,6 +31,7 @@ import qualified JobsDaemon.Compression as C
 import Util.API (ToAPIError (..))
 import Util.Hmac (newHmac)
 import Util.Path (ObjectType (..), getFileSize, uploadDir, newTmpFile, getPath)
+import Util.Proxy (getRemoteHostText)
 
 import System.TimeIt (timeIt)
 
@@ -50,7 +51,7 @@ processFile :: AdminKeyId -> FileInfo -> Bool
 processFile adminKeyId f public = do
     app <- getYesod
     extras <- getExtra
-    clientHost <- remoteTextHost
+    clientHost <- getRemoteHostText $ extraReverseProxy extras
     time <- liftIO getCurrentTime
     let yesterday = (-3600 * 24) `addUTCTime` time
 
@@ -170,13 +171,6 @@ processFile adminKeyId f public = do
     processUnknown app fileId = do
         _ <- liftIO $ C.putFile app fileId []
         return True
-
-    remoteTextHost = do
-        extras <- getExtra
-        if extraReverseProxy extras
-            -- Returns the client's IP from the proxy's headers.
-            then (T.pack . C.unpack . fromMaybe "") <$> lookupHeader "x-forwarded-for"
-            else (T.pack . showSockAddr . remoteHost) <$> waiRequest
 
 -- | Computes the score of an upload given its number of views.
 -- The score is computed so an upload must gain an order of magnitude (10 times)

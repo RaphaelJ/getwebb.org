@@ -73,6 +73,7 @@ library
                      Util.Paging
                      Util.Path
                      Util.Pretty
+                     Util.Proxy
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT

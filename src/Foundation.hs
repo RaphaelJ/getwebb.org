@@ -223,19 +223,20 @@ instance YesodAccount App where
     type AccountUser     App = User
     type AccountSettings App = UserAccountSettings
 
+    useProxy = extraReverseProxy . appExtra . settings
+
     signInDest  _ = HistoryR
     signOutDest _ = HistoryR
 
-    initUser email name pass salt avatar = do
+    initUser email name pass salt hostname avatar = do
         time <- liftIO $ getCurrentTime
         adminKey <- newAdminKey
         return User {
               userEmail = email, userName = name, userPassword = pass
-            , userSalt = salt, userCreated = time, userAvatar = avatar
-            , userIsAdmin = False, userAdminKey = adminKey
-            , userCommentsCount = 0, userBio = Nothing
-            , userLocation = Nothing, userWebsite = Nothing
-            , userDefaultPublic = True
+            , userSalt = salt, userHostname = hostname, userCreated = time
+            , userAvatar = avatar, userIsAdmin = False, userAdminKey = adminKey
+            , userCommentsCount = 0, userBio = Nothing, userLocation = Nothing
+            , userWebsite = Nothing, userDefaultPublic = True
             }
 
     emailLookup    _ = UniqueUserEmail
@@ -245,6 +246,7 @@ instance YesodAccount App where
     accountUsername _ = userName
     accountPassword _ = userPassword
     accountSalt     _ = userSalt
+    accountHostname _ = userHostname
     accountAvatarId _ = userAvatar
 
     accountAvatarIdField _ = UserAvatar
@@ -349,10 +351,3 @@ isAdmin upload key =
 -- | Get the 'Extra' value, used to hold data from the settings.yml file.
 getExtra :: Handler Extra
 getExtra = fmap (appExtra . settings) getYesod
-
--- Note: previous versions of the scaffolding included a deliver function to
--- send emails. Unfortunately, there are too many different options for us to
--- give a reasonable default. Instead, the information is available on the
--- wiki:
---
--- https://github.com/yesodweb/yesod/wiki/Sending-email

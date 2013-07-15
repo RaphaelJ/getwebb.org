@@ -67,10 +67,11 @@ class (Yesod parent, YesodPersist parent, RenderMessage parent FormMessage
     signInDest, signOutDest :: parent -> Route parent
 
     -- | Initialise a new user value (musn't add the user to the database).
-    initUser :: Text      -- ^ Email
-             -> Text      -- ^ Username
-             -> Text      -- ^ Hashed password
-             -> Text      -- ^ Salt used to hash the password
+    initUser :: Text      -- ^ Email.
+             -> Text      -- ^ Username.
+             -> Text      -- ^ Hashed password.
+             -> Text      -- ^ Salt used to hash the password.
+             -> Text      -- ^ IP address of the register host.
              -> AvatarNum
              -> YesodDB parent (AccountUser parent)
 

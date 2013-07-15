@@ -22,6 +22,7 @@ User
     name                        Text
     password                    Text -- SHA1 hash of the password.
     salt                        Text -- Salt used to hash the password.
+    hostname                    Text -- IP address of the register host.
     created                     UTCTime
     avatar                      Int64
     isAdmin                     Bool

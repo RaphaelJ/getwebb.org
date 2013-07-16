@@ -66,6 +66,7 @@ library
                      Util.Date
                      Util.Extras
                      Util.FFmpeg
+                     Util.Form
                      Util.HashDir
                      Util.Hmac
                      Util.Hmac.Type

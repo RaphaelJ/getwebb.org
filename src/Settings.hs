@@ -64,23 +64,27 @@ widgetFile = (if development then widgetFileReload
               widgetFileSettings
 
 data Extra = Extra {
-      extraReverseProxy :: Bool, extraAuthor :: Text, extraAuthorMail :: Text
-    , extraUploadDir :: FilePath, extraMaxFileSize :: Word64
-    , extraMaxRequestSize :: Word64, extraMaxDailyUploads :: Int
-    , extraMaxDailySize :: Word64, extraTimeout :: Int, extraJobsThreads :: Int
-    , extraFacebook :: Text
+      extraReverseProxy    :: Bool,       extraAccountRoot     :: Maybe Text
+    , extraStaticRoot      :: Maybe Text, extraAuthor          :: Text
+    , extraAuthorMail      :: Text,       extraUploadDir       :: FilePath
+    , extraMaxFileSize     :: Word64,     extraMaxRequestSize  :: Word64
+    , extraMaxDailyUploads :: Int,        extraMaxDailySize    :: Word64
+    , extraTimeout         :: Int,        extraJobsThreads     :: Int
+    , extraFacebook        :: Text
     } deriving Show
 
 parseExtra :: DefaultEnv -> Object -> Parser Extra
 parseExtra _ o = Extra
-    <$> o .: "reverseProxy"
-    <*> o .: "author"
-    <*> o .: "authorMail"
-    <*> o .: "uploadDir"
-    <*> o .: "maxFileSize"
-    <*> o .: "maxRequestSize"
-    <*> o .: "maxDailyUploads"
-    <*> o .: "maxDailySize"
-    <*> o .: "timeout"
-    <*> o .: "jobsThreads"
-    <*> o .: "facebook"
+    <$> o .:  "reverseProxy"
+    <*> o .:? "accountRoot"
+    <*> o .:? "staticRoot"
+    <*> o .:  "author"
+    <*> o .:  "authorMail"
+    <*> o .:  "uploadDir"
+    <*> o .:  "maxFileSize"
+    <*> o .:  "maxRequestSize"
+    <*> o .:  "maxDailyUploads"
+    <*> o .:  "maxDailySize"
+    <*> o .:  "timeout"
+    <*> o .:  "jobsThreads"
+    <*> o .:  "facebook"

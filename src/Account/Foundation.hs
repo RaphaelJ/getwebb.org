@@ -16,11 +16,7 @@ import qualified Vision.Image as I
 -- avatar (identicon).
 newtype Sprite = Sprite (A.Array Int I.GreyImage)
 
-data Account = Account {
-      -- | The public and the private reCaptcha keys.
-      acRecaptchaKeys :: (Text, Text)
-    , acAvatarSprite :: Sprite
-    }
+data Account = Account { acAvatarSprite :: Sprite }
 
 -- | The key used in the sessions to store the user's ID.
 sessionKey :: Text

@@ -25,6 +25,5 @@ instance YesodAccount master =>
 -- | Initializes a new 'Account' foundation type.
 makeAccount :: IO Account
 makeAccount = do
-    reCaptachaKeys <- read `fmap` readFile "config/recaptcha"
     sprite <- loadSprite
-    return $! Account reCaptachaKeys sprite
+    return $! Account sprite

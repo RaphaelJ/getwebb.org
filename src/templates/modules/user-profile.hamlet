@@ -29,13 +29,13 @@ $maybe bio <- userBio profile
         <tr>
             <th>Website
             <td>
-                <a href=#{website} target=_blank>
+                <a href=#{website} target=_blank title=#{website}>
                     #{wrappedText website 40}
 
     $maybe location <- userLocation profile
         <tr>
             <th>Location
-            <td>
+            <td title=#{location}>
                 #{wrappedText location 40}
 
 <div .clear_float>

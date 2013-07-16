@@ -32,6 +32,7 @@ import Account
 import Handler.Download.ViewsCache.Type (ViewsCache)
 import JobsDaemon.Type (JobsQueue)
 import Model
+import Util.Form (checkLength)
 import Util.Hmac.Type (Hmac)
 import Util.Pretty (PrettyNumber (..), wrappedText)
 
@@ -169,11 +170,21 @@ instance Yesod App where
         getCurrentPage (Just HistoryR) = History
         getCurrentPage _               = Other
 
-    -- This is done to provide an optimization for serving static files from
-    -- a separate domain. Please see the staticRoot setting in Settings.hs
---     urlRenderOverride y (StaticR s) =
---         Just $ uncurry (joinPath y (Settings.staticRoot $ settings y)) $ renderRoute s
---     urlRenderOverride _ _ = Nothing
+
+--     urlRenderOverride app (StaticR s) =
+    urlRenderOverride app route =
+        case route of AccountR _ -> overrideRoot extraAccountRoot
+                      StaticR  _ -> overrideRoot extraStaticRoot
+                      _          -> Nothing
+      where
+        overrideRoot newRoot =
+            case newRoot extras of
+                Just root ->
+                    let (path, queries) = renderRoute route
+                    in Just $ joinPath app root path queries
+                Nothing   -> Nothing
+
+        extras = appExtra $ settings app
 
     authRoute _ = Just $ AccountR SignInR
 
@@ -185,7 +196,8 @@ instance Yesod App where
                                                 Settings.staticDir
                                                 (StaticR . flip StaticRoute [])
 
-    -- Place Javascript at bottom of the body tag so the rest of the page loads first
+    -- Place Javascript at bottom of the body tag so the rest of the page loads 
+    -- first
     jsLoader _ = BottomOfBody
 
     -- What messages should be logged. The following includes all messages when
@@ -262,15 +274,14 @@ instance YesodAccount App where
         $(widgetFile "modules/user-bar")
 
     accountSettingsForm user = UserAccountSettings
-        <$> aopt bioField bioSettings (Just (userBio user))
-        <*> aopt textField "Location" (Just (userLocation user))
-        <*> aopt urlField "Website" (Just (userWebsite user))
+        <$> aopt (checkLength 400 textareaField) bioSettings
+                 (Just (userBio user))
+        <*> aopt (checkLength 100 textField) "Location"
+                 (Just (userLocation user))
+        <*> aopt (checkLength 250 urlField) "Website" (Just (userWebsite user))
         <*> areq checkBoxField "Set uploads as public by default"
                  (Just (userDefaultPublic user))
       where
-        bioField = checkBool (\(Textarea bio) -> T.length bio <= 400)
-                             (bioTooLong :: Text) textareaField
-        bioTooLong = "Your biography can't be longer than 400 characters."
         bioSettings = FieldSettings {
               fsLabel = "Say something about yourself"
             , fsTooltip = Just "or let empty."

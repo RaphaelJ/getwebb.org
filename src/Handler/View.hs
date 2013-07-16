@@ -22,6 +22,7 @@ import Account
 import Handler.Comment (
       maxCommentLength, commentForm, retrieveComments, removeComment
     )
+import Handler.Upload.Processing (maxTitleLength)
 import Util.API (sendNoContent, withFormSuccess, withUploadOwner)
 import Util.Date (getDiffTime)
 import Util.Pretty (
@@ -33,6 +34,7 @@ import Util.Extras (
       Extras (..), getFileExtras, getUploadStats, getIcon, getImage
     , getMiniature, getAudioSources, getArchive, getUploadOwner
     )
+import Util.Form (checkLength)
 import Util.Hmac (Hmac (..), Hmacs (..))
 import Util.Path (uploadDir)
 
@@ -163,8 +165,9 @@ patchViewR hmacTxt = do
                 , (UploadPublic =.) <$> mPublic
                 ]
   where
-    form = renderDivs $ (,) <$> aopt textField titleSettings  Nothing
-                            <*> aopt boolField publicSettings Nothing
+    form = renderDivs $ (,)
+       <$> aopt (checkLength maxTitleLength textField) titleSettings Nothing
+       <*> aopt boolField publicSettings Nothing
 
     titleSettings = FieldSettings {
           fsLabel = "Upload title", fsTooltip = Nothing, fsId = Nothing

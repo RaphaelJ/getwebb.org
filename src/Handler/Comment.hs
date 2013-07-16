@@ -12,15 +12,14 @@ import Import
 import Control.Monad
 import Data.Maybe
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
 import Data.Time.Clock (NominalDiffTime, addUTCTime, getCurrentTime)
-import Text.Blaze.Renderer.Text (renderMarkup)
 
 import Account
 import Util.API (
       sendObjectCreated, sendNoContent, sendErrorResponse, sendPermissionDenied
     , tooManyRequests429, withFormSuccess
     )
+import Util.Form (checkLength)
 import Util.Hmac (Hmac, newHmac)
 import Util.Json ()
 import Util.Pretty (PrettyDiffTime (..))
@@ -210,20 +209,14 @@ removeComment (Entity commentId comment) = do
 -- | Creates a form to post a new comment.
 commentForm :: Form Textarea
 commentForm =
-    renderDivs $ areq (check sizeCheck textareaField) messageSettings Nothing
+    renderDivs $ areq (checkLength maxCommentLength textareaField)
+                      messageSettings Nothing
   where
     messageSettings = FieldSettings {
               fsLabel = "Message", fsTooltip = Nothing
             , fsId = Just "comment_message", fsName = Just "message"
             , fsAttrs = [("placeholder", "Say something about this file.")]
             }
-
-    sizeCheck area@(Textarea msg)
-        | T.length msg > maxCommentLength =
-            Left $ TL.toStrict $ renderMarkup [shamlet|
-                    "Your message can't exceed #{maxCommentLength} characters."
-                |]
-        | otherwise = Right area
 
 -- | Computes the Wilson confidence score of comment.
 -- See <http://www.evanmiller.org/how-not-to-sort-by-average-rating.html>.

@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Handles the whole processing of a recently uploaded file.
 module Handler.Upload.Processing (
-      UploadError (..), processFile, score, moveToTmp, hashFile, moveToUpload
+      UploadError (..)
+    , maxTitleLength, processFile, score, moveToTmp, hashFile, moveToUpload
     ) where
 
 import Import
@@ -30,13 +31,17 @@ import Util.Proxy (getRemoteHostText)
 
 import System.TimeIt (timeIt)
 
--- | Contains the diferents kinds of error that may occur during the processing
+-- | Contains the different kinds of error that may occur during the processing
 -- of an upload.
 data UploadError = DailyIPLimitReached | FileTooLarge
 
 instance ToAPIError UploadError where
     toAPIError DailyIPLimitReached = "Daily per IP limit reached."
     toAPIError FileTooLarge        = "The file exceeds the maximum file size."
+
+-- | Maximum length in characters of the name/title of an upload.
+maxTitleLength :: Int
+maxTitleLength = 250
 
 -- | Process a file and returns its new ID from the database.
 -- Returns either the uploaded file or an error message to be returned to the 
@@ -68,8 +73,7 @@ processFile adminKeyId f public = do
         liftIO $ putStrLn "Hash file:"
         hash <- liftIO $ timeIt $ hashFile tmpPath
         let ext = T.toLower $ T.pack $ takeExtension $ T.unpack $ fileName f
-
-        let path = getPath (uploadDir app hash) Original
+            path = getPath (uploadDir app hash) Original
 
         -- Checks if the file exists.
         -- eithFileId gets a Right value if its a new file which file needs
@@ -107,9 +111,10 @@ processFile adminKeyId f public = do
                     return (key, True)
 
             (key, hmac) <- lift $ newHmac HmacUpload
-            let upload = Upload {
+            let wrappedName = T.take maxTitleLength $ fileName f
+                upload = Upload {
                   uploadHmac = hmac,  uploadFile = fileId
-                , uploadName = fileName f, uploadTitle = fileName f
+                , uploadName = wrappedName, uploadTitle = wrappedName
                 , uploadPublic = public, uploadCreated = time
                 , uploadHostname = clientHost, uploadAdminKey = adminKeyId
                 , uploadScore = score time 0, uploadViews = 0

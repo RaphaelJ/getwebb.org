@@ -47,10 +47,11 @@ jobsDaemon app = do
 
         -- Unlocks dependent jobs.
         modifyMVar_ mvar $ \(JobsDepends graph) -> do
-            let Just deps       = jobId `M.lookup` graph
-                (graph', ready) = foldl' step (graph, []) deps
+            let Just deps        = jobId `M.lookup` graph
+                graph'           = jobId `M.delete` graph
+                (graph'', ready) = foldl' step (graph', []) deps
             forM_ ready (writeChan chan)
-            return $ JobsDepends graph'
+            return $ JobsDepends graph''
   where
     -- Adds a job to the dependency graph of its first not finished parent or
     -- to the ready list if there is no more unexecuted dependency.
@@ -59,7 +60,7 @@ jobsDaemon app = do
         in if null deps'
             then (graph, (jobId, action) : ready)
             else let (d:ds) = deps'
-                     entry = (jobId, action, ds)
+                     entry  = (jobId, action, ds)
                  in (M.adjust (entry :) d graph, ready)
 
 -- | Forks the jobs daemon @n@ times. Returns @n@ 'ThreadId's.

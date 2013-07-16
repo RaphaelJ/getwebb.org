@@ -1,8 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Handles the whole processing of a recently uploaded file.
 module Handler.Upload.Processing (
-      UploadError (..)
-    , maxTitleLength, processFile, score, moveToTmp, hashFile, moveToUpload
+      UploadError (..), processFile, score, moveToTmp, hashFile, moveToUpload
     ) where
 
 import Import
@@ -39,10 +38,6 @@ instance ToAPIError UploadError where
     toAPIError DailyIPLimitReached = "Daily per IP limit reached."
     toAPIError FileTooLarge        = "The file exceeds the maximum file size."
 
--- | Maximum length in characters of the name/title of an upload.
-maxTitleLength :: Int
-maxTitleLength = 250
-
 -- | Process a file and returns its new ID from the database.
 -- Returns either the uploaded file or an error message to be returned to the 
 -- user.
@@ -73,7 +68,7 @@ processFile adminKeyId f public = do
         liftIO $ putStrLn "Hash file:"
         hash <- liftIO $ timeIt $ hashFile tmpPath
         let ext = T.toLower $ T.pack $ takeExtension $ T.unpack $ fileName f
-            path = getPath (uploadDir app hash) OriginalOriginal
+            path = getPath (uploadDir app hash) Original
 
         -- Checks if the file exists.
         -- eithFileId gets a Right value if its a new file which file needs
@@ -112,8 +107,8 @@ processFile adminKeyId f public = do
 
             (key, hmac) <- lift $ newHmac HmacUpload
             let name = fileName f
-                wrappedName | T.length name == 0 = "Unknown"
-                            | otherwise          = T.take maxTitleLength name
+                wrappedName | T.null name = "Unknown"
+                            | otherwise   = T.take maxUploadTitleLength name
                 upload = Upload {
                   uploadHmac = hmac,  uploadFile = fileId
                 , uploadName = wrappedName, uploadTitle = wrappedName

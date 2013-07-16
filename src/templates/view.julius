@@ -17,6 +17,13 @@ $(".editable_title").click(function uploadUpdateTitle() {
             alert("Please enter a title of at least one character.");
             elem.focus();
             return;
+        } else if (newTitle.length > #{rawJS $ show maxUploadTitleLength}) {
+            alert(
+                "The title can't exceed #{rawJS $ show maxUploadTitleLength} " +
+                "characters."
+            );
+            elem.focus();
+            return;
         }
 
         elem.text(newTitle);

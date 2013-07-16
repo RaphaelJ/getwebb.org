@@ -274,11 +274,12 @@ instance YesodAccount App where
         $(widgetFile "modules/user-bar")
 
     accountSettingsForm user = UserAccountSettings
-        <$> aopt (checkLength 400 textareaField) bioSettings
+        <$> aopt (checkLength maxUserBioLength textareaField) bioSettings
                  (Just (userBio user))
-        <*> aopt (checkLength 100 textField) "Location"
+        <*> aopt (checkLength maxUserLocationLength textField) "Location"
                  (Just (userLocation user))
-        <*> aopt (checkLength 250 urlField) "Website" (Just (userWebsite user))
+        <*> aopt (checkLength maxUserWebsiteLength urlField) "Website"
+                 (Just (userWebsite user))
         <*> areq checkBoxField "Set uploads as public by default"
                  (Just (userDefaultPublic user))
       where

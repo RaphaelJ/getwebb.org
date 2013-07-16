@@ -12,7 +12,7 @@ import Import
 import Control.Monad
 import Data.Maybe
 import qualified Data.Text as T
-import Data.Time.Clock (NominalDiffTime, addUTCTime, getCurrentTime)
+import Data.Time.Clock (addUTCTime, getCurrentTime)
 
 import Account
 import Util.API (
@@ -32,14 +32,6 @@ maxNComments = 200
 -- | Default number of comments which will be fetched in one request.
 defaultNComments :: Int
 defaultNComments = 50
-
--- | Maximum length of a comment in characters.
-maxCommentLength :: Int
-maxCommentLength = 400
-
--- | Seconds between two comments from the same user/host.
-minCommentInterval :: NominalDiffTime
-minCommentInterval = 60
 
 -- Handler ---------------------------------------------------------------------
 

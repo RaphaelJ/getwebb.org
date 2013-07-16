@@ -8,7 +8,7 @@ import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
-import Data.Time.Clock (UTCTime, NominalDiffTime, addUTCTime, getCurrentTime)
+import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
 import Text.Blaze.Renderer.Text (renderMarkup)
 
 import Yesod
@@ -18,10 +18,6 @@ import Account.Util (newUser, setUserId, redirectNoAuth)
 import Settings (widgetFile)
 import Util.Pretty (PrettyDiffTime (..))
 import Util.Proxy (getRemoteHostText)
-
--- | Seconds between two registrations from the same IP.
-minRegistrationInterval :: NominalDiffTime
-minRegistrationInterval = 5 * 60
 
 -- | Displays the register form in the default layout.
 getRegisterR :: YesodAccount parent => AccountHandler parent Html

@@ -19,10 +19,7 @@ import System.Directory (removeDirectoryRecursive)
 import Text.Julius (rawJS)
 
 import Account
-import Handler.Comment (
-      maxCommentLength, commentForm, retrieveComments, removeComment
-    )
-import Handler.Upload.Processing (maxTitleLength)
+import Handler.Comment (commentForm, retrieveComments, removeComment)
 import Util.API (sendNoContent, withFormSuccess, withUploadOwner)
 import Util.Date (getDiffTime)
 import Util.Pretty (
@@ -166,7 +163,8 @@ patchViewR hmacTxt = do
                 ]
   where
     form = renderDivs $ (,)
-       <$> aopt (checkLength maxTitleLength textField) titleSettings Nothing
+       <$> aopt (checkLength maxUploadTitleLength textField) titleSettings
+                Nothing
        <*> aopt boolField publicSettings Nothing
 
     titleSettings = FieldSettings {

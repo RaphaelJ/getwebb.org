@@ -8,13 +8,15 @@ import Control.Monad.Trans.Writer
 import Data.Int
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime)
 import Data.Word
 
 import Database.Persist.Sql (SqlPersistT, Migration)
 
 import Model.Field
 import Util.Hmac.Type
+
+-- Entities --------------------------------------------------------------------
 
 share [mkPersist sqlOnlySettings, mkMigrate "migrateEnts"] [persistLowerCase|
 User
@@ -190,6 +192,23 @@ JobDependency
     UniqueJobDependency         job dependency
     deriving Show
 |]
+
+-- Constraints -----------------------------------------------------------------
+
+maxUploadTitleLength, maxCommentLength, maxUserBioLength, maxUserLocationLength,
+    maxUserWebsiteLength :: Int
+
+maxUploadTitleLength  = 250
+maxCommentLength      = 400
+maxUserBioLength      = 100
+maxUserLocationLength = 100
+maxUserWebsiteLength  = 250
+
+-- | Seconds between two comments from the same user/host.
+minCommentInterval :: NominalDiffTime
+minCommentInterval = 60
+
+-- Indexes ---------------------------------------------------------------------
 
 -- | Creates each entities and their indexes.
 migrateAll :: (MonadLogger m, MonadIO m, MonadBaseControl IO m) =>

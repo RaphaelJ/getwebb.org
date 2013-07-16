@@ -5,7 +5,7 @@ import Prelude
 import Data.Int
 import qualified Data.Array as A
 import Data.Text (Text)
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime)
 
 import Database.Persist.Sql (SqlBackend)
 import Yesod
@@ -22,6 +22,8 @@ data Account = Account { acAvatarSprite :: Sprite }
 sessionKey :: Text
 sessionKey = "_ACCOUNT_ID"
 
+-- Models & constraints --------------------------------------------------------
+
 share [mkPersist sqlOnlySettings, mkMigrate "migrateAccount"] [persistLowerCase|
 -- Manages how many users share a same avatar.
 AvatarFile
@@ -35,6 +37,16 @@ Avatar
     hash Text
     deriving Show
 |]
+
+maxEmailLength, maxUsernameLength :: Int
+maxEmailLength    = 250
+maxUsernameLength = 100
+
+-- | Seconds between two registrations from the same IP.
+minRegistrationInterval :: NominalDiffTime
+minRegistrationInterval = 5 * 60
+
+-- Foundation types ------------------------------------------------------------
 
 type AvatarNum = Int64
 

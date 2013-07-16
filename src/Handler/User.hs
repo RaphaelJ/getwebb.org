@@ -6,7 +6,6 @@ import Import
 import Control.Monad
 import Data.Maybe
 import Data.Time.Clock (getCurrentTime, diffUTCTime)
-import Text.Hamlet (shamlet)
 
 import Account
 import Handler.Comment (retrieveCommentVote)

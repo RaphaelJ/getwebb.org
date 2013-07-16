@@ -7,22 +7,17 @@ module Handler.Upload.Processing (
 import Import
 
 import Control.Monad
-import Data.Maybe
-import Network.Socket (NameInfoFlag (..), getNameInfo)
 import System.Directory
 import System.FilePath
 import System.IO
 
 import Control.Monad.Trans.Either
 import Database.Persist.Sql (Single (..), rawSql)
-import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as B
 import Data.Digest.Pure.SHA (sha1, showDigest)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime, addUTCTime)
 import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
-import Network.Wai (remoteHost)
-import Network.Wai.Logger.Utils (showSockAddr)
 
 import Handler.Upload.Archive (processArchive)
 import Handler.Upload.Image (processImage)

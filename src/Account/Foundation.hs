@@ -5,6 +5,7 @@ import Prelude
 import Data.Int
 import qualified Data.Array as A
 import Data.Text (Text)
+import Data.Time.Clock (UTCTime)
 
 import Database.Persist.Sql (SqlBackend)
 import Yesod
@@ -66,21 +67,27 @@ class (Yesod parent, YesodPersist parent, RenderMessage parent FormMessage
     -- | Post sign in/sign out routes.
     signInDest, signOutDest :: parent -> Route parent
 
+    -- | 'True' if the application is running behind a reverse proxy.
+    usesReverseProxy :: parent -> Bool
+
     -- | Initialise a new user value (musn't add the user to the database).
     initUser :: Text      -- ^ Email.
              -> Text      -- ^ Username.
              -> Text      -- ^ Hashed password.
              -> Text      -- ^ Salt used to hash the password.
              -> Text      -- ^ IP address of the register host.
+             -> UTCTime   -- ^ Creation time.
              -> AvatarNum
              -> YesodDB parent (AccountUser parent)
 
-    -- | Unique keys to fetch users from the database.
+    -- | Unique and indexed keys to fetch users from the database.
     emailLookup, usernameLookup :: parent -> Text -> Unique (AccountUser parent)
+    hostnameLookup :: parent -> EntityField (AccountUser parent) Text
+    createdLookup  :: parent -> EntityField (AccountUser parent) UTCTime
 
     -- | Accesses data from the user account data type.
-    accountEmail, accountUsername, accountPassword, accountSalt ::
-        parent -> AccountUser parent -> Text
+    accountEmail, accountUsername, accountPassword, accountSalt, accountHostname
+        :: parent -> AccountUser parent -> Text
 
     accountAvatarId :: parent -> AccountUser parent -> AvatarNum
 

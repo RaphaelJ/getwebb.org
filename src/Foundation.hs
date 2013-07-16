@@ -9,7 +9,6 @@ import qualified Data.ByteString.Lazy as B
 import qualified Data.ByteString.Char8 as S8
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (getCurrentTime)
 import Data.Typeable (Typeable)
 import System.FilePath ((</>))
 
@@ -96,44 +95,49 @@ instance Yesod App where
     approot = ApprootMaster $ appRoot . settings
 
     errorHandler e = do
-        let ((title :: Text), mMsg) = case e of
+        let ((title :: Text), mMsg, mMarkup) = case e of
                 NotFound ->
-                    let msg = [shamlet|
+                    let markup = [shamlet|
                             The page you are looking for is no longer available.
                             <br />
                             If this was an uploaded file, it has been removed.
                         |]
-                    in ("404 Not Found", Just msg)
+                    in ("404 Not Found", Nothing, Just markup)
                 InternalError err ->
-                    let msg = [shamlet|
+                    let markup = [shamlet|
                             Our internal software failed for the following
                             reason :
                             <pre>
                                 #{err}
                         |]
-                    in ("500 Internal Server Error", Just msg)
-                InvalidArgs _ -> ("Invalid Arguments", Nothing)
-                NotAuthenticated -> ("401 Not Authenticated", Nothing)
+                    in ("500 Internal Server Error", Just err, Just markup)
+                InvalidArgs _    -> ("400 Invalid Arguments", Nothing, Nothing)
+                NotAuthenticated -> ("401 Not Authenticated", Nothing, Nothing)
                 PermissionDenied err ->
-                    let msg = [shamlet|
+                    let markup = [shamlet|
                             You don't have the permission to access this
                             ressource for the following reason :
                             <pre>
                                 #{err}
                         |]
-                    in ("403 Permission Denied", Just msg)
+                    in ("403 Permission Denied", Just err, Just markup)
                 BadMethod m ->
-                    let msg = [shamlet|
+                    let markup = [shamlet|
                             Method <code>#{S8.unpack m}</code> not supported
                         |]
-                    in ("405 Method Not Allowed", Just msg)
+                    in ("405 Method Not Allowed", Nothing, Just markup)
 
         selectRep $ do
             provideRep $ defaultLayout $ do
                 setTitle [shamlet|#{title} - getwebb|]
                 $(widgetFile "error")
 
-            provideJson $ object [title .= maybe "" renderMarkup mMsg]
+            provideJson $
+                case mMsg of
+                    Just msg -> array [
+                            renderMarkup [shamlet| #{title} : #{msg}|]
+                        ]
+                    Nothing  -> array [title]
 
     -- Store session data on the client in encrypted cookies,
     -- default session idle timeout is two year.
@@ -223,17 +227,16 @@ instance YesodAccount App where
     type AccountUser     App = User
     type AccountSettings App = UserAccountSettings
 
-    useProxy = extraReverseProxy . appExtra . settings
+    usesReverseProxy = extraReverseProxy . appExtra . settings
 
     signInDest  _ = HistoryR
     signOutDest _ = HistoryR
 
-    initUser email name pass salt hostname avatar = do
-        time <- liftIO $ getCurrentTime
+    initUser email name pass salt hostname created avatar = do
         adminKey <- newAdminKey
         return User {
               userEmail = email, userName = name, userPassword = pass
-            , userSalt = salt, userHostname = hostname, userCreated = time
+            , userSalt = salt, userHostname = hostname, userCreated = created
             , userAvatar = avatar, userIsAdmin = False, userAdminKey = adminKey
             , userCommentsCount = 0, userBio = Nothing, userLocation = Nothing
             , userWebsite = Nothing, userDefaultPublic = True
@@ -241,6 +244,8 @@ instance YesodAccount App where
 
     emailLookup    _ = UniqueUserEmail
     usernameLookup _ = UniqueUserName
+    hostnameLookup _ = UserHostname
+    createdLookup  _ = UserCreated
 
     accountEmail    _ = userEmail
     accountUsername _ = userName
@@ -259,7 +264,7 @@ instance YesodAccount App where
     accountSettingsForm user = UserAccountSettings
         <$> aopt bioField bioSettings (Just (userBio user))
         <*> aopt textField "Location" (Just (userLocation user))
-        <*> aopt websiteField "Website" (Just (userWebsite user))
+        <*> aopt urlField "Website" (Just (userWebsite user))
         <*> areq checkBoxField "Set uploads as public by default"
                  (Just (userDefaultPublic user))
       where
@@ -271,10 +276,6 @@ instance YesodAccount App where
             , fsTooltip = Just "or let empty."
             , fsId = Nothing, fsName = Nothing, fsAttrs = []
         }
-
-        websiteField = checkBool ("http://" `T.isPrefixOf`)
-                                 (websiteNotUrl :: Text) textField
-        websiteNotUrl = "The website's URL must start with http://"
 
     accountSettingsSave userId (UserAccountSettings bio location site privacy) =
         update userId [ UserBio           =. bio

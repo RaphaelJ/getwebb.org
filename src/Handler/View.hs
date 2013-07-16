@@ -16,7 +16,6 @@ import Data.Time.Clock (getCurrentTime, diffUTCTime)
 import Network.HTTP.Types.Header (hUserAgent)
 import Network.Wai (requestHeaders)
 import System.Directory (removeDirectoryRecursive)
-import Text.Hamlet (shamlet)
 import Text.Julius (rawJS)
 
 import Account

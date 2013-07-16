@@ -89,6 +89,7 @@ Comment
     user                        UserId
     upload                      UploadId
     message                     Textarea
+    hostname                    Text -- IP address of the author's host.
     created                     UTCTime
     score                       Double -- Computed from the votes.
     upvotes                     Int default=0
@@ -210,8 +211,11 @@ migrateAll = do
         , ("upload_last_view", "\"upload\"(\"viewed\")")
         , ( "upload_score"
           , "\"upload\"(\"public\", \"score\" DESC, \"id\" DESC)")
-        , ("comment_created", "\"comment\"(\"user\", \"created\")")
+        , ("user_hostname", "\"user\"(\"hostname\", \"created\")")
+        , ("comment_user_created", "\"comment\"(\"user\", \"created\")")
+        , ("comment_hostname_created", "\"comment\"(\"hostname\", \"created\")")
         , ("comment_score", "\"comment\"(\"upload\", \"score\" DESC)")
-        , ("commentvote_user", "\"comment_vote\"(\"comment\", \"user\")")
+        , ( "commentvote_comment_user"
+          , "\"comment_vote\"(\"comment\", \"user\")")
         , ("job_completed", "\"job\"(\"completed\")")
         ]

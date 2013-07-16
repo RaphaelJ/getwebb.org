@@ -12,9 +12,12 @@ import Import
 
 import Data.String (IsString)
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
 import Network.HTTP.Types.Status (
       Status, mkStatus, badRequest400, created201, noContent204, forbidden403
     )
+import Text.Blaze (Markup)
+import Text.Blaze.Renderer.Text (renderMarkup)
 
 import Util.Hmac (Hmac)
 
@@ -32,6 +35,9 @@ instance ToAPIError Text where
 
 instance ToAPIError [Char] where
     toAPIError = APIError . T.pack
+
+instance ToAPIError Markup where
+    toAPIError = APIError . TL.toStrict . renderMarkup
 
 -- | Responds to the client with a 201 Created and a JSON object containing the
 -- HMAC of the object and the URI to the object.

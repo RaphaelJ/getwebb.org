@@ -3,8 +3,8 @@
         <h1>#{title}
 
         <div .message>
-            $maybe msg <- mMsg
-                <p>#{msg}
+            $maybe markup <- mMarkup
+                <p>#{markup}
 
             <p>
                 Return to our <a href="@{UploadR}">home page</a> or to the

@@ -7,12 +7,21 @@ import Control.Applicative  as Import ((<$>), (<*>))
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
+import Data.Time.Clock (UTCTime, NominalDiffTime, addUTCTime, getCurrentTime)
+import Text.Blaze.Renderer.Text (renderMarkup)
 
 import Yesod
 
 import Account.Foundation
 import Account.Util (newUser, setUserId, redirectNoAuth)
 import Settings (widgetFile)
+import Util.Pretty (PrettyDiffTime (..))
+import Util.Proxy (getRemoteHostText)
+
+-- | Seconds between two registrations from the same IP.
+minRegistrationInterval :: NominalDiffTime
+minRegistrationInterval = 5 * 60
 
 -- | Displays the register form in the default layout.
 getRegisterR :: YesodAccount parent => AccountHandler parent Html
@@ -27,9 +36,9 @@ postRegisterR = do
     ((res, widget), enctype) <- lift (runFormPost registerForm)
 
     case res of
-        FormSuccess (email, name, pass) -> do
+        FormSuccess (email, name, pass, host, created) -> do
             sub <- getYesod
-            userId <- lift $ newUser sub email name pass
+            userId <- lift $ newUser sub email name pass host created
             lift $ do
                 setUserId userId
                 getYesod >>= redirect . signInDest
@@ -49,7 +58,8 @@ data RegisterRes = RegisterRes {
     }
 
 registerForm :: YesodAccount parent => Html
-             -> MForm (ParentHandler parent) (FormResult (Text, Text, Text)
+             -> MForm (ParentHandler parent) ( FormResult ( Text, Text, Text
+                                                          , Text, UTCTime)
                                              , ParentWidget parent ())
 registerForm html = do
     let form = RegisterRes <$> areq emailField'    emailSettings    Nothing
@@ -58,8 +68,9 @@ registerForm html = do
                            <*> areq passwordField  confirmSettings  Nothing
     (res, widget) <- renderDivs form html
 
-    -- Checks if both passwords match.
-    return $! case res of
+    -- Checks if both passwords match and if the client hasn't created an
+    -- account recently.
+    case res of
         FormSuccess (RegisterRes email name pass confirm)
             | pass /= confirm ->
                 let msg = "Your passwords don't match." :: Text
@@ -67,10 +78,37 @@ registerForm html = do
                         <p .errors>#{msg}
                         ^{widget}
                     |]
-                in (FormFailure [msg], widget')
-            | otherwise -> (FormSuccess (email, name, pass), widget)
-        FormFailure errs -> (FormFailure errs, widget)
-        FormMissing -> (FormMissing, widget)
+                in return (FormFailure [msg], widget')
+            | otherwise -> lift $ do
+                -- Checks if the user hasn't registered a new account recently.
+                app      <- getYesod
+                host     <- getRemoteHostText $ usesReverseProxy app
+                created  <- liftIO getCurrentTime
+                let minCreated = addUTCTime (-minRegistrationInterval) created
+
+                runDB $ do
+                    mRecent <- selectFirst [ hostnameLookup app ==. host
+                                           , createdLookup app  >.  minCreated ]
+                                           []
+
+                    case mRecent of
+                        Just _  ->
+                            let msg = TL.toStrict $ renderMarkup [shamlet|
+                                    Please wait
+                                    #{PrettyDiffTime minRegistrationInterval}
+                                    between the creation of two new accounts.
+                                |]
+                                widget' = [whamlet|
+                                    <p .errors>#{msg}
+                                    ^{widget}
+                                |]
+                            in return (FormFailure [msg], widget')
+                        Nothing ->
+                            return ( FormSuccess ( email, name, pass, host
+                                                 , created)
+                                   , widget)
+        FormFailure errs -> return (FormFailure errs, widget)
+        FormMissing -> return (FormMissing, widget)
   where
     emailField' = checkM checkEmailExists emailField
     emailSettings = FieldSettings {

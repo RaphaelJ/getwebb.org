@@ -12,8 +12,9 @@ import Import
 import Control.Monad
 import Data.Maybe
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
 import Data.Time.Clock (NominalDiffTime, addUTCTime, getCurrentTime)
-import Text.Printf
+import Text.Blaze.Renderer.Text (renderMarkup)
 
 import Account
 import Util.API (
@@ -22,6 +23,8 @@ import Util.API (
     )
 import Util.Hmac (Hmac, newHmac)
 import Util.Json ()
+import Util.Pretty (PrettyDiffTime (..))
+import Util.Proxy (getRemoteHostText)
 
 -- | Maximum number of comments which will be fetched in one request.
 maxNComments :: Int
@@ -35,7 +38,7 @@ defaultNComments = 50
 maxCommentLength :: Int
 maxCommentLength = 400
 
--- | Seconds between two comments from the same user.
+-- | Seconds between two comments from the same user/host.
 minCommentInterval :: NominalDiffTime
 minCommentInterval = 60
 
@@ -71,17 +74,24 @@ postCommentsR hmac = do
     ((res, _), _) <- runFormPost commentForm
 
     withFormSuccess res $ \msg -> do
-        time <- liftIO $ getCurrentTime
+        -- Checks if the user/host hasn't submitted a comment too recently.
+        app     <- getYesod
+        host    <- getRemoteHostText $ usesReverseProxy app
+        created <- liftIO getCurrentTime
+        let minCreated = addUTCTime (-minCommentInterval) created
+
         commentHmac <- runDB $ do
-            -- Checks if the user has submitted a comment too recently.
-            mRecent <- selectFirst [
-                      CommentUser    ==. userId
-                    , CommentCreated >.  addUTCTime (-minCommentInterval) time
-                    ] []
+            mRecent <- selectFirst (    ([ CommentUser     ==. userId
+                                         , CommentCreated  >.  minCreated ])
+                                    ||. ([ CommentHostname ==. host
+                                         , CommentCreated  >.  minCreated ]))
+                                   []
             whenJust mRecent $ \_ ->
                 sendErrorResponse tooManyRequests429 [
-                      printf "Please wait %s between two comments."
-                             (show minCommentInterval) :: String
+                        [shamlet|
+                            Please wait #{PrettyDiffTime minCommentInterval}
+                            between two comments.
+                        |]
                     ]
 
             -- Commits the comment and a first upvote.
@@ -89,7 +99,7 @@ postCommentsR hmac = do
             liftIO $ print (uploadId, hmac)
 
             (key, commentHmac) <- newHmac HmacComment
-            insertKey key $ Comment commentHmac userId uploadId msg time
+            insertKey key $ Comment commentHmac userId uploadId msg host created
                                     (score 1 0) 1 0
             insert_ $ CommentVote key userId Upvote
             update userId   [UserCommentsCount   +=. 1]
@@ -210,8 +220,9 @@ commentForm =
 
     sizeCheck area@(Textarea msg)
         | T.length msg > maxCommentLength =
-            Left $ T.pack $ printf "Your message can't exceed %d characters."
-                                   maxCommentLength
+            Left $ TL.toStrict $ renderMarkup [shamlet|
+                    "Your message can't exceed #{maxCommentLength} characters."
+                |]
         | otherwise = Right area
 
 -- | Computes the Wilson confidence score of comment.

@@ -14,7 +14,7 @@ uploadsPerPage :: Int
 uploadsPerPage = 24
 
 -- | Shows the user's upload history.
-getHistoryR :: Handler RepHtml
+getHistoryR :: Handler Html
 getHistoryR = do
     app <- getYesod
     mUser <- getUser

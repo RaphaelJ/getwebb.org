@@ -16,6 +16,7 @@ import qualified Data.ByteString.Lazy.Char8 as C
 import Data.Digest.Pure.SHA (sha1, showDigest)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Time.Clock (UTCTime)
 import System.Random (randomRIO)
 
 import Yesod
@@ -26,14 +27,16 @@ import Account.Foundation
 -- | Creates a new user. Returns the ID of the created entity. Doesn't set the
 -- session value.
 newUser :: (MonadHandler m, YesodAccount (HandlerSite m)) =>
-           Account -> Text -> Text -> Text
+           Account -> Text -> Text -> Text -> Text -> UTCTime
         -> m (Key (AccountUser (HandlerSite m)))
-newUser sub email name pass = do
+newUser sub email name pass host created = do
     salt <- randomSalt
     let !img = genIdenticon (acAvatarSprite sub) email
     liftHandlerT $ runDB $ do
         (avatarId, _) <- newAvatar img
-        initUser email name (saltedHash salt pass) salt avatarId >>= insert
+        u <- initUser email name (saltedHash salt pass) salt host created
+                      avatarId
+        insert u
 
 -- | Checks the given credentials without setting the session value.
 -- Returns the user ID if succeed. Tries with the username then the email.

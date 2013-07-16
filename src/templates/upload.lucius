@@ -309,6 +309,7 @@
             h3 {
                 margin: 3px 0 10px 0;
 
+                color: #2D2D2D;
                 font-size: 18px;
                 font-weight: bold;
             }

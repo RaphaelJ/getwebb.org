@@ -73,7 +73,7 @@ processFile adminKeyId f public = do
         liftIO $ putStrLn "Hash file:"
         hash <- liftIO $ timeIt $ hashFile tmpPath
         let ext = T.toLower $ T.pack $ takeExtension $ T.unpack $ fileName f
-            path = getPath (uploadDir app hash) Original
+            path = getPath (uploadDir app hash) OriginalOriginal
 
         -- Checks if the file exists.
         -- eithFileId gets a Right value if its a new file which file needs
@@ -111,7 +111,9 @@ processFile adminKeyId f public = do
                     return (key, True)
 
             (key, hmac) <- lift $ newHmac HmacUpload
-            let wrappedName = T.take maxTitleLength $ fileName f
+            let name = fileName f
+                wrappedName | T.length name == 0 = "Unknown"
+                            | otherwise          = T.take maxTitleLength name
                 upload = Upload {
                   uploadHmac = hmac,  uploadFile = fileId
                 , uploadName = wrappedName, uploadTitle = wrappedName

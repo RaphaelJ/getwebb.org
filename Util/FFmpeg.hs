@@ -104,8 +104,6 @@ encode :: (FilePath -> FFmpegArgs) -> FilePath
 encode args path sink = do
     -- Runs ffmpeg and seeds its input with the source and seeks its output in
     -- the sink.
-    putStrLn $ unwords $ args path
-
     (code, _) <- withExec ffmpeg (args path) $ \_ hStdout hStderr _ -> do
         _ <- resourceForkIO $ sourceHandle hStderr $$ sinkFile "/dev/null"
         sourceHandle hStdout $$ sink

@@ -28,8 +28,6 @@ import Util.Hmac (newHmac)
 import Util.Path (ObjectType (..), getFileSize, uploadDir, newTmpFile, getPath)
 import Util.Proxy (getRemoteHostText)
 
-import System.TimeIt (timeIt)
-
 -- | Contains the different kinds of error that may occur during the processing
 -- of an upload.
 data UploadError = DailyIPLimitReached | FileTooLarge
@@ -65,8 +63,7 @@ processFile adminKeyId f public = do
             left FileTooLarge
 
         -- Checks if the file has been already uploaded by computing its hash.
-        liftIO $ putStrLn "Hash file:"
-        hash <- liftIO $ timeIt $ hashFile tmpPath
+        hash <- liftIO $ hashFile tmpPath
         let ext = T.toLower $ T.pack $ takeExtension $ T.unpack $ fileName f
             path = getPath (uploadDir app hash) Original
 
@@ -88,7 +85,6 @@ processFile adminKeyId f public = do
                     -- Existing file: removes the temporary file and increments
                     -- the file's counter.
                     liftIO $ removeFile tmpPath
-                    liftIO $ putStrLn "Existing file"
                     lift $ update fileId [FileCount +=. 1]
                     return (fileId, False)
                 Nothing -> do
@@ -102,7 +98,6 @@ processFile adminKeyId f public = do
                         }
                     lift $ insertKey key file
                     liftIO $ moveToUpload tmpPath path
-                    liftIO $ putStrLn $ "New file " ++ path
                     return (key, True)
 
             (key, hmac) <- lift $ newHmac HmacUpload
@@ -188,8 +183,7 @@ moveToTmp f = do
     (path, h) <- liftIO $ newTmpFile app "upload_"
     liftIO $ hClose h
 
-    liftIO $ putStrLn "Move file:"
-    liftIO $ timeIt $ fileMove f path
+    liftIO $ fileMove f path
 
     return path
 

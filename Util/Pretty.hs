@@ -10,11 +10,13 @@ import Prelude
 
 import Data.Char (intToDigit)
 import qualified Data.Text as T
+import Data.Text.Lazy.Builder (fromText)
 import Data.Time.Clock (NominalDiffTime)
 import Data.Word
 import Text.Printf (printf)
 
 import Text.Blaze (ToMarkup (..))
+import Text.Shakespeare.Text (ToText (..))
 
 -- | A new type to represents a showable object on which the string
 -- representation will be truncated if too long.
@@ -38,6 +40,9 @@ instance Show WrappedText where
 instance ToMarkup WrappedText where
     toMarkup = toMarkup . wtTruncated
 
+instance ToText WrappedText where
+    toText = fromText . wtTruncated
+
 -- | A new type to represent large numbers with a separator between thousands.
 newtype PrettyNumber = PrettyNumber Int deriving (Eq, Ord, Num)
 
@@ -58,6 +63,9 @@ instance Show PrettyNumber where
 instance ToMarkup PrettyNumber where
     toMarkup = toMarkup . show
 
+instance ToText PrettyNumber where
+    toText = toText . show
+
 -- | A new type to represent file size which will be displayed in a human
 -- readable way.
 newtype PrettyFileSize = PrettyFileSize Word64 deriving (Eq, Ord, Num)
@@ -76,6 +84,9 @@ instance Show PrettyFileSize where
 instance ToMarkup PrettyFileSize where
     toMarkup = toMarkup . show
 
+instance ToText PrettyFileSize where
+    toText = toText . show
+
 -- | A new type to represent a media duration which will be displayed in a human
 -- readable way. The duration is encoded in centisecond.
 newtype PrettyDuration = PrettyDuration Word64 deriving (Eq, Ord, Num)
@@ -93,6 +104,9 @@ instance Show PrettyDuration where
 
 instance ToMarkup PrettyDuration where
     toMarkup = toMarkup . show
+
+instance ToText PrettyDuration where
+    toText = toText . show
 
 -- | A new type to represent a eslaped time an human readable way.
 newtype PrettyDiffTime = PrettyDiffTime NominalDiffTime
@@ -125,3 +139,6 @@ instance Show PrettyDiffTime where
 
 instance ToMarkup PrettyDiffTime where
     toMarkup = toMarkup . show
+
+instance ToText PrettyDiffTime where
+    toText = toText . show

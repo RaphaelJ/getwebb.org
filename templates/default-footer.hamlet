@@ -6,13 +6,11 @@
                 getwebb
 
         <p #info>
-            <!--Icons by P.J. Onori, O. Frolov, J. Wieser, M. Zlatar, A. Ramadan, D. Ullrich
-            &amp; A. Whitcroft Graphicons-->
-            <a href="@{UploadR}">
+            <a href=https://github.com/RaphaelJ/getwebb.org/blob/master/LICENSE.md>
                 Credits
             &nbsp;•&nbsp;
             <a href="https://github.com/RaphaelJ/getwebb.org">
                 Sources
             &nbsp;•&nbsp;
-            <a href="mailto:#{extraAuthorMail $ appExtra $ settings app}">
+            <a href="mailto:#{extraAdminMail $ appExtra $ settings app}">
                 Report a file

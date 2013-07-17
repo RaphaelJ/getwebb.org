@@ -18,7 +18,6 @@ import System.FilePath (takeDirectory)
 
 import qualified Vision.Image as I
 import qualified Vision.Primitive as I
-import System.TimeIt (timeIt)
 
 import qualified JobsDaemon.Compression as C
 import qualified JobsDaemon.ResizeImage as R
@@ -45,16 +44,14 @@ processImage path ext fileId | not (ext `S.member` extensions) = return False
     app <- getYesod
 
     -- Tries to open the file as an image.
-    liftIO $ putStrLn "Load original image:"
-    eImg <- liftIO $ timeIt $ E.try (I.load path)
+    eImg <- liftIO $ E.try (I.load path)
 
     case eImg of
         Right img -> do
             -- Creates the miniature and saves it.
             let dir = takeDirectory path
                 size@(I.Size w h) = I.getSize img
-            liftIO $ putStrLn "Miniature: "
-            liftIO $ timeIt $ do
+            liftIO $ do
                 let miniImg = miniature img
                 I.save miniImg (getPath dir Miniature)
 

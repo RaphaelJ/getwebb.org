@@ -7,11 +7,10 @@ import Control.Applicative  as Import ((<$>), (<*>))
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
-import Text.Blaze.Renderer.Text (renderMarkup)
 
 import Yesod
+import Text.Shakespeare.Text (st)
 
 import Account.Foundation
 import Account.Util (newUser, setUserId, redirectNoAuth)
@@ -89,7 +88,7 @@ registerForm html = do
 
                     case mRecent of
                         Just _  ->
-                            let msg = TL.toStrict $ renderMarkup [shamlet|
+                            let msg = [st|
                                     Please wait
                                     #{PrettyDiffTime minRegistrationInterval}
                                     between the creation of two new accounts.

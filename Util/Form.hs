@@ -4,10 +4,9 @@ module Util.Form (IsTextField (..), checkLength) where
 import Prelude
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
 
 import Yesod
-import Text.Blaze.Renderer.Text (renderMarkup)
+import Text.Shakespeare.Text (st)
 
 import Util.Pretty (PrettyNumber (..))
 
@@ -28,6 +27,4 @@ checkLength :: (Monad m, RenderMessage (HandlerSite m) Text, IsTextField txt) =>
 checkLength len =
     checkBool ((<= len) . T.length . fieldText) errMsg
   where
-    errMsg = TL.toStrict $ renderMarkup [shamlet|
-            This field can't exceed #{PrettyNumber len} characters.
-        |]
+    errMsg = [st|This field can't exceed #{PrettyNumber len} characters.|]

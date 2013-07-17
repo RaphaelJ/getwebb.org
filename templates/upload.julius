@@ -89,7 +89,8 @@ $("#upload_form").submit(function ()
             info.div.append(file_status);
 
             var file_title = $("<h3>");
-            file_title.text(wrappedText(file.name, 55));
+            var wrappedName = wrappedText(file.name, 55)
+            file_title.text(wrappedName);
             file_status.append(file_title);
 
             var progress = $("<div>", { class: "progress" });
@@ -117,7 +118,7 @@ $("#upload_form").submit(function ()
                         title.append(link);
                     }
                 }
-            } (file.name, file_title, progress_complete);
+            } (wrappedName, file_title, progress_complete);
 
             $("#uploads").append(info.div);
             $("#uploads").append($("<div>", { class : "clear_float" }));
@@ -197,7 +198,6 @@ function uploadFiles(loaded, total, files_info, uploaded, errors)
     }, false);
 
     xhr.addEventListener("load", function (e) {
-        alert("ok");
         var status = e.target.status,
             res = jQuery.parseJSON(e.target.responseText);
 

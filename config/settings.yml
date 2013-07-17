@@ -5,19 +5,23 @@ Default: &defaults
   approot: "http://192.168.10.200:3000"
   #accountRoot: "https://127.0.0.1:3000" # Uses a SSL server for accounts
   #staticRoot: "http://static.exemple.com:3000" # Other host for static content
-  author: "Raphael Javaux"
-  authorMail: "raphaeljavaux(at)gmail.com"
+
+  admin: "Raphael Javaux"
+  adminMail: "admin@getwebb.org"
+
   uploadDir: "files"
   maxFileSize: 157286400 # 150 MiB
   maxRequestSize: 10485760 # 10 MiB
   maxDailyUploads: 150 # 150 uploads per ip per day
   maxDailySize: 3221225472 # 3 Gio per ip per day
+
   timeout: 120 # Web server timeout in seconds
   jobsThreads: 1 # Number of threads which executes background tasks
+
   adsenseClient: "ca-pub-8544036589375641"
   adsenseSlot: "5337604561"
   analytics: "UA-42540474-1"
-  facebook: "124047527761820" # Facebook App ID
+  facebook: "124047527761820"
 
 Development:
   <<: *defaults

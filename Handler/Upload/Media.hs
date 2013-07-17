@@ -79,7 +79,6 @@ processMedia :: FilePath -> Text -> FileId -> Handler Bool
 processMedia path ext fileId | not (ext `S.member` extensions) = return False
                              | otherwise = do
     mInfo <- liftIO $ getInfo path
-    liftIO $ print mInfo
 
     case mInfo of
         Just (MediaInfo mediaType duration) -> do
@@ -140,9 +139,6 @@ processMedia path ext fileId | not (ext `S.member` extensions) = return False
             mTitle   <- liftIO $ maybeStrTag <$> ID3.title tag
             mTrack   <- liftIO $ maybeIntTag <$> ID3.track tag
             mYear    <- liftIO $ maybeIntTag <$> ID3.year tag
-
-            liftIO $ print [mAlbum, mArtist, mComment, mGenre, mTitle]
-            liftIO $ print [mTrack, mYear]
 
             -- Ensures that at least one tag has been found.
             _ <- MaybeT $! return $ msum [
@@ -206,10 +202,8 @@ processMedia path ext fileId | not (ext `S.member` extensions) = return False
                 case eImg of
                     Right img -> do
                         liftIO $ I.save (miniature img) miniaturePath
-                        liftIO $ putStrLn "OK"
                         return $! Just (url, True)
-                    Left (e :: E.SomeException) -> do
-                        liftIO $ print e
+                    Left (_ :: E.SomeException) -> do
                         return $! Just (url, False)
 
     -- Parses the last.fm JSON response and return the possible URL and the

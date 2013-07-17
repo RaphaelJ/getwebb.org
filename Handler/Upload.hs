@@ -11,7 +11,11 @@ import qualified Data.Text as T
 
 import Database.Persist.Sql (rawSql)
 import Network.HTTP.Types.Status (requestEntityTooLarge413)
+import Network.Mail.Mime (Address (..), simpleMail, renderSendMail)
+import Text.Blaze.Renderer.Text (renderMarkup)
+import Text.Hamlet (hamletFile)
 import Text.Julius (rawJS)
+import Text.Shakespeare.Text (st)
 
 import Account (getUser)
 import Handler.Upload.Processing (UploadError (..), processFile, score)
@@ -19,7 +23,7 @@ import Util.API (
       sendObjectCreated, sendErrorResponse, tooManyRequests429, withFormSuccess
     )
 import Util.Hmac (Hmac (..))
-import Util.Pretty (PrettyFileSize (..))
+import Util.Pretty (PrettyFileSize (..), wrappedText)
 
 -- | Options which can be selected by the user when uploading a file.
 data Options = Options {
@@ -69,7 +73,7 @@ postUploadR = do
     addHeader "Access-Control-Allow-Origin" "*"
 
     ((res, _), _) <- runFormPostNoToken uploadForm
-    withFormSuccess res $ \ (~(file:_), Options public email) -> do
+    withFormSuccess res $ \ (~(file:_), Options public mEmail) -> do
         -- Allocates an new admin key if the client doesn't have one.
         mAdminKey <- getAdminKey
         adminKeyId <- case mAdminKey of
@@ -84,9 +88,10 @@ postUploadR = do
         eUpload <- processFile adminKeyId file public
         case eUpload of
             Right upload -> do
-                {- TODO: email -}
-                let hmac = uploadHmac upload
-                sendObjectCreated hmac (ViewR $ toPathPiece $ hmac)
+                let hmac  = uploadHmac upload
+                    route = ViewR $ toPathPiece hmac
+                whenJust mEmail (sendEmailLink upload route)
+                sendObjectCreated hmac route
             Left err -> do
                 let status = case err of
                         DailyIPLimitReached -> tooManyRequests429
@@ -149,3 +154,26 @@ uploadForm extra = do
     let res = (,) <$> filesRes <*> (Options <$> publicRes <*> emailRes)
 
     return (res, (filesWidget, optsWidget))
+
+-- | Sends the link to the upload by email.
+sendEmailLink :: Upload -> Route App -> Text -> Handler ()
+sendEmailLink upload route email = do
+    rdr <- getUrlRenderParams
+    extra <- getExtra
+
+    let wrappedTitle = wrappedText (uploadTitle upload) 50
+        from = Address (Just $ extraAdmin extra) (extraAdminMail extra)
+        to   = Address Nothing email
+        subject = [st|#{wrappedTitle} | getwebb|]
+        text = renderMarkup $ [hamlet|
+            A file named #{wrappedTitle} has been send to you via getwebb.org.
+
+            $with Hmac hmacTxt <- uploadHmac upload
+                Click here on the following link to download this file:
+                @{ViewR hmacTxt}
+
+            Sincerely, the getwebb administrators.
+            |] rdr
+        html = renderMarkup $ $(hamletFile "templates/email.hamlet") rdr
+
+    liftIO $ simpleMail to from subject text html [] >>= renderSendMail

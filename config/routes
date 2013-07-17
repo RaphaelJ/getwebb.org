@@ -19,7 +19,7 @@
 /comment/#Hmac/up       CommentUpR              PUT
 /comment/#Hmac/down     CommentDownR            PUT
 
-/gallery                BrowserR                GET
+/browser                BrowserR                GET
 
 /history                HistoryR                GET
 /history/fusion         HistoryFusionR          GET

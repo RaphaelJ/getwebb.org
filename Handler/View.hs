@@ -76,11 +76,11 @@ getViewR hmacs' = do
                     Nothing -> redirectNext (tail hmacs)
 
             app <- getYesod
+            extra <- getExtra
             mAdminKey <- getAdminKey
             currentTime <- liftIO getCurrentTime
             rdr <- getUrlRenderParams
             Just currUrl <- getCurrentRoute
-            facebookAppId <- extraFacebook <$> getExtra
 
             (commentWidget, commentEnctype) <- generateFormPost commentForm
 

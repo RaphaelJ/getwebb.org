@@ -14,8 +14,10 @@ Default: &defaults
   maxDailySize: 3221225472 # 3 Gio per ip per day
   timeout: 120 # Web server timeout in seconds
   jobsThreads: 1 # Number of threads which executes background tasks
+  adsenseClient: "ca-pub-8544036589375641"
+  adsenseSlot: "5337604561"
+  analytics: "UA-42540474-1"
   facebook: "124047527761820" # Facebook App ID
-  #analytics: UA-YOURCODE
 
 Development:
   <<: *defaults

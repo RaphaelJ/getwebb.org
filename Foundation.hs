@@ -25,6 +25,7 @@ import Settings.StaticFiles as Import
 import System.Log.FastLogger (Logger)
 import Text.Blaze.Renderer.Text (renderMarkup)
 import Text.Jasmine (minifym)
+import Text.Julius (rawJS)
 import Text.Hamlet (hamletFile)
 import qualified Web.ClientSession as S
 
@@ -150,6 +151,7 @@ instance Yesod App where
 
     defaultLayout widget = do
         app <- getYesod
+        extra <- getExtra
         mMsg <- getMessage
 
         currentPage <- getCurrentPage <$> getCurrentRoute
@@ -163,13 +165,28 @@ instance Yesod App where
             $(widgetFile "default-body")
             $(widgetFile "default-footer")
             addScriptRemote "http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"
+
+            -- Google analytics
+            toWidget [julius|
+                var _gaq = _gaq || [];
+                _gaq.push(['_setAccount', '#{rawJS $ extraAnalytics extra}']);
+                _gaq.push(['_trackPageview']);
+
+                (function() {
+                    var ga = document.createElement('script');
+                    ga.type = 'text/javascript'; ga.async = true;
+                    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+                    var s = document.getElementsByTagName('script')[0];
+                    s.parentNode.insertBefore(ga, s);
+                })();
+            |]
+
         giveUrlRenderer $(hamletFile "templates/default-layout.hamlet")
       where
         getCurrentPage (Just UploadR)  = NewUpload
         getCurrentPage (Just BrowserR) = Browser
         getCurrentPage (Just HistoryR) = History
         getCurrentPage _               = Other
-
 
 --     urlRenderOverride app (StaticR s) =
     urlRenderOverride app route =

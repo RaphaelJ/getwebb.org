@@ -17,7 +17,7 @@
 
     <div .share>
         <a .facebook_button
-            href="https://www.facebook.com/dialog/feed?app_id=#{facebookAppId}&link=@{ViewR hmacTxt}&picture=@{icon}&name=#{wrappedTitle}&redirect_uri=@{currUrl}">
+            href="https://www.facebook.com/dialog/feed?app_id=#{extraFacebook extra}&link=@{ViewR hmacTxt}&picture=@{icon}&name=#{wrappedTitle}&redirect_uri=@{currUrl}">
             Share
         <a .twitter_button
             href="https://twitter.com/intent/tweet?text=#{wrappedTitle}&url=@{ViewR hmacTxt}&via=GetwebbFiles&original_referer=@{currUrl}">
@@ -136,8 +136,8 @@
 
     <div .ad>
         <script type="text/javascript">
-            google_ad_client = "ca-pub-8544036589375641";
-            google_ad_slot = "5337604561";
+            google_ad_client = "#{extraAdsenseClient extra}";
+            google_ad_slot = "#{extraAdsenseSlot extra}";
             google_ad_width = 250;
             google_ad_height = 250;
         <script type="text/javascript"

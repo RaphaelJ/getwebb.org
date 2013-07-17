@@ -27,12 +27,12 @@ getHistoryR = do
     (uploads, orphans) <- case mAdminKey of
         Just adminKey -> runDB $ do
             let (selectFilters, orphans) = case adminKey of
-                    AdminKeyUser (Entity a _) (Just (Entity b anonKey)) ->
+                    AdminKeyUser (Entity a _) (Just (Entity b anonKey)) _ ->
                         ([UploadAdminKey ==. a] ||. [UploadAdminKey ==. b]
                         , adminKeyCount anonKey)
-                    AdminKeyUser (Entity a _) Nothing             ->
+                    AdminKeyUser (Entity a _) Nothing                   _ ->
                         ([UploadAdminKey ==. a], 0)
-                    AdminKeyAnon (Entity a _)                     ->
+                    AdminKeyAnon (Entity a _)                             ->
                         ([UploadAdminKey ==. a], 0)
 
             uploads <- selectList selectFilters (Desc UploadId : selectOpts) >>=
@@ -56,7 +56,7 @@ getHistoryFusionR :: Handler ()
 getHistoryFusionR = do
     mAdminKey <- getAdminKey
     case mAdminKey of
-        Just (AdminKeyUser (Entity userKey _) (Just (Entity anonKey c))) ->
+        Just (AdminKeyUser (Entity userKey _) (Just (Entity anonKey c)) _) ->
             runDB $ do
                 updateWhere [UploadAdminKey ==. anonKey]
                             [UploadAdminKey =.  userKey]

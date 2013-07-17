@@ -22,6 +22,7 @@ Default: &defaults
   adsenseSlot: "5337604561"
   analytics: "UA-42540474-1"
   facebook: "124047527761820"
+  twitter: "GetwebbFiles"
 
 Development:
   <<: *defaults

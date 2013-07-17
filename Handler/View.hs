@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, PatternGuards #-}
+{-# LANGUAGE OverloadedStrings, PatternGuards, ScopedTypeVariables #-}
 -- | Page which displays the information about a file.
 module Handler.View (getViewR, patchViewR, deleteViewR, removeUpload)
     where
@@ -28,8 +28,10 @@ import Util.Pretty (
     , wrappedText
     )
 import Util.Extras (
-      Extras (..), getFileExtras, getUploadStats, getIcon, getImage
-    , getMiniature, getAudioSources, getArchive, getUploadOwner
+      Extras (..), getFileExtras, getUploadStats
+    , getIcon, getMiniature, getCard, getDisplayable
+    , getAudioSources, getArchive
+    , getUploadOwner
     )
 import Util.Form (checkLength)
 import Util.Hmac (Hmac (..), Hmacs (..))
@@ -91,7 +93,6 @@ getViewR hmacs' = do
                 userIsOwner = ((entityKey . fst) <$> mOwner) == mUserId
                 links = getLinks hmacs
                 icon = getIcon upload extras
-                image = getImage hmac extras
                 miniature = getMiniature hmac extras
                 audioSources = getAudioSources hmac extras
                 archive = getArchive rdr hmac extras
@@ -102,9 +103,15 @@ getViewR hmacs' = do
                 setTitle [shamlet|#{wrappedTitle} | getwebb|]
                 let rightPaneWidget = $(widgetFile "view-right-pane")
                     commentsWidget  = $(widgetFile "view-comments")
-                    pageWidget = case fileType file of
-                        Image -> $(widgetFile "view-image")
-                        _     -> $(widgetFile "view-file")
+                    pageWidget = case extras of
+                        ImageExtras attrs _ -> do
+                            toWidgetHead $ fbImageObject extra upload attrs icon
+                            toWidgetHead $ photoCard extra upload attrs mOwner
+                            $(widgetFile "view-image")
+                        _     -> do
+                            toWidgetHead $ fbFileObject extra upload icon
+                            toWidgetHead $ summaryCard extra upload mOwner icon
+                            $(widgetFile "view-file")
 
                 $(widgetFile "modules/comment-actions")
                 $(widgetFile "modules/upload-remove")
@@ -141,6 +148,51 @@ getViewR hmacs' = do
             next     = toPathPiece $ Hmacs $ tail hmacs ++ [head hmacs]
         in Just (previous, next)
     getLinks _             = Nothing
+
+    -- Meta datas for Facebook
+
+    fbObject extra upload = [hamlet|
+        <meta property="fb:app_id" content=#{extraFacebook extra}>
+        $with Hmac hmacTxt <- uploadHmac upload
+            <meta property="og:url" content=@{ViewR hmacTxt}>
+        <meta property="og:title" content=#{uploadTitle upload}>
+        <meta property="og:site_name" content="getwebb">
+    |]
+
+    fbImageObject extra upload attrs icon = [hamlet|
+        ^{fbObject extra upload}
+        <meta property="og:image" content=@{getCard (uploadHmac upload) attrs}>
+        <meta property="og:image" content=@{icon}>
+    |]
+
+    fbFileObject extra upload icon = [hamlet|
+        ^{fbObject extra upload}
+        <meta property="og:image" content=@{icon}>
+    |]
+
+    -- Cards which provide meta datas for Twitter.
+
+    basicCard (card :: Text) extra upload mOwner = [hamlet|
+        <meta name="twitter:card" content=#{card}>
+        <meta name="twitter:site" content=@#{extraTwitter extra}>
+        $maybe (Entity _ owner, _) <- mOwner
+          $maybe twitter <- userTwitter owner
+            <meta name="twitter:creator" content="@#{twitter}">
+        <meta name="twitter:title" content=#{uploadTitle upload}>
+    |]
+
+    summaryCard extra upload mOwner icon = [hamlet|
+        ^{basicCard "summary" extra upload mOwner}
+        <meta name="twitter:description"
+              content="Share files easily with your friends">
+        <meta name="twitter:image" content=@{icon}>
+    |]
+
+    photoCard extra upload attrs mOwner = [hamlet|
+        ^{basicCard "photo" extra upload mOwner}
+        <meta name="twitter:image"
+              content=@{getCard (uploadHmac upload) attrs}>
+    |]
 
     -- This is used in hamlet templates because they only supports functions
     -- in expressions, not operators.

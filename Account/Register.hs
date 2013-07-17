@@ -4,7 +4,6 @@ module Account.Register (getRegisterR, postRegisterR, registerForm) where
 
 import Prelude
 import Control.Applicative  as Import ((<$>), (<*>))
-import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
@@ -15,6 +14,7 @@ import Text.Shakespeare.Text (st)
 import Account.Foundation
 import Account.Util (newUser, setUserId, redirectNoAuth)
 import Settings (widgetFile)
+import Util.Form (checkAlphaNum)
 import Util.Pretty (PrettyDiffTime (..))
 import Util.Proxy (getRemoteHostText)
 
@@ -114,15 +114,11 @@ registerForm html = do
         checkExists emailLookup email
                     ("This email is already used by another user." :: Text)
 
-    usernameField = checkM checkUsernameExists $ check checkUsername textField
+    usernameField = checkAlphaNum $ checkM checkUsernameExists textField
     usernameSettings = FieldSettings {
           fsLabel = "Username", fsTooltip = Just "Alphanumeric characters."
         , fsId = Nothing, fsName = Just "username", fsAttrs = []
         }
-    checkUsername name | T.any (not . (`S.member` validChars)) name =
-        Left ("Username must only contain alphanumeric characters." :: Text)
-                       | otherwise                                  = Right name
-    validChars = S.fromList $ ['A'..'Z'] ++ ['a'..'z'] ++ ['0'..'9']
     checkUsernameExists name =
         checkExists usernameLookup name
                     ("This username is already used by another user." :: Text)

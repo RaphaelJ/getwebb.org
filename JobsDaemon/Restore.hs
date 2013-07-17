@@ -26,7 +26,7 @@ restoreJobQueue app = runDBIO app $ do
                            [Asc JobDependencyDependency]
         return $ map (jobDependencyDependency . entityVal) deps
 
-    action fileId Compression       = C.jobCompress  app fileId
-    action fileId ExifTags          = E.jobExifTags  app fileId
-    action fileId (Resize destType) = R.jobResize    app fileId destType
-    action fileId Transcode         = T.jobTranscode app fileId
+    action fileId Compression           = C.jobCompress  app fileId
+    action fileId ExifTags              = E.jobExifTags  app fileId
+    action fileId (Resize job destType) = R.jobResize    app fileId job destType
+    action fileId Transcode             = T.jobTranscode app fileId

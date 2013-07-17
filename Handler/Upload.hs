@@ -77,9 +77,9 @@ postUploadR = do
         -- Allocates an new admin key if the client doesn't have one.
         mAdminKey <- getAdminKey
         adminKeyId <- case mAdminKey of
-            Just (AdminKeyUser (Entity i _) _) -> return i
-            Just (AdminKeyAnon (Entity i _))   -> return i
-            Nothing                            -> do
+            Just (AdminKeyUser (Entity i _) _ _) -> return i
+            Just (AdminKeyAnon (Entity i _))     -> return i
+            Nothing                              -> do
                 adminKeyId <- runDB newAdminKey
                 setAdminKey adminKeyId
                 return adminKeyId

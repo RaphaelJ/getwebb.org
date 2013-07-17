@@ -33,7 +33,7 @@ import Account
 import Handler.Download.ViewsCache.Type (ViewsCache)
 import JobsDaemon.Type (JobsQueue)
 import Model
-import Util.Form (checkLength)
+import Util.Form (twitterField, checkLength)
 import Util.Hmac.Type (Hmac)
 import Util.Pretty (PrettyNumber (..), wrappedText)
 
@@ -224,6 +224,7 @@ data UserAccountSettings = UserAccountSettings {
       usBio           :: Maybe Textarea
     , usLocation      :: Maybe Text
     , usWebsite       :: Maybe Text
+    , usTwitter       :: Maybe Text
     , usDefaultPublic :: Bool
     }
 
@@ -241,9 +242,10 @@ instance YesodAccount App where
         return User {
               userEmail = email, userName = name, userPassword = pass
             , userSalt = salt, userHostname = hostname, userCreated = created
-            , userAvatar = avatar, userIsAdmin = False, userAdminKey = adminKey
+            , userAvatar = avatar, userAdmin = False, userAdminKey = adminKey
             , userCommentsCount = 0, userBio = Nothing, userLocation = Nothing
-            , userWebsite = Nothing, userDefaultPublic = True
+            , userWebsite = Nothing, userTwitter = Nothing
+            , userDefaultPublic = True
             }
 
     emailLookup    _ = UniqueUserEmail
@@ -272,6 +274,7 @@ instance YesodAccount App where
                  (Just (userLocation user))
         <*> aopt (checkLength maxUserWebsiteLength urlField) "Website"
                  (Just (userWebsite user))
+        <*> aopt twitterField twitterSettings (Just (userTwitter user))
         <*> areq checkBoxField "Set uploads as public by default"
                  (Just (userDefaultPublic user))
       where
@@ -281,11 +284,18 @@ instance YesodAccount App where
             , fsId = Nothing, fsName = Nothing, fsAttrs = []
         }
 
-    accountSettingsSave userId (UserAccountSettings bio location site privacy) =
-        update userId [ UserBio           =. bio
-                      , UserLocation      =. location
-                      , UserWebsite       =. site
-                      , UserDefaultPublic =. privacy ]
+        twitterSettings = FieldSettings {
+              fsLabel = "Twitter"
+            , fsTooltip = Just "Your twitter account without the starting @."
+            , fsId = Nothing, fsName = Nothing, fsAttrs = []
+        }
+
+    accountSettingsSave userId setts =
+        update userId [ UserBio           =. usBio            setts
+                      , UserLocation      =. usLocation       setts
+                      , UserWebsite       =. usWebsite        setts
+                      , UserTwitter       =. usTwitter        setts
+                      , UserDefaultPublic =. usDefaultPublic  setts ]
 
     avatarsDir _ = Settings.staticDir </> "avatars"
     avatarsDirRoute _ path = StaticR $ StaticRoute ("avatars" : path) []
@@ -296,9 +306,12 @@ instance YesodAccount App where
 -- their cookies whereas authenticated users have an associated 'AdminKey'.
 -- An 'AdminKey' gives some privileges to the corresponding uploads to its
 -- owner.
-data AdminKeyValue = AdminKeyUser (Entity AdminKey) (Maybe (Entity AdminKey))
-                   | AdminKeyAnon (Entity AdminKey)
-                   deriving (Typeable)
+data AdminKeyValue =
+    -- | Authenticated users can have up to two 'AdminKey's and can be
+    -- administrators (last field equals 'True').
+      AdminKeyUser (Entity AdminKey) (Maybe (Entity AdminKey)) Bool
+    | AdminKeyAnon (Entity AdminKey)
+    deriving (Typeable)
 
 adminKeySessionKey :: Text
 adminKeySessionKey = "ADMIN_KEY"
@@ -319,8 +332,9 @@ getAdminKey = cached $ runMaybeT $
         (Entity _ user, _) <- MaybeT getUser
         MaybeT $ runDB $ runMaybeT $ do
             let keyId = userAdminKey user
-            key <- MaybeT $ get keyId
-            lift $ AdminKeyUser (Entity keyId key) <$> getCookieKey
+            key        <- MaybeT $ get keyId
+            mCookieKey <- lift getCookieKey
+            return $ AdminKeyUser (Entity keyId key) mCookieKey (userAdmin user)
     <|> (AdminKeyAnon <$> MaybeT (runDB getCookieKey))
   where
     -- Retrieves the AdminKey in the browser's session from the database, if
@@ -334,20 +348,21 @@ getAdminKey = cached $ runMaybeT $
 -- | Returns the total number of upload of the user.
 uploadsCount :: Maybe AdminKeyValue -> Int
 uploadsCount k =
-    case k of Just (AdminKeyUser a Nothing)  -> keyCount a
-              Just (AdminKeyUser a (Just b)) -> keyCount a + keyCount b
-              Just (AdminKeyAnon a)          -> keyCount a
-              Nothing                        -> 0
+    case k of Just (AdminKeyUser a Nothing  _) -> keyCount a
+              Just (AdminKeyUser a (Just b) _) -> keyCount a + keyCount b
+              Just (AdminKeyAnon a)            -> keyCount a
+              Nothing                          -> 0
   where
     keyCount = adminKeyCount . entityVal
 
--- | Returns True if the client is the administrator of the upload.
+-- | Returns True if the client has administrator rights on the upload.
 isAdmin :: Upload -> Maybe AdminKeyValue -> Bool
 isAdmin upload key =
-    case key of Just (AdminKeyUser a _)        | sameKey a -> True
-                Just (AdminKeyUser _ (Just b)) | sameKey b -> True
-                Just (AdminKeyAnon a)          | sameKey a -> True
-                _                                          -> False
+    case key of Just (AdminKeyUser _ _        True)             -> True
+                Just (AdminKeyUser a _        _)    | sameKey a -> True
+                Just (AdminKeyUser _ (Just b) _)    | sameKey b -> True
+                Just (AdminKeyAnon a)               | sameKey a -> True
+                _                                               -> False
   where
     sameKey = (uploadAdminKey upload ==) . entityKey
 

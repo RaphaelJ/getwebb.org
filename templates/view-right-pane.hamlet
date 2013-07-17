@@ -17,10 +17,10 @@
 
     <div .share>
         <a .facebook_button
-            href="https://www.facebook.com/dialog/feed?app_id=#{extraFacebook extra}&link=@{ViewR hmacTxt}&picture=@{icon}&name=#{wrappedTitle}&redirect_uri=@{currUrl}">
+            href="https://www.facebook.com/sharer/sharer.php?u=@{ViewR hmacTxt}">
             Share
         <a .twitter_button
-            href="https://twitter.com/intent/tweet?text=#{wrappedTitle}&url=@{ViewR hmacTxt}&via=GetwebbFiles&original_referer=@{currUrl}">
+            href="https://twitter.com/intent/tweet?text=#{wrappedTitle}&url=@{ViewR hmacTxt}&via=#{extraTwitter extra}&original_referer=@{currUrl}">
             Tweet
 
     <div .clear_float>
@@ -55,11 +55,13 @@
                    value="<a href='@{DownloadR hmacTxt}'>#{wrappedTitle}</a>"
                    onclick="this.select()" />
 
-            $maybe imageUrl <- image
+            $case extras
+              $of ImageExtras attrs _
                 <h4>Image with link
                 <input type=text
-                       value="<a href='@{ViewR hmacTxt}'><img alt='#{wrappedTitle}' src='@{imageUrl}' /></a>"
+                       value="<a href='@{ViewR hmacTxt}'><img alt='#{wrappedTitle}' src='@{getDisplayable hmac attrs}' /></a>"
                        onclick="this.select()" />
+              $of _
 
             $maybe miniatureUrl <- miniature
                 <h4>Miniature with link
@@ -76,11 +78,13 @@
                    value="[url=@{DownloadR hmacTxt}]#{wrappedTitle}[/url]"
                    onclick="this.select()" />
 
-            $maybe imageUrl <- image
+            $case extras
+              $of ImageExtras attrs _
                 <h4>Image with link
                 <input type=text
-                       value="[url=@{ViewR hmacTxt}][img]@{imageUrl}[/img][/url]"
+                       value="[url=@{ViewR hmacTxt}][img]@{getDisplayable hmac attrs}[/img][/url]"
                        onclick="this.select()" />
+              $of _
 
             $maybe miniatureUrl <- miniature
                 <h4>Miniature with link
@@ -96,11 +100,13 @@
             <input type=text value="[#{wrappedTitle}](@{DownloadR hmacTxt})"
                    onclick="this.select()" />
 
-            $maybe imageUrl <- image
+            $case extras
+              $of ImageExtras attrs _
                 <h4>Image with link
                 <input type=text
-                       value="[@{ViewR hmacTxt}](![#{wrappedTitle}](@{imageUrl}))"
+                       value="[@{ViewR hmacTxt}](![#{wrappedTitle}](@{getDisplayable hmac attrs}))"
                        onclick="this.select()" />
+              $of _
 
             $maybe miniatureUrl <- miniature
                 <h4>Miniature with link

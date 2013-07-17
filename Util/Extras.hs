@@ -2,7 +2,8 @@
 -- | Helpers to retrieve meta-data and statistics from a file/upload.
 module Util.Extras (
       Extras (..), getFileExtras, getUploadStats
-    , getIcon, getImage, getMiniature, getAudioSources, getArchive
+    , getIcon, getMiniature, getCard, getDisplayable
+    , getAudioSources, getArchive
     , getUploadInfo, getUploadsInfo, getUploadOwner
     ) where
 
@@ -116,20 +117,26 @@ getIcon upload extras =
         , ".flv", ".mov", ".mp4", ".mpg", ".ogv", ".swf", ".vob", ".webm"
         , ".wmv"]
 
--- Returns the URL to the displayable image if the file has one.
-getImage :: Hmac -> Extras -> Maybe (Route App)
-getImage hmac@(Hmac hmacTxt) (ImageExtras attrs _) =
-    case imageAttrsDisplayable attrs of
-        Just _  -> Just $ DownloadDisplayableR hmac
-        Nothing -> Just $ DownloadR            hmacTxt
-getImage _                   _                     = Nothing
-
 -- | Returns the URL to the miniature if the file has one.
 getMiniature :: Hmac -> Extras -> Maybe (Route App)
 getMiniature hmac (ImageExtras _ _) = Just $ DownloadMiniatureR hmac
 getMiniature hmac (AudioExtras _ (Just attrs))
     | audioAttrsMiniature attrs     = Just $ DownloadMiniatureR hmac
 getMiniature _    _                 = Nothing
+
+-- | Returns the URL to the card of the image if the file has one, else the
+-- original image.
+getCard :: Hmac -> ImageAttrs -> Route App
+getCard hmac attrs =
+    case imageAttrsCard attrs of Just _  -> DownloadCardR hmac
+                                 Nothing -> getDisplayable hmac attrs
+
+-- | Returns the URL to the displayable image, or the original image if the file
+-- hasn't.
+getDisplayable :: Hmac -> ImageAttrs -> Route App
+getDisplayable hmac@(Hmac hmacTxt) attrs =
+    case imageAttrsDisplayable attrs of Just _  -> DownloadDisplayableR hmac
+                                        Nothing -> DownloadR            hmacTxt
 
 -- | Returns the URL to every HTML5 audio files which can be displayed in the
 -- browser with thier mime-types.

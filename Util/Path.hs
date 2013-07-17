@@ -17,7 +17,7 @@ import Util.HashDir (hashDir, hashDir')
 
 -- | Used to represents the different resources which can be downloaded.
 data ObjectType = Original
-                | Miniature | Display DisplayType
+                | Miniature | Card ImageType | Display ImageType
                 | WebMAudio | MP3
                 | WebMVideo | MKV
                 | CompressedFile Hmac
@@ -51,6 +51,9 @@ getPath dir Miniature          = dir </> "miniature" <.> "png"
 getPath dir (Display PNG)      = dir </> "original" <.> "png"
 getPath dir (Display JPG)      = dir </> "original" <.> "jpg"
 getPath dir (Display GIF)      = dir </> "original" <.> "gif"
+getPath dir (Card PNG)         = dir </> "card"     <.> "png"
+getPath dir (Card JPG)         = dir </> "card"     <.> "jpg"
+getPath dir (Card GIF)         = dir </> "card"     <.> "gif"
 getPath dir WebMAudio          = dir </> "original" <.> "webm"
 getPath dir MP3                = dir </> "original" <.> "mp3"
 getPath dir WebMVideo          = dir </> "original" <.> "webm"

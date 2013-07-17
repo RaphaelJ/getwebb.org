@@ -58,6 +58,7 @@ data Extra = Extra {
     , extraTimeout         :: Int,        extraJobsThreads     :: Int
     , extraAdsenseClient   :: Text,       extraAdsenseSlot     :: Text
     , extraAnalytics       :: Text,       extraFacebook        :: Text
+    , extraTwitter         :: Text
     } deriving Show
 
 parseExtra :: DefaultEnv -> Object -> Parser Extra
@@ -78,3 +79,4 @@ parseExtra _ o = Extra
     <*> o .:  "adsenseSlot"
     <*> o .:  "analytics"
     <*> o .:  "facebook"
+    <*> o .:  "twitter"

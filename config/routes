@@ -5,6 +5,7 @@
 
 /d/#Text                DownloadR               GET
 /d/#Hmac/mini           DownloadMiniatureR      GET
+/d/#Hmac/card           DownloadCardR           GET
 /d/#Hmac/awebm          DownloadWebMAR          GET
 /d/#Hmac/mp3            DownloadMP3R            GET
 /d/#Hmac/vwebm          DownloadWebMVR          GET

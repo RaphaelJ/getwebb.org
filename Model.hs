@@ -27,7 +27,7 @@ User
     hostname                    Text -- IP address of the register host.
     created                     UTCTime
     avatar                      Int64
-    isAdmin                     Bool
+    admin                       Bool
     -- Links every upload of this user to this user.
     adminKey                    AdminKeyId
     commentsCount               Int default=0
@@ -35,6 +35,7 @@ User
     bio                         Textarea Maybe
     location                    Text Maybe
     website                     Text Maybe
+    twitter                     Text Maybe
     defaultPublic               Bool -- True if wants new files to be public.
 
     UniqueUserEmail             email
@@ -114,9 +115,12 @@ ImageAttrs
     width                       Word32
     height                      Word32
 
-    -- If Just, displays this object instead of the original image in the 
+    -- If Just, provides the card on social medias instead of the source image.
+    card                        ImageType Maybe
+
+    -- If Just, displays this object instead of the original image in the
     -- browser.
-    displayable                 DisplayType Maybe
+    displayable                 ImageType Maybe
 
     UniqueImageAttrs            file
     deriving Show
@@ -200,7 +204,7 @@ maxUploadTitleLength, maxCommentLength, maxUserBioLength, maxUserLocationLength,
 
 maxUploadTitleLength  = 250
 maxCommentLength      = 400
-maxUserBioLength      = 100
+maxUserBioLength      = 400
 maxUserLocationLength = 100
 maxUserWebsiteLength  = 250
 

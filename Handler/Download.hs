@@ -3,8 +3,9 @@
 -- accesses.
 module Handler.Download (
     -- * Page handlers
-      getDownloadR, getDownloadMiniatureR, getDownloadWebMAR, getDownloadMP3R
-    , getDownloadWebMVR, getDownloadMKVR, getDownloadDisplayableR
+      getDownloadR
+    , getDownloadMiniatureR, getDownloadCardR, getDownloadDisplayableR
+    , getDownloadWebMAR, getDownloadMP3R, getDownloadWebMVR, getDownloadMKVR
     , getDownloadArchiveR
     ) where
 
@@ -155,32 +156,13 @@ getDownloadWebMVR = streamRawUploadObject WebMVideo "video/webm"
 getDownloadMKVR :: Hmac -> Handler TypedContent
 getDownloadMKVR = streamRawUploadObject MKV "video/x-matroska"
 
+-- | Responds with a smaller image for social medias.
+getDownloadCardR :: Hmac -> Handler TypedContent
+getDownloadCardR = streamResizedImage imageAttrsCard Card
+
 -- | Responds with the displayable version of the file of the upload.
 getDownloadDisplayableR :: Hmac -> Handler TypedContent
-getDownloadDisplayableR hmac = do
-    (uploadId, h, displayType) <- runDB $ do
-        Entity uploadId upload <- getBy404 $ UniqueUploadHmac hmac
-
-        let fileId = uploadFile upload
-        file <- getJust fileId
-        when (fileType file /= Image)
-            notFound
-
-        Just (Entity _ attrs) <- getBy $ UniqueImageAttrs fileId
-
-        case imageAttrsDisplayable attrs of
-            Just displayType -> do
-                -- Opens the file inside the transaction to ensure data
-                -- consistency.
-                h <- lift $ safeOpenFile file (Display displayType)
-
-                return (uploadId, h, displayType)
-            Nothing -> notFound
-
-    let mime = case displayType of PNG -> typePng
-                                   JPG -> typeJpeg
-                                   GIF -> typeGif
-    streamFileHandle uploadId mime h
+getDownloadDisplayableR = streamResizedImage imageAttrsDisplayable Display
 
 -- | Responds with a file contained in an archive of an upload.
 getDownloadArchiveR :: Hmac -> Hmac -> Handler TypedContent
@@ -217,6 +199,34 @@ streamRawUploadObject :: ObjectType -> ContentType -> Hmac
                       -> Handler TypedContent
 streamRawUploadObject objType mime hmac = do
     (Entity uploadId _, _, h) <- openUpload hmac objType
+    streamFileHandle uploadId mime h
+
+-- | Streams a card or a displayable image if it has been generated.
+streamResizedImage :: (ImageAttrs -> Maybe ImageType)
+                   -> (ImageType -> ObjectType) -> Hmac -> Handler TypedContent
+streamResizedImage attrGetter typeConstr hmac = do
+    (uploadId, h, displayType) <- runDB $ do
+        Entity uploadId upload <- getBy404 $ UniqueUploadHmac hmac
+
+        let fileId = uploadFile upload
+        file <- getJust fileId
+        when (fileType file /= Image)
+            notFound
+
+        Just (Entity _ attrs) <- getBy $ UniqueImageAttrs fileId
+
+        case attrGetter attrs of
+            Just displayType -> do
+                -- Opens the file inside the transaction to ensure data
+                -- consistency.
+                h <- lift $ safeOpenFile file (typeConstr displayType)
+
+                return (uploadId, h, displayType)
+            Nothing -> notFound
+
+    let mime = case displayType of PNG -> typePng
+                                   JPG -> typeJpeg
+                                   GIF -> typeGif
     streamFileHandle uploadId mime h
 
 streamFileHandle :: UploadId -> ContentType -> Handle -> Handler TypedContent

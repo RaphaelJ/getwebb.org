@@ -25,6 +25,12 @@ $maybe bio <- userBio profile
         <th>Comments
         <td>#{PrettyNumber $ userCommentsCount profile}
 
+    $maybe location <- userLocation profile
+        <tr>
+            <th>Location
+            <td title=#{location}>
+                #{wrappedText location 40}
+
     $maybe website <- userWebsite profile
         <tr>
             <th>Website
@@ -32,11 +38,12 @@ $maybe bio <- userBio profile
                 <a href=#{website} target=_blank title=#{website}>
                     #{wrappedText website 40}
 
-    $maybe location <- userLocation profile
+    $maybe twitter <- userTwitter profile
         <tr>
-            <th>Location
-            <td title=#{location}>
-                #{wrappedText location 40}
+            <th>Twitter
+            <td>
+                <a href="https://twitter.com/#{twitter}" target=_blank>
+                    #{twitter}
 
 <div .clear_float>
 

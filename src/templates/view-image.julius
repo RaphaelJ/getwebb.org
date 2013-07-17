@@ -18,3 +18,7 @@ $("#footer_buttons .footer_button").click(function (e) {
         pane.toggleClass("enabled", true);
     }
 });
+
+actionKeys.bind(actionKeys.keys.c, function () {
+    $("#comments_button").click();
+});

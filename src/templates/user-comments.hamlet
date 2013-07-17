@@ -65,7 +65,7 @@
                                 $if isUserProfile
                                     <span .action .remove
                                             onclick="commentRemove('#{commentHmac'}', '@{CommentR commentHmac'}')">
-                                        ⨯
+                                        ×
                                         <span .no_tablet>Remove
 
                             <p .content>#{commentMessage comment}

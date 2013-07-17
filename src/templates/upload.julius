@@ -197,6 +197,7 @@ function uploadFiles(loaded, total, files_info, uploaded, errors)
     }, false);
 
     xhr.addEventListener("load", function (e) {
+        alert("ok");
         var status = e.target.status,
             res = jQuery.parseJSON(e.target.responseText);
 

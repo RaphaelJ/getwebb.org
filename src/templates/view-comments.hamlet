@@ -90,7 +90,7 @@
                                 $if isUser
                                     <span .action .remove
                                             onclick="commentRemove('#{commentHmac'}', '@{CommentR commentHmac'}', commentsCounterDecrement)">
-                                        ⨯
+                                        ×
                                         <span .no_tablet>Remove
 
                             <p .content>

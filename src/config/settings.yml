@@ -2,7 +2,7 @@ Default: &defaults
   host: "*4" # any IPv4 host
   port: 3000
   reverseProxy: no # Used to choose the method to retrieve clients' IPs
-  approot: "http://127.0.0.1:3000"
+  approot: "http://192.168.10.200:3000"
   #accountRoot: "https://127.0.0.1:3000" # Uses a SSL server for accounts
   #staticRoot: "http://static.exemple.com:3000" # Other host for static content
   author: "Raphael Javaux"
@@ -10,7 +10,7 @@ Default: &defaults
   uploadDir: "files"
   maxFileSize: 157286400 # 150 MiB
   maxRequestSize: 10485760 # 10 MiB
-  maxDailyUploads: 500 # 500 uploads per ip per day
+  maxDailyUploads: 150 # 150 uploads per ip per day
   maxDailySize: 3221225472 # 3 Gio per ip per day
   timeout: 120 # Web server timeout in seconds
   jobsThreads: 1 # Number of threads which executes background tasks

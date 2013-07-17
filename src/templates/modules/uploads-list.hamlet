@@ -42,7 +42,7 @@
                 <div .action .remove
                      onclick="uploadRemove('@{ViewR hmacTxt}', uploadFadeOut('#{hmacTxt}'))"
                      hint="Remove this file">
-                    ⨯
+                    ×
             $else
                 $maybe owner <- mOwner
                  $with ownerName <- userName owner

@@ -139,7 +139,6 @@
         .ad_large, .ad_small {
             margin: 10px auto;
 
-            background-color: red;
             text-align: center;
         }
 

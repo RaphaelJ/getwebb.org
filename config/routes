@@ -29,3 +29,5 @@
 
 /user/#Text             UserGalleryR            GET
 /user/#Text/comments    UserCommentsR           GET
+
+/terms                  TermsR                  GET

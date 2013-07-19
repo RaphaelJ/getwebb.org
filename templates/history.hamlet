@@ -7,7 +7,7 @@
         $if null uploads
             <p .notice>
                 $if page == 1
-                    You don't have uploaded any file yet.
+                    You haven't uploaded any file yet.
                 $else
                     You hit your last history page.
         $else

@@ -208,7 +208,7 @@ footer {
 
     line-height: 23px;
     color: white;
-    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
+    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.2);
 
     #footer_content {
         margin-left: 0;
@@ -294,6 +294,11 @@ footer {
                 box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6);
                 color: rgba(255, 255, 255, 0.9);
             }
+
+            .ad {
+                border-top: 1px solid rgba(255, 255, 255, 0.15);
+                box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.4)
+            }
         }
 
         #comments {
@@ -347,6 +352,9 @@ footer {
             background-color: #F0F0F0;
 
             width: 100%;
+
+            .ad {
+            }
         }
 
         #comments {

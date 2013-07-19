@@ -1,0 +1,30 @@
+<div #page>
+    <div .page_content>
+        <h1>Terms of use
+
+        <p>
+            Getwebb is a free service provided without any guarantee about the
+            safety of uploaded files.
+
+        <p>
+            Every uploaded file has a maximum file size of
+            #{PrettyFileSize $ extraMaxFileSize extra}. Daily limits for each
+            Internet hosts are #{PrettyNumber $ extraMaxDailyUploads extra}
+            files and a total disk space of
+            #{PrettyFileSize $ extraMaxDailySize extra}.
+
+        <p>
+            Any uploaded file must conform to Belgian and European laws.
+            This prohibit files which diffusion is threatening copyright laws.
+
+        <p>
+            Any complain about an uploaded file can be submitted by sending
+            an email to
+            <a href="mailto:#{extraAdminMail extra}">
+                #{extraAdminMail extra}</a>
+            with the appropriate documents and references needed to prove the
+            illegal nature of the uploaded file.<br />
+            Getwebb engages itself to treat every complain separately as
+            promptly as possible.<br />
+            To do this, any uploaded file can be removed from diffusion without
+            any warning.

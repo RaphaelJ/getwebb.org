@@ -3,8 +3,6 @@
         <a #logo href=@{UploadR}>
             g<span class="no_mobile">etwebb</span>
 
-        <span #free_file_sharing .no_tablet>
-            free file sharing
 
         <ul #links>
             $case currentPage

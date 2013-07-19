@@ -12,5 +12,8 @@
             <a href="https://github.com/RaphaelJ/getwebb.org">
                 Sources
             &nbsp;•&nbsp;
+            <a href=@{TermsR}>
+                Terms<span class="no_mobile"> of use</span>
+            &nbsp;•&nbsp;
             <a href="mailto:#{extraAdminMail $ appExtra $ settings app}">
                 Report a file

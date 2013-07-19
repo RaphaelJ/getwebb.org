@@ -13,9 +13,20 @@ $doctype 5
 
         ^{pageHead pc}
 
-        <link href=@{StaticR img_favicon_png} rel=icon type=image/png>
+        <link href=@{StaticR img_icon_24_png} rel=icon type=image/png>
+        <link href=@{StaticR img_icon_24_png} rel="shortcut icon"
+              type=image/png>
 
-        <link href=http://fonts.googleapis.com/css?family=Chau+Philomene+One|Ubuntu
+        <link rel=logo href=@{StaticR img_logo_svg} type="image/svg">
+        <link rel=fluid-icon href=@{StaticR img_icon_512_png} title=Getwebb>
+        <link rel=apple-touch-icon sizes=57x57 href=@{StaticR img_logo_57_png}>
+        <link rel=apple-touch-icon sizes=114x114
+              href=@{StaticR img_logo_114_png}>
+        <link rel=apple-touch-icon sizes=72x72 href=@{StaticR img_logo_72_png}>
+        <link rel=apple-touch-icon sizes=144x144
+              href=@{StaticR img_logo_144_png}>
+
+        <link href=http://fonts.googleapis.com/css?family=Chau+Philomene+One
               rel=stylesheet type=text/css>
         <link href=http://fonts.googleapis.com/css?family=Open+Sans:300,400,600
               rel=stylesheet type=text/css>

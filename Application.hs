@@ -38,6 +38,7 @@ import Handler.Download
 import qualified Handler.Download.ViewsCache as VC
 import Handler.History
 import Handler.Upload
+import Handler.Terms
 import Handler.User
 import Handler.View
 

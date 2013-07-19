@@ -126,9 +126,22 @@
     }
 
     .ad {
-        margin: 20px auto;
+        margin: 20px 0;
         overflow: hidden;
-        width: 250px;
+        width: 100%;
+
+        h2 {
+            margin: 3px 10px;
+            text-transform:lowercase;
+            font-size: 12px;
+        }
+
+        .ad_content {
+            width 250px;
+            margin: 10px auto;
+
+            text-align: center;
+        }
     }
 }
 

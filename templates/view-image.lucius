@@ -232,7 +232,7 @@ footer {
 
 /* On large screens, at least 500px are reserved for the left panel and 300px
  * for the right panel. Comments are displayed in the right corner. */
-@media (min-width: 800px) and (min-height: 700px) {
+@media (min-width: 800px) and (min-height: 550px) {
     #full_screen #position_relative {
         #info {
             max-width: 500px;
@@ -320,7 +320,7 @@ footer {
 /* On smaller screens, the right panel is not displayed until the user uses the
  * button on the footer bar. Comments and right panel are displayed in
  * full screen. */
-@media (max-width: 799px), (max-height: 699px) {
+@media (max-width: 799px), (max-height: 549px) {
     #full_screen #position_relative {
         #info {
             width: 100%;

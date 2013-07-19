@@ -50,15 +50,15 @@ widgetFile = (if development then widgetFileReload
               widgetFileSettings
 
 data Extra = Extra {
-      extraReverseProxy    :: Bool,       extraAccountRoot     :: Maybe Text
-    , extraStaticRoot      :: Maybe Text, extraAdmin           :: Text
-    , extraAdminMail       :: Text,       extraUploadDir       :: FilePath
-    , extraMaxFileSize     :: Word64,     extraMaxRequestSize  :: Word64
-    , extraMaxDailyUploads :: Int,        extraMaxDailySize    :: Word64
-    , extraTimeout         :: Int,        extraJobsThreads     :: Int
-    , extraAdsenseClient   :: Text,       extraAdsenseSlot     :: Text
-    , extraAnalytics       :: Text,       extraFacebook        :: Text
-    , extraTwitter         :: Text
+      extraReverseProxy     :: Bool,       extraAccountRoot      :: Maybe Text
+    , extraStaticRoot       :: Maybe Text, extraAdmin            :: Text
+    , extraAdminMail        :: Text,       extraUploadDir        :: FilePath
+    , extraMaxFileSize      :: Word64,     extraMaxRequestSize   :: Word64
+    , extraMaxDailyUploads  :: Int,        extraMaxDailySize     :: Word64
+    , extraTimeout          :: Int,        extraJobsThreads      :: Int
+    , extraAdsenseClient    :: Text,       extraAdsenseSlotLarge :: Text
+    , extraAdsenseSlotSmall :: Text,       extraAnalytics        :: Text
+    , extraFacebook         :: Text,       extraTwitter          :: Text
     } deriving Show
 
 parseExtra :: DefaultEnv -> Object -> Parser Extra
@@ -76,7 +76,8 @@ parseExtra _ o = Extra
     <*> o .:  "timeout"
     <*> o .:  "jobsThreads"
     <*> o .:  "adsenseClient"
-    <*> o .:  "adsenseSlot"
+    <*> o .:  "adsenseSlotLarge"
+    <*> o .:  "adsenseSlotSmall"
     <*> o .:  "analytics"
     <*> o .:  "facebook"
     <*> o .:  "twitter"

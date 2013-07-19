@@ -2,7 +2,7 @@ Default: &defaults
   host: "*4" # any IPv4 host
   port: 3000
   reverseProxy: no # Used to choose the method to retrieve clients' IPs
-  approot: "http://192.168.10.200:3000"
+  approot: "http://127.0.0.1:3000"
   #accountRoot: "https://127.0.0.1:3000" # Uses a SSL server for accounts
   #staticRoot: "http://static.exemple.com:3000" # Other host for static content
 
@@ -19,7 +19,8 @@ Default: &defaults
   jobsThreads: 1 # Number of threads which executes background tasks
 
   adsenseClient: "ca-pub-8544036589375641"
-  adsenseSlot: "5337604561"
+  adsenseSlotLarge: "5337604561"
+  adsenseSlotSmall: "2520078965"
   analytics: "UA-42540474-1"
   facebook: "124047527761820"
   twitter: "GetwebbFiles"

@@ -136,17 +136,40 @@
             font-size: 12px;
         }
 
-        .ad_content {
-            width 250px;
+        .ad_large, .ad_small {
             margin: 10px auto;
 
+            background-color: red;
             text-align: center;
+        }
+
+        .ad_large {
+            width: 250px;
+        }
+
+        .ad_small {
+            width: 234px;
         }
     }
 }
 
-@media (max-height: 699px) {
-    #right_pane .ad {
+/* Displays the large ad on screens with a height exceeding 740px.
+ * Displays the small ad on screens with a height exceeding 490px. */
+
+@media (min-height: 740px) {
+    #right_pane .ad .ad_small {
         display: none;
     }
 }
+
+@media (max-height: 739px) {
+    #right_pane .ad .ad_large {
+        display: none;
+    }
+}
+
+@media (max-height: 549px) {
+    #right_pane .ad {
+        display: none;
+    }
+} 

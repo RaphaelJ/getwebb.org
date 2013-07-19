@@ -143,11 +143,20 @@
     <div .ad>
         <h2>Advertisement
 
-        <div .ad_content>
+        <div .ad_large>
             <script type="text/javascript">
                 google_ad_client = "#{extraAdsenseClient extra}";
-                google_ad_slot = "#{extraAdsenseSlot extra}";
+                google_ad_slot = "#{extraAdsenseSlotLarge extra}";
                 google_ad_width = 250;
                 google_ad_height = 250;
+            <script type="text/javascript"
+                    src="http://pagead2.googlesyndication.com/pagead/show_ads.js" />
+
+        <div .ad_small>
+            <script type="text/javascript">
+                google_ad_client = "#{extraAdsenseClient extra}";
+                google_ad_slot = "#{extraAdsenseSlotSmall extra}";
+                google_ad_width = 234;
+                google_ad_height = 60;
             <script type="text/javascript"
                     src="http://pagead2.googlesyndication.com/pagead/show_ads.js" />

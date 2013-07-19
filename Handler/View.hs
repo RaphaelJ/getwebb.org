@@ -89,7 +89,7 @@ getViewR hmacs' = do
             stats <- getUploadStats entity
             let Entity _ upload = entity
                 title = uploadTitle upload
-                wrappedTitle = wrappedText title 50
+                wrappedTitle = wrappedText title 70
                 userIsOwner = ((entityKey . fst) <$> mOwner) == mUserId
                 links = getLinks hmacs
                 icon = getIcon upload extras

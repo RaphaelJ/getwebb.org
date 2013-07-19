@@ -63,7 +63,7 @@ getDownloadR hmacs' =
                     return (decompress bs', fileSize file)
             Nothing                         -> return (bs', fileSize file)
 
-        trackedBs <- getTrackedBS uploadId bs
+        trackedBs <- getTrackedBS True uploadId bs
 
         let mime = defaultMimeLookup (uploadName upload)
         streamByteString [h] trackedBs mime (Just size)
@@ -99,7 +99,7 @@ getDownloadR hmacs' =
                     Nothing ->
                         return Nothing
 
-        let uploads = take 15 {- FIXME: Space leak -} $ catMaybes $ uploads'
+        let uploads = take 15 {- FIXME: Space leak -} $ catMaybes uploads'
 
         when (null uploads)
             notFound
@@ -118,8 +118,9 @@ getDownloadR hmacs' =
                               then decompress
                               else id
 
-        bs <- liftIO (L.hGetContents h) >>= getTrackedBS uploadId . decompress'
-        return $! Z.addEntryToArchive (Z.toEntry name' epoch bs) archive
+        bs        <- liftIO (L.hGetContents h)
+        trackedBs <- getTrackedBS True uploadId $ decompress' bs
+        return $! Z.addEntryToArchive (Z.toEntry name' epoch trackedBs) archive
 
     -- Returns true if the browser supports the gzip encoding.
     getGzipClientSupport = do
@@ -138,31 +139,31 @@ getDownloadR hmacs' =
 
 -- | Responds with the miniature of the upload.
 getDownloadMiniatureR :: Hmac -> Handler TypedContent
-getDownloadMiniatureR = streamRawUploadObject Miniature typePng
+getDownloadMiniatureR = streamRawUploadObject False Miniature typePng
 
 -- | Responds with the WebM audio file of the upload.
 getDownloadWebMAR :: Hmac -> Handler TypedContent
-getDownloadWebMAR = streamRawUploadObject WebMAudio "audio/webm"
+getDownloadWebMAR = streamRawUploadObject True WebMAudio "audio/webm"
 
 -- | Responds with the MP3 file of the upload.
 getDownloadMP3R :: Hmac -> Handler TypedContent
-getDownloadMP3R = streamRawUploadObject MP3 "audio/mpeg"
+getDownloadMP3R = streamRawUploadObject True MP3 "audio/mpeg"
 
 -- | Responds with the WebM video file of the upload.
 getDownloadWebMVR :: Hmac -> Handler TypedContent
-getDownloadWebMVR = streamRawUploadObject WebMVideo "video/webm"
+getDownloadWebMVR = streamRawUploadObject True WebMVideo "video/webm"
 
 -- | Responds with the MKV video file of the upload.
 getDownloadMKVR :: Hmac -> Handler TypedContent
-getDownloadMKVR = streamRawUploadObject MKV "video/x-matroska"
+getDownloadMKVR = streamRawUploadObject True MKV "video/x-matroska"
 
 -- | Responds with a smaller image for social medias.
 getDownloadCardR :: Hmac -> Handler TypedContent
-getDownloadCardR = streamResizedImage imageAttrsCard Card
+getDownloadCardR = streamResizedImage False imageAttrsCard Card
 
 -- | Responds with the displayable version of the file of the upload.
 getDownloadDisplayableR :: Hmac -> Handler TypedContent
-getDownloadDisplayableR = streamResizedImage imageAttrsDisplayable Display
+getDownloadDisplayableR = streamResizedImage True imageAttrsDisplayable Display
 
 -- | Responds with a file contained in an archive of an upload.
 getDownloadArchiveR :: Hmac -> Hmac -> Handler TypedContent
@@ -190,21 +191,21 @@ getDownloadArchiveR hmac archiveHmac = do
         mime = defaultMimeLookup path
         size = word64 $ Z.eUncompressedSize entry
 
-    bs <- getTrackedBS uploadId (Z.fromEntry entry)
+    bs <- getTrackedBS True uploadId (Z.fromEntry entry)
     streamByteString [h] bs mime (Just size)
 
 -- HTTP streaming --------------------------------------------------------------
 
-streamRawUploadObject :: ObjectType -> ContentType -> Hmac
+streamRawUploadObject :: Bool -> ObjectType -> ContentType -> Hmac
                       -> Handler TypedContent
-streamRawUploadObject objType mime hmac = do
+streamRawUploadObject commitView objType mime hmac = do
     (Entity uploadId _, _, h) <- openUpload hmac objType
-    streamFileHandle uploadId mime h
+    streamFileHandle commitView uploadId mime h
 
 -- | Streams a card or a displayable image if it has been generated.
-streamResizedImage :: (ImageAttrs -> Maybe ImageType)
+streamResizedImage :: Bool -> (ImageAttrs -> Maybe ImageType)
                    -> (ImageType -> ObjectType) -> Hmac -> Handler TypedContent
-streamResizedImage attrGetter typeConstr hmac = do
+streamResizedImage commitView attrGetter typeConstr hmac = do
     (uploadId, h, displayType) <- runDB $ do
         Entity uploadId upload <- getBy404 $ UniqueUploadHmac hmac
 
@@ -227,11 +228,12 @@ streamResizedImage attrGetter typeConstr hmac = do
     let mime = case displayType of PNG -> typePng
                                    JPG -> typeJpeg
                                    GIF -> typeGif
-    streamFileHandle uploadId mime h
+    streamFileHandle commitView uploadId mime h
 
-streamFileHandle :: UploadId -> ContentType -> Handle -> Handler TypedContent
-streamFileHandle uploadId mime h = do
-    bs   <- liftIO (L.hGetContents h) >>= getTrackedBS uploadId
+streamFileHandle :: Bool -> UploadId -> ContentType -> Handle 
+                 -> Handler TypedContent
+streamFileHandle commitView uploadId mime h = do
+    bs   <- liftIO (L.hGetContents h) >>= getTrackedBS commitView uploadId
     size <- word64 <$> liftIO (hFileSize h)
 
     streamByteString [h] bs mime (Just size)

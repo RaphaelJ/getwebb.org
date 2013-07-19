@@ -94,12 +94,14 @@ getCacheEntry uploadId = do
 
 -- | Wraps the original ByteString so each transmitted chunk size is commited
 -- to the upload's total amount of transferred bytes using the 'ViewsCache'.
--- Updates the upload's last view once the stream has been fully streamed.
-getTrackedBS :: UploadId -> L.ByteString -> Handler L.ByteString
-getTrackedBS uploadId bs = do
+-- Updates the upload's last view and views count once the stream has been fully
+-- streamed if commitView if equals to 'True'.
+getTrackedBS :: Bool -> UploadId -> L.ByteString -> Handler L.ByteString
+getTrackedBS commitView uploadId bs = do
     app <- getYesod
     let bwTracker = addBandwidth app uploadId
-        finalizer = incrementViewCount app uploadId
+        finalizer = if commitView then incrementViewCount app uploadId
+                                  else return ()
     liftIO $ trackedBS bwTracker finalizer bs
 
 -- | Wraps a 'L.ByteString' so each generated 'L.Chunk' size is commited to the

@@ -42,7 +42,7 @@ img `isLarger` (Z :. maxH :. maxW) = let Z :. h :. w = extent img
 -- Preserves the aspect-ratio.
 resize :: Source r (Channel RGBImage) => RGBImage r -> DIM2 -> RGBImage U
 resize !img !(Z :. maxH :. maxW) =
-    I.resize img Bilinear size'
+    I.resize img NearestNeighbor size'
   where
     !(Z :. h :. w) = extent img
     !maxRatio = max (w % maxW) (h % maxH)

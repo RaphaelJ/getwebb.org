@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE BangPatterns, OverloadedStrings #-}
 -- | The functions in this modules defines are used to generate user avatars,
 -- to resize uploaded images, to add and remove avatars in the database and to
 -- get paths and routes to avatar files.
@@ -20,11 +20,16 @@ import qualified Data.ByteString.Lazy.Char8 as C
 import Data.Digest.Pure.SHA (sha1, bytestringDigest, showDigest)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Word
 import System.Directory (createDirectoryIfMissing, removeFile)
 import System.FilePath ((</>), (<.>), takeDirectory)
 
-import qualified Vision.Image as I
-import qualified Vision.Primitive as I
+import Vision.Image (
+      D, GreyImage (..), GreyPixel (..), Image (..), InterpolMethod (..)
+    , RGBAImage (..), RGBAPixel (..), Rect (..), Source, U,  Z (..), (:.) (..)
+    , convert, crop, extent, fromFunctionLine, horizontalFlip, load, getPixel
+    , resize, save, toList, verticalFlip
+    )
 import Yesod
 
 import Account.Foundation
@@ -33,15 +38,18 @@ import Util.HashDir (hashDir, hashDir')
 -- | Abstract data type used to enforce images to be resized before being
 -- inserted in the database.
 data AvatarImage = AvatarImage {
-      aiImage :: !I.RGBAImage, aiGenerated :: !Bool, aiHash :: !ImageHash
+      aiImage :: !(RGBAImage U), aiGenerated :: !Bool, aiHash :: !ImageHash
     }
 
 newtype ImageHash = ImageHash Text
 
-avatarSize, tileSize :: Int
-avatarSize = 4 * tileSize -- Must be a multiple of 2 * tileSize
+-- Must be a multiple of 2 * tileSize as the avatar will be composed of four
+-- regions which are generated from a square number of tiles.
+avatarSize :: Int
+avatarSize = 4 * tileSize
 
 -- | Size of the tiles in 'spriteFile'.
+tileSize :: Int
 tileSize = 20
 
 spriteFile :: FilePath
@@ -51,12 +59,13 @@ spriteFile = "Account" </> "avatar_sprite" <.> "png"
 -- vector of these tiles. Tiles must be arranged in horizontal order.
 loadSprite :: IO Sprite
 loadSprite = do
-    img <- I.load spriteFile
-    let I.Size w _ = I.getSize img
+    Right io <- load spriteFile
+    let img = convert io :: GreyImage D
+        Z :. _ :. w = extent img
         n = w `quot` tileSize
-        tiles = [ I.crop img (I.Rect x 0 tileSize tileSize)
-            | let maxX = tileSize * (n - 1)
-            , x <- [0,tileSize..maxX] ]
+        tiles = [ crop img (Rect x 0 tileSize tileSize)
+                | let maxX = tileSize * (n - 1)
+                , x <- [0,tileSize..maxX] ]
     return $! Sprite $! A.listArray (0, n-1) tiles
 
 -- | Generates a deterministic avatar using an user identifier.
@@ -65,46 +74,34 @@ genIdenticon (Sprite sprite) str =
     let (color, tiles) = G.runGet getVals hash
         regionsArr = regions color tiles
 
-        -- Combines regions into a single image.
-        img = I.fromFunction (I.Size avatarSize avatarSize) $ \(I.Point x y) ->
-            let (xQuot, xRem) = x `quotRem` regionSide
-                (yQuot, yRem) = y `quotRem` regionSide
-                region = regionsArr A.! (xQuot + yQuot * 2)
-            in region `I.getPixel` I.Point xRem yRem
-        img' = I.force img
-    in AvatarImage img' True (hashImage img')
+        -- Combines the four regions into a single image.
+        line (Z :. y) = let (!yQuot, !yRem) = y `quotRem` regionSide
+                        in (2 * yQuot, yRem)
+        pixel (!yQuot2, !yRem) (Z :. _ :. x) =
+            let (!xQuot, !xRem) = x `quotRem` regionSide
+                !region = regionsArr A.! (yQuot2 + xQuot)
+            in region `getPixel` (Z :. yRem :. xRem)
+        img = fromFunctionLine (Z :. avatarSize :. avatarSize) line pixel
+    in AvatarImage img True (hashImage img)
   where
     -- Generates an infinite hash by repeating the application of the SHA1
     -- function.
     hash = C.concat $ tail $ iterate (bytestringDigest . sha1)
                                      (C.pack $ T.unpack str)
 
-    -- The avatar is divided in 4 symmetrical regions. Each region is randomly
-    -- generated from a square number of randomly chosen tiles.
-    regions :: (I.GreyPixel -> I.RGBAPixel) -> A.Array Int I.GreyImage
-            -> A.Array Int I.RGBAImage
-    regions color tiles =
-        let region1 = I.force $ I.fromFunction regionSize $ \(I.Point x y) ->
-                let (xQuot, xRem) = x `quotRem` tileSize
-                    (yQuot, yRem) = y `quotRem` tileSize
-                    tile = tiles A.! (xQuot + yQuot * nTilesSide)
-                in color $ tile `I.getPixel` I.Point xRem yRem
-            region2 = I.force $ I.horizontalFlip region1
-            region3 = I.verticalFlip region1
-            region4 = I.verticalFlip region2
-        in A.listArray (0, 3) [region1, region2, region3, region4]
-
-    regionSide = avatarSize `quot` 2
-    regionSize = I.Size regionSide regionSide
+    -- Width/Height of one region if the avatar.
+    -- There are 4 regions in the avatar.
+    !regionSide = avatarSize `quot` 2
 
     -- Each region is composed of a square number of tiles.
-    nTilesSide = regionSide `quot` tileSize
-    nTiles = nTilesSide * nTilesSide
+    !nTilesSide = regionSide `quot` tileSize
+    !nTiles = nTilesSide * nTilesSide
 
     -- Takes a random color and a set of random tiles from a bytestring.
     getVals = do
         -- Uses the first 3 bytes to get a random color.
-        color <- I.RGBAPixel <$> G.getWord8 <*> G.getWord8 <*> G.getWord8
+        (r, g, b) <- (,,) <$> G.getWord8 <*> G.getWord8 <*> G.getWord8
+        let color (GreyPixel v) = RGBAPixel r g b v
 
         -- Uses a byte to choose random tiles.
         let availTiles = 1 + snd (A.bounds sprite)
@@ -116,11 +113,35 @@ genIdenticon (Sprite sprite) str =
 
         return (color, arr)
 
+    -- The avatar is divided in 4 symmetrical regions. Each region is randomly
+    -- generated from a square number of randomly chosen tiles.
+    -- This function returns the four regions from the set of randomly choosen
+    -- tiles.
+    regions :: (GreyPixel -> RGBAPixel) -> A.Array Int (GreyImage D)
+            -> A.Array Int (RGBAImage U)
+    regions color tiles =
+        let regionSize = Z :. regionSide :. regionSide
+
+            -- Computes the first region by copying the randomly choosen tiles.
+            line (Z :. y) = let (!yQuot, !yRem) = y `quotRem` tileSize
+                            in (yQuot * nTilesSide, yRem)
+            pixel (!yOffset, !yRem) (Z :. _ :. x) =
+                let (!xQuot, !xRem) = x `quotRem` tileSize
+                    !tile = tiles A.! (yOffset + xQuot)
+                in color $ tile `getPixel` (Z :. yRem :. xRem)
+            region1 = fromFunctionLine regionSize line pixel
+
+            region2 = horizontalFlip region1
+            region3 = verticalFlip region1
+            region4 = verticalFlip region2
+        in A.listArray (0, 3) [region1, region2, region3, region4]
+
 -- | Resizes and adapts an uploaded image to be used as an avatar.
-avatarImage :: I.RGBAImage -> AvatarImage
+avatarImage :: Source r (Channel RGBAImage) => RGBAImage r -> AvatarImage
 avatarImage img =
-    let img' = I.force $ I.resize I.Bilinear img (I.Size avatarSize avatarSize)
+    let img' = resize img Bilinear (Z :. avatarSize :. avatarSize)
     in AvatarImage img' False (hashImage img')
+{-# INLINE avatarImage #-}
 
 -- | Registers and saves a new avatar. Checks if the same avatar is not used by
 -- another user.
@@ -135,7 +156,7 @@ newAvatar (AvatarImage img generated imgHash@(ImageHash hash)) = do
             app <- lift $ getYesod
             let path = avatarPath app imgHash
             liftIO $ createDirectoryIfMissing True (takeDirectory path)
-            liftIO $ I.save img path
+            liftIO $ save path img
             insert_ $ AvatarFile hash 1
     let avatar = Avatar generated hash
     Key (PersistInt64 avatarId) <- insert avatar
@@ -181,10 +202,8 @@ avatarRoute app avatar =
     in avatarsDirRoute app file
 
 -- | Returns the SHA1 of the pixels values of the image.
-hashImage :: I.RGBAImage -> ImageHash
-hashImage =
-    ImageHash . T.pack . showDigest . sha1 . L.pack . concat 
-              . map I.pixToValues . I.toList
+hashImage :: (Image i, Channel i ~ Word8, Source r Word8) => i r -> ImageHash
+hashImage = ImageHash . T.pack . showDigest . sha1 . L.pack . toList
 
 int :: Integral a => a -> Int
 int = fromIntegral

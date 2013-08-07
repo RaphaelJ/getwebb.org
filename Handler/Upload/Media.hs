@@ -9,7 +9,6 @@ module Handler.Upload.Media (
 import Import
 
 import Control.Applicative
-import qualified Control.Exception as E
 import Control.Monad
 import Control.Monad.Trans.Maybe (MaybeT (..), runMaybeT)
 import qualified Data.Set as S
@@ -29,7 +28,7 @@ import qualified Network.Lastfm as L
 import qualified Network.Lastfm.Track as L
 import qualified Sound.TagLib as ID3
 import System.Posix.Files (createSymbolicLink, removeLink)
-import qualified Vision.Image as I
+import Vision.Image (D, RGBImage (..), convert, load, save)
 
 import Handler.Upload.Image (miniature)
 import qualified JobsDaemon.Compression as C
@@ -197,13 +196,14 @@ processMedia path ext fileId | not (ext `S.member` extensions) = return False
                     release closeTmp
 
                 -- Generates the cover image miniature.
-                eImg <- liftIO $ E.try (I.load tmp)
+                eImg <- liftIO $ load tmp
                 liftIO $ removeFile tmp
                 case eImg of
-                    Right img -> do
-                        liftIO $ I.save (miniature img) miniaturePath
+                    Right img' -> do
+                        let img = convert img' :: RGBImage D
+                        liftIO $ save miniaturePath (miniature img)
                         return $! Just (url, True)
-                    Left (_ :: E.SomeException) -> do
+                    Left _ -> do
                         return $! Just (url, False)
 
     -- Parses the last.fm JSON response and return the possible URL and the

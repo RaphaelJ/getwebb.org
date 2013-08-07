@@ -10,11 +10,11 @@ import Data.Time.Clock (NominalDiffTime, UTCTime)
 import Database.Persist.Sql (SqlBackend)
 import Yesod
 
-import qualified Vision.Image as I
+import Vision.Image (D, GreyImage)
 
 -- | The sprite contains the set of patterns which can be used to build a random
 -- avatar (identicon).
-newtype Sprite = Sprite (A.Array Int I.GreyImage)
+newtype Sprite = Sprite (A.Array Int (GreyImage D))
 
 data Account = Account { acAvatarSprite :: Sprite }
 

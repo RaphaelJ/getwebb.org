@@ -6,7 +6,6 @@ module Account.Settings (getSettingsR, postSettingsR) where
 import Prelude
 
 import Control.Applicative
-import qualified Control.Exception as E
 import Data.Monoid
 import System.Directory (removeFile)
 import System.FilePath ((</>))
@@ -14,7 +13,7 @@ import System.IO (hClose, openTempFile)
 
 import Yesod
 import Control.Monad.Trans.Resource (register)
-import qualified Vision.Image as I
+import Vision.Image (F, RGBAImage (..), convert, load)
 
 import Account.Foundation
 import Account.Avatar (
@@ -50,16 +49,16 @@ postSettingsR = do
             liftIO $ hClose h
             liftIO $ fileMove f tmpPath
 
-            eImg <- liftIO $ E.try (I.load tmpPath)
+            eImg <- liftIO $ load tmpPath
 
             case eImg of
                 Right img -> do
-                    let img' = avatarImage img
+                    let img' = avatarImage (convert img :: RGBAImage F)
                     lift $ runDB $ do
                         replaceAvatar userId user avatar img'
                         accountSettingsSave userId setts
                     redirectSuccess
-                Left (_ :: E.SomeException) ->
+                Left _ ->
                     return [whamlet|
                         <p .errors>Invalid image.
                         ^{widget}

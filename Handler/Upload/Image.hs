@@ -11,18 +11,22 @@ module Handler.Upload.Image (
 
 import Import
 
-import qualified Control.Exception as E
 import Data.Maybe
 import qualified Data.Set as S
 import System.FilePath (takeDirectory)
 
-import qualified Vision.Image as I
-import qualified Vision.Primitive as I
+import Vision.Image (
+      D, F, Image (..), InterpolMethod (..), Rect (..), RGBImage (..), Source, U
+    , Z (..), (:.) (..)
+    , convert, crop, extent, load, resize, save
+    )
 
 import qualified JobsDaemon.Compression as C
 import qualified JobsDaemon.ResizeImage as R
 import qualified JobsDaemon.ExifTags    as EXIF
 import Util.Path (ObjectType (..), getPath)
+
+import System.TimeIt
 
 -- | Files extensions which are supported by the DevIL image library.
 extensions :: S.Set Text
@@ -49,16 +53,15 @@ processImage path ext fileId | not (ext `S.member` extensions) = return False
     app <- getYesod
 
     -- Tries to open the file as an image.
-    eImg <- liftIO $ E.try (I.load path)
+    eImg <- liftIO $ load path
 
     case eImg of
-        Right img -> do
+        Right img' -> do
             -- Creates the miniature and saves it.
             let dir = takeDirectory path
-                I.Size w h = I.getSize img
-            liftIO $ do
-                let miniImg = miniature img
-                I.save miniImg (getPath dir Miniature)
+                !img = convert img' :: RGBImage F
+                Z :. h :. w = extent img
+            liftIO $ timeIt $ save (getPath dir Miniature) (miniature img)
 
             -- Creates a resized image for social medias.
             mCardJobId <- genCard img
@@ -94,14 +97,14 @@ processImage path ext fileId | not (ext `S.member` extensions) = return False
             _ <- liftIO $ C.putFile app fileId compressDeps
 
             return True
-        Left (_ :: E.SomeException) -> return False
+        Left _ -> return False
   where
     -- Generates a scaled down image for social medias if the image is too
     -- large to be used directly as a card.
     genCard img | img `R.isLarger` R.maxCardSize = do
                     app <- getYesod
                     let destType = fromMaybe PNG imgType
-                    liftIO $ Just <$> R.putFile app fileId ResizeCard destType 
+                    liftIO $ Just <$> R.putFile app fileId ResizeCard destType
                                                 []
                 | otherwise = return Nothing
 
@@ -113,7 +116,7 @@ processImage path ext fileId | not (ext `S.member` extensions) = return False
             Just destType -> genDisplayableAsync img destType
             Nothing       -> do
                 let img' = R.resize img R.maxDisplayableSize
-                liftIO $ I.save img' (getPath dir (Display PNG))
+                liftIO $ save (getPath dir (Display PNG)) img'
                 return $ SyncDisplayableGen PNG
 
     -- Generates the displayable image in background if the image is larger
@@ -132,18 +135,17 @@ processImage path ext fileId | not (ext `S.member` extensions) = return False
             | otherwise                       = Nothing
 
 -- | Generates a miniature from the input image.
-miniature :: I.RGBImage -> I.RGBImage
+miniature :: Source r (Channel RGBImage) => RGBImage r -> RGBImage U
 miniature img =
     -- Crops the image in a square rectangle as large as the largest side of the
     -- image.
-    if w > h then resize $ I.crop img (I.Rect ((w - h) `quot` 2) 0 h h)
-             else resize $ I.crop img (I.Rect 0 ((h - w) `quot` 2) w w)
+    if w > h then resize' $ crop img (Rect ((w - h) `quot` 2) 0 h h)
+             else resize' $ crop img (Rect 0 ((h - w) `quot` 2) w w)
   where
     -- Resizes the cropped image to a square of miniatureSize.
 --     resize img' = I.resize I.NearestNeighbor img' miniSize
-    resize img' = I.resize I.Bilinear img' miniSize
-    {-# INLINE resize #-}
-
+    resize' img' = resize img' Bilinear miniSize
+    {-# INLINE resize' #-}
 --     -- Draw a bright border surrounded by a dark border.
 --     drawBorder img' = I.fromFunction miniSize (drawBorderStep img')
 --     {-# INLINE drawBorder #-}
@@ -159,5 +161,7 @@ miniature img =
 --         brighter val = fromIntegral $ min 255 $ int val + 50
 --     {-# INLINE drawBorderStep #-}
 
-    I.Size w h = I.getSize img
-    !miniSize = I.Size miniatureSize miniatureSize
+    !(Z :. h :. w) = extent img
+    !miniSize = Z :. miniatureSize :. miniatureSize
+{-# SPECIALIZE miniature :: RGBImage D -> RGBImage U #-}
+{-# SPECIALIZE miniature :: RGBImage F -> RGBImage U #-}

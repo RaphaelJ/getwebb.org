@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 -- | Uses the JobDaemon to resizes images which are too large to be easily
 -- displayed in a browser or in a social media.
 module JobsDaemon.ResizeImage (
@@ -13,36 +14,41 @@ import Import
 import Data.Ratio
 import System.Directory (removeFile)
 
-import qualified Vision.Image as I
-import qualified Vision.Primitive as I
+import Vision.Image (
+      D, DIM2, F, Image (..), InterpolMethod (..), RGBImage, Source, U, Z (..)
+    , (:.) (..)
+    , convert, extent, load, save
+    )
+import qualified Vision.Image as I (resize)
 
 import JobsDaemon.Util (registerJob, runDBIO)
 import Util.Path (ObjectType (..), uploadDir, getFileSize, getPath)
 
 -- | The maximum size of an image to be used as a Twitter card.
-maxCardSize :: I.Size
-maxCardSize = I.Size 640 640
+maxCardSize :: DIM2
+maxCardSize = Z :. 640 :. 640
 
 -- | The maximum size of an image to be displayed in the viewer.
-maxDisplayableSize :: I.Size
-maxDisplayableSize = I.Size 2048 1200
+maxDisplayableSize :: DIM2
+maxDisplayableSize = Z :. 1200 :. 2048
 
 -- | Returns 'True' if the image is larger than the given size on at least one
 -- dimension.
-isLarger :: I.RGBImage -> I.Size -> Bool
-img `isLarger` I.Size maxW maxH = let I.Size w h = I.getSize img
-                                  in w > maxW || h > maxH
+isLarger :: Source r (Channel RGBImage) => RGBImage r -> DIM2 -> Bool
+img `isLarger` (Z :. maxH :. maxW) = let Z :. h :. w = extent img
+                                     in w > maxW || h > maxH
 
 -- | Returns an image which has been scaled down to the maximum given size.
 -- Preserves the aspect-ratio.
-resize :: I.RGBImage -> I.Size -> I.RGBImage
-resize img maxSize@(I.Size maxW maxH) | img `isLarger` maxSize =
-    I.resize I.NearestNeighbor img size'
+resize :: Source r (Channel RGBImage) => RGBImage r -> DIM2 -> RGBImage U
+resize !img !(Z :. maxH :. maxW) =
+    I.resize img Bilinear size'
   where
-    I.Size w h = I.getSize img
-    maxRatio = max (w % maxW) (h % maxH)
-    size' = I.Size (round $ (w % 1) / maxRatio) (round $ (h % 1) / maxRatio)
-resize img _                                         = img
+    !(Z :. h :. w) = extent img
+    !maxRatio = max (w % maxW) (h % maxH)
+    !size' = Z :. (round $ (h % 1) / maxRatio) :. (round $ (w % 1) / maxRatio)
+{-# SPECIALIZE resize :: RGBImage D -> DIM2 -> RGBImage U #-}
+{-# SPECIALIZE resize :: RGBImage F -> DIM2 -> RGBImage U #-}
 
 -- | Generates a resized image in background. Doesn't save the resized file if 
 -- this last is larger than the original file.
@@ -59,17 +65,19 @@ jobResize app fileId job destType = do
         path = getPath dir Original
         destPath = getPath dir (objType destType)
 
-    img <- I.load path
+    eImg <- load path
+    case eImg of
+        Right img -> do
+            -- Will fail if the file has been removed.
+            save destPath (resize (convert img :: RGBImage D) maxSize)
+            newSize <- getFileSize destPath
 
-    -- Will fail if the file has been removed.
-    I.save (resize img maxSize) destPath
-    newSize <- getFileSize destPath
-
-    if newSize < fileSize file
-        then runDBIO app $
-            updateWhere [ImageAttrsFile ==. fileId]
-                        [attrsField =. Just destType]
-        else removeFile destPath
+            if newSize < fileSize file
+                then runDBIO app $
+                    updateWhere [ImageAttrsFile ==. fileId]
+                                [attrsField =. Just destType]
+                else removeFile destPath
+        Left err -> error err
 
 -- | Adds a file to the background resizing queue for cards and displayable
 -- images.

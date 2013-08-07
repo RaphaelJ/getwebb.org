@@ -26,8 +26,6 @@ import qualified JobsDaemon.ResizeImage as R
 import qualified JobsDaemon.ExifTags    as EXIF
 import Util.Path (ObjectType (..), getPath)
 
-import System.TimeIt
-
 -- | Files extensions which are supported by the DevIL image library.
 extensions :: S.Set Text
 extensions = S.fromDistinctAscList [
@@ -61,7 +59,7 @@ processImage path ext fileId | not (ext `S.member` extensions) = return False
             let dir = takeDirectory path
                 !img = convert img' :: RGBImage F
                 Z :. h :. w = extent img
-            liftIO $ timeIt $ save (getPath dir Miniature) (miniature img)
+            liftIO $ save (getPath dir Miniature) (miniature img)
 
             -- Creates a resized image for social medias.
             mCardJobId <- genCard img

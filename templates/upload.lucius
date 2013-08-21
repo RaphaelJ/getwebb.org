@@ -1,3 +1,110 @@
+#upload_screen {
+    position: absolute;
+    top: 37px;
+    left: 0;
+    right: 0;
+    bottom: 25px;
+
+    h1 {
+        margin: 40px 0;
+
+        font-size: 23px;
+        color: white;
+        text-align: center;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 1);
+    }
+
+    #upload_box {
+        margin: 40px auto;
+        width: 750px;
+
+        border-radius: 2px;
+        background-color: rgba(255, 255, 255, 0.85);
+        border: 1px solid rgba(255, 255, 255, 1);
+        box-shadow: 0 0 10px rgba(0, 0, 0, 1);
+
+        #upload_box_content {
+            padding: 7px 15px;
+
+            h2 {
+                margin-top: 12px;
+                padding-bottom: 12px;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            }
+
+            ul#features {
+                margin: auto;
+                padding: 0;
+                width: 100%;
+
+                list-style-type: none;
+
+                li {
+                    width: 33%;
+                    float: left;
+                    margin: 25px 0;
+                    padding: 0;
+
+                    text-align: center;
+
+                    h3 {
+                        margin: 3px 0 10px 0;
+
+                        color: #2D2D2D;
+                        font-size: 18px;
+                        font-weight: bold;
+                    }
+
+                    .description {
+                        display: block;
+                        padding: 0 20px;
+                    }
+                }
+            }
+
+            ul#features:after {
+                clear: both;
+            }
+        }
+    }
+
+    ul#browser {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 20px;
+        width: 100%;
+        padding: 0;
+        margin: 0;
+        background-color: rgba(255, 255, 255, 0.1);
+
+        box-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
+
+        list-style-type: none;
+        font-size: 0;
+
+        li {
+            display: inline-block;
+            width: 5%;
+
+            img {
+                width: 100%;
+                opacity: 0.75;
+            }
+            img:hover {
+                opacity: 1;
+            }
+        }
+
+        .big_button {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+        }
+    }
+}
+
+/*
 #home_screen {
     background-image: url('@{StaticR img_homepage_homescreen_png}');
 
@@ -389,4 +496,4 @@
             }
         }
     }
-}
+}*/

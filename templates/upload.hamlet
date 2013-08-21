@@ -1,3 +1,88 @@
+<div #upload_screen>
+    <h1>
+        Upload files up to #{PrettyFileSize maxFileSize} for free
+
+    <div #upload_box>
+        <div #upload_box_content>
+            <div #upload_error style="display: none">
+
+            <form #upload_form enctype="multipart/form-data"
+                            method="post" action="@{UploadR}">
+                <h2>Select some files to upload
+
+                <div #public_private .buttons>
+                    <span .button .left .public #public_button
+                          onclick="uploadPublic(true);"
+                          hint="Uploaded files will be published in the public gallery">
+                        Public
+                    <span .button .right .private #private_button
+                          onclick="uploadPublic(false);"
+                          hint="Uploaded files will NOT be published in the public gallery">
+                        Private
+                <div .clear_float>
+
+                <div #upload_widget>
+                    ^{filesWidget}
+
+                <input .big_button #upload_button type=submit tabindex=2
+                                                  value=Upload>
+
+                <span .options_button #options_toggle tabindex=3>
+                    Show more options
+
+                <div .clear_float>
+
+                <div #options style="display: none">
+                    ^{optsWidget}
+
+            <div #upload_progress style="display: none">
+                <h2 #upload_status>
+
+                <div #upload_speed>
+
+                <div .clear_float>
+
+                <div #uploads>
+
+            <ul #features>
+                <li>
+                    <img src=@{StaticR img_homepage_storage_png}
+                            alt="Storage icon">
+                    <h3>Large files
+                    <span .description>
+                        Upload files up to
+                        <strong>#{PrettyFileSize maxFileSize}
+                        each without any registration.
+
+                <li>
+                    <img src=@{StaticR img_homepage_formats_png}
+                            alt="Formats icon">
+                    <h3>Format aware
+                    <span .description>
+                        We provide special features for images, medias and
+                        archives.
+
+                <li>
+                    <img src=@{StaticR img_homepage_infinity_png}
+                            alt="Infinity icon">
+                    <h3>No expiration
+                    <span .description>
+                        Your file will not be removed if it is downloaded a
+                        least once a year.
+
+            <div .clear_float>
+    <ul #browser>
+        $forall (upload, iconUrl) <- topImages
+          $with Hmac hmac <- uploadHmac upload
+           $with title <- uploadTitle upload
+            <li .hint hint=#{title}>
+                <a href=@{ViewR hmac}>
+                    <img src=@{iconUrl} alt=#{title} />
+
+        <a .big_button href=@{BrowserR}>
+            Browse most viewed files
+
+<!--
 <div #home_screen>
     <div #upload_global_progress>
         <div #upload_global_progress_complete .complete>
@@ -86,3 +171,4 @@
                 it will not be removed from our servers.
 
     <div .clear_float>
+-->

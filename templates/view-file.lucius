@@ -108,14 +108,6 @@
 
     #right_pane {
         background-color: rgba(0, 0, 0, 0.05);
-
-        h2, h3, h4 {
-            color: #2D2D2D;
-        }
-
-        .ad {
-            border-top: 1px solid rgba(0, 0, 0, 0.1);
-        }
     }
 
     #comments_title {

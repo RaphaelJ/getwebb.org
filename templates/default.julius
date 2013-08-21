@@ -79,29 +79,29 @@ function prettyDiffTime(secs)
     if (y > 1)
         return y.toString() + " years";
     else if (y == 1)
-        return "one year";
+        return "1 year";
     else if (m > 1)
         return m.toString() + " months";
     else if (m == 1)
-        return "one month";
+        return "1 month";
     else if (d > 1)
         return d.toString() + " days";
     else if (d == 1)
-        return "one day";
+        return "1 day";
     else if (h > 1)
         return h.toString() + " hours";
     else if (h == 1)
-        return "one hour";
+        return "1 hour";
     else if (mins > 1)
         return mins.toString() + " minutes";
     else if (mins == 1)
-        return "one minute";
+        return "1 minute";
     else if (s > 1)
         return s.toString() + " seconds";
     else if (s == 1)
-        return "one second";
+        return "1 second";
     else
-        return "less than one second";
+        return "now";
 }
 
 // Escapes HTML special chars (<, >, & ...) and transforms line feed in <br>.

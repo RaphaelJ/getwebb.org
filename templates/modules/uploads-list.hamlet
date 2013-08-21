@@ -53,23 +53,21 @@
 
             <div .info>
                 <span .size>
-                    <span .value>#{PrettyFileSize (fileSize file)}
+                    #{PrettyFileSize (fileSize file)}
 
                 •
 
                 <span .views>
-                 $with views <- int $ uploadViews upload
+                 $with views <- uploadViews upload
                     $if views > 1
                         <span .value>
                             #{PrettyNumber views}
-                        <span .key>views
+                        <span .unit>views
                     $elseif views == 1
                         <span .value>one
-                        <span .key>view
+                        <span .unit>view
                     $else
                         <span .value>no
-                        <span .key>view
-
-
+                        <span .unit>view
 
 <div .clear_float>

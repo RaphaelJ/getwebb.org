@@ -1,19 +1,20 @@
 <div #right_pane>
  $with hmacTxt <- toPathPiece hmac
-    <div .download>
-        <a .big_button href=@{DownloadR hmacTxt} download=#{uploadName upload}
-                       tabindex=1>
-            Download
+    <div .actions>
+        <div .download>
+            <a .big_button href=@{DownloadR hmacTxt} download=#{uploadName upload}
+                        tabindex=1>
+                Download
 
-    $if isAdmin upload mAdminKey
-        <div .remove>
-            <span .big_button .remove_button
-                  onclick="uploadRemove('@{ViewR hmacTxt}', reloadPage);">
-                Remove
+        $if isAdmin upload mAdminKey
+            <div .remove>
+                <span .big_button .remove_button
+                    onclick="uploadRemove('@{ViewR hmacTxt}', reloadPage);">
+                    Remove
 
     <div .size>
-        <span .key>File size :
-        <span .value>#{PrettyFileSize (fileSize file)}
+        <span .key>File size
+        #{PrettyFileSize (fileSize file)}
 
     <div .share>
         <a .facebook_button
@@ -22,8 +23,30 @@
         <a .twitter_button
             href="https://twitter.com/intent/tweet?text=#{wrappedTitle}&url=@{ViewR hmacTxt}&via=#{extraTwitter extra}&original_referer=@{currUrl}">
             Tweet
-
     <div .clear_float>
+
+    <div .stats>
+        $with (views, _, bw) <- stats
+            <span .views title="Number of times the file has been downloaded">
+                $if views > 1
+                    <span .value>#{PrettyNumber views}
+                    <span .unit>views
+                $elseif views == 1
+                    1
+                    <span .unit>view
+                $else
+                    0
+                    <span .unit>view
+
+            <span .creation
+                  title="Time eslaped since the file has been uploaded">
+                #{PrettyDiffTime uploadDiffTime}
+
+            <span .bandwidth
+                  title="Total bandwidth consumed since the file has been uploaded">
+                #{PrettyFileSize bw}
+
+            <div .clear_float>
 
     <div .embded_links>
         <div .buttons>
@@ -114,31 +137,16 @@
                        value="[@{ViewR hmacTxt}](![#{wrappedTitle}](@{miniatureUrl}))"
                        onclick="this.select()" />
 
-    <div .stats>
-        <h3>Statistics
-        $maybe (Entity _ owner, ownerAvatar) <- mOwner
-         $with ownerName <- userName owner
-            <div .creator>
-                <a href=@{UserGalleryR ownerName}>
-                    <img .avatar src=@{avatarRoute app ownerAvatar} alt=#{ownerName} />
-                <span .key>
-                    Uploaded
-                    by <a href=@{UserGalleryR ownerName}>#{wrappedText ownerName 20}</a>.
-        $with (views, _, bw) <- stats
-            <span .key>Totalled
-            <span .value>
-                $if views > 1
-                    #{PrettyNumber (int views)} views
-                $elseif views == 1
-                    one view
-                $else
-                    no view
-            <span .key>in
-            <span .value>#{PrettyDiffTime uploadDiffTime}
-            <span .key>for a total bandwith of
-            <span .value>#{PrettyFileSize bw}.
 
-            <div .clear_float>
+    $maybe (Entity _ owner, ownerAvatar) <- mOwner
+     $with ownerName <- userName owner
+        <div .creator>
+            <a href=@{UserGalleryR ownerName}>
+                <img .avatar src=@{avatarRoute app ownerAvatar} alt=#{ownerName} />
+            <span .key>
+                Uploaded by
+                <a href=@{UserGalleryR ownerName}>#{wrappedText ownerName 20}
+        <div .clear_float>
 
     <div .ad>
         <h2>Advertisement

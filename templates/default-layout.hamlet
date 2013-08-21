@@ -6,18 +6,42 @@ $doctype 5
 <html>
     <head>
         <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width">
 
         <title>#{pageTitle pc}
-        <meta name="author" content="#{extraAdmin $ appExtra $ settings app}">
-        <meta name="viewport" content="width=device-width">
 
         ^{pageHead pc}
 
+        <link href=@{StaticR img_logo_svg} rel=logo type="image/svg">
         <link href=@{StaticR img_icon_24_png} rel=icon type=image/png>
-        <link href=@{StaticR img_icon_24_png} rel="shortcut icon"
-              type=image/png>
+        <link href=@{StaticR img_icon_ico} rel="shortcut icon" type=image/png>
 
-        <link rel=logo href=@{StaticR img_logo_svg} type="image/svg">
+        <meta name="author" content="#{extraAdmin $ appExtra $ settings app}">
+        <meta name="description"
+              content="Getwebb let you upload large file for free">
+        <meta name="keywords" content="upload file, send file, upload image, send image, send file email, big file, large file, free upload, file hosting">
+
+        <meta name="application-name" content="Getwebb">
+        <meta name="msapplication-tooltip"
+              content="Getwebb let you upload large file for free">
+        <meta name="msapplication-starturl" content=@{UploadR}>
+        <meta name="msapplication-navbutton-color" content="#3D94B6">
+        <meta name="msapplication-TileColor" content="#3D94B6">
+        <meta name="msapplication-square70x70logo"
+              content=@{StaticR img_msapplication_square70x70logo_png}>
+        <meta name="msapplication-square150x150logo"
+              content=@{StaticR img_msapplication_square150x150logo_png}>
+        <meta name="msapplication-wide310x150logo"
+              content=@{StaticR img_msapplication_wide310x150logo_png}>
+        <meta name="msapplication-square310x310logo"
+              content=@{StaticR img_msapplication_square310x310logo_png}>
+        <meta name="msapplication-task"
+              content="name=Upload a file;action-uri=@{UploadR};icon-uri=@{StaticR img_icon_ico}">
+        <meta name="msapplication-task"
+              content="name=Most viewed public files;action-uri=@{BrowserR};icon-uri=@{StaticR img_icon_ico}">
+        <meta name="msapplication-task"
+              content="name=Upload history;action-uri=@{HistoryR};icon-uri=@{StaticR img_icon_ico}">
+
         <link rel=fluid-icon href=@{StaticR img_icon_512_png} title=Getwebb>
         <link rel=apple-touch-icon sizes=57x57 href=@{StaticR img_logo_57_png}>
         <link rel=apple-touch-icon sizes=114x114

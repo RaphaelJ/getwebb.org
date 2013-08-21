@@ -1,6 +1,7 @@
 ul.uploads {
     padding: 5px;
     margin: 0;
+    min-height: 500px;
 
     list-style-type: none;
 
@@ -59,6 +60,18 @@ ul.uploads {
 
         .info {
             margin-bottom: 3px;
+
+            .value, .unit {
+                font-size: 0.9em;
+            }
+
+            .value {
+                color: rgba(0, 0, 0, 0.8);
+            }
+
+            .unit {
+                color: rgba(0, 0, 0, 0.5);
+            }
         }
 
         .buttons, .creator {

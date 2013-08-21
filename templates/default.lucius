@@ -1,7 +1,7 @@
 /* Global definitions */
 
 html, body {
-    background-color: #E0DED3;
+    background-color: rgb(15, 61, 82);
     height: 100%;
 
     font-family: Arial, Helvetica, sans-serif;
@@ -25,18 +25,6 @@ a:hover, .action:hover {
 
 .getwebb {
     font-family: "Chau Philomene One", sans-serif;
-}
-
-.key, .value {
-    font-size: 0.9em;
-}
-
-.key {
-    color: rgba(0, 0, 0, 0.5);
-}
-
-.value {
-    color: rgba(0, 0, 0, 0.8);
 }
 
 .count {
@@ -174,6 +162,7 @@ form {
             box-sizing: border-box;
 
     text-align: center;
+    font-family: Arial, Helvetica, sans-serif;
 
     transition-property: all;
     transition-duration: 0.2s;
@@ -187,7 +176,7 @@ form {
     padding: 8px 15px;
 
     background-color: #80AE2B;
-    border: 1px solid #538820;
+    border: 1px solid #638620;
     border-radius: 3px;
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
 
@@ -369,14 +358,14 @@ a.big_button, a.big_button:hover {
 }
 
 #page {
-    width: 1000px;
     margin: 10px auto 0 auto;
 
-    background-color: #F0F0F0;
-    box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+    border-radius: 2px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 1);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 1);
 
     .page_content {
-        min-height: 150px;
         padding: 15px;
     }
 
@@ -522,13 +511,17 @@ footer {
     }
 }
 
-@media (min-width: 1000px) {
+@media (min-width: 1002px) {
     .only_tablet {
         display: none;
     }
+
+    #page {
+        width: 1000px;
+    }
 }
 
-@media (max-width: 999px) {
+@media (max-width: 1001px) {
     .no_tablet {
         display: none;
     }

@@ -5,31 +5,44 @@
 
     width: 300px;
 
+    h2, h3, h4 {
+        color: #2D2D2D;
+    }
+
     h3 {
         margin: 10px 0 5px 0;
     }
 
-    .download, .remove {
+    .actions {
         margin: 10px 10px 0 10px;
 
-        .big_button {
-            display: block;
-            margin: 0;
-        }
+        .download, .remove {
+            margin: 3px 0;
 
-        .big_button.remove_button {
-            background-color: #B71B17;
-            border: 1px solid #631311;
-        }
+            .big_button {
+                display: block;
+                margin: 0;
+            }
 
-        .big_button.remove_button:hover {
-            background-color: #9E1814;
+            .big_button.remove_button {
+                background-color: #B71B17;
+                border: 1px solid #951612;
+            }
+
+            .big_button.remove_button:hover {
+                background-color: #9E1814;
+            }
         }
     }
 
     .size {
         float: right;
         margin: 3px 10px 3px 0;
+
+        .key {
+            margin-right: 5px;
+            color: rgba(0, 0, 0, 0.4);
+        }
     }
 
     .share {
@@ -45,7 +58,7 @@
             background-color: transparent;
             background-repeat: no-repeat;
             background-position: 3px center;
-            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.25);
             border-radius: 2px;
 
             color: white;
@@ -90,6 +103,45 @@
         }
     }
 
+    .stats {
+        margin: 15px 10px;
+
+        .views, .creation, .bandwidth {
+               -moz-box-sizing: border-box;
+            -webkit-box-sizing: border-box;
+                box-sizing: border-box;
+
+            float: left;
+            text-align: center;
+
+            .value, .unit {
+                display: block;
+                width: 100%;
+            }
+
+            .value {
+                font-size: 1.1em;
+            }
+
+            .unit {
+                font-size: 0.9em;
+                opacity: 0.7;
+            }
+        }
+
+        .views, .bandwidth {
+            width: 33%;
+        }
+
+        .creation {
+            width: 34%;
+        }
+
+        .creation, .bandwidth {
+            border-left: 1px solid rgba(0, 0, 0, 0.1);
+        }
+    }
+
     .embded_links {
         margin: 15px 10px;
 
@@ -112,27 +164,27 @@
 
     }
 
-    .stats {
-        margin: 15px 10px;
+    .creator {
+        margin: 10px 10px 0 10px;
 
-        .creator {
-            img {
-                width: 50px;
-                height: 50px;
-                float: left;
-                margin-right: 5px;
-            }
+        img {
+            width: 50px;
+            height: 50px;
+            float: left;
+            margin-right: 10px;
         }
     }
 
     .ad {
-        margin: 20px 0;
+        margin: 10px 0;
         overflow: hidden;
         width: 100%;
 
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+
         h2 {
             margin: 3px 10px;
-            text-transform:lowercase;
+            text-transform: lowercase;
             font-size: 12px;
         }
 

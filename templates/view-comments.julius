@@ -81,7 +81,7 @@ function commentNew(form)
             message.append(" ");
 
             $("<span>").addClass("date")
-                       .text("few moments ago")
+                       .text("just now")
                        .appendTo(message);
             message.append(" ");
 

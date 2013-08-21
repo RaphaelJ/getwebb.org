@@ -45,7 +45,7 @@ getUploadR = do
     let maxRequestSize = extraMaxRequestSize extras
 
     defaultLayout $ do
-        setTitle "Free file sharing | getwebb"
+        setTitle "Upload a file | getwebb"
         $(widgetFile "upload")
   where
     -- Searchs the ten most popular images. Returns a list of uploads and the
